@@ -1,0 +1,7 @@
+{
+  "name": "New Holland",
+  "description": "A comprehensive financial services platform combining a public-facing corporate website for insurance and investment products with an integrated internal CRM for agent productivity and lead management.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

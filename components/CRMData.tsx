@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutGrid, 
@@ -14,10 +15,20 @@ import {
   Bell, 
   CheckCircle,
   Menu,
-  X
+  X,
+  Zap,
+  ArrowRight,
+  RefreshCw,
+  Users,
+  Settings,
+  ShieldCheck,
+  Award,
+  PenTool,
+  Webhook,
+  ClipboardCheck
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
-import { UserRole, ProductType } from '../types';
+import { UserRole, ProductType, Notification } from '../types';
 
 interface CRMLayoutProps {
   children: React.ReactNode;
@@ -31,8 +42,10 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
   const notifRef = useRef<HTMLDivElement>(null);
   
   const [bellShake, setBellShake] = useState(false);
+  const [activeToast, setActiveToast] = useState<Notification | null>(null);
   const prevNotifCount = useRef(notifications.length);
   const prevChatCount = useRef(chatMessages.length);
+  const [lastSyncTime, setLastSyncTime] = useState(new Date());
 
   const unreadChats = useMemo(() => {
     if (!user) return 0;
@@ -42,14 +55,28 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
   const unreadNotifs = notifications.filter(n => !n.read).length;
   const totalUnreadAlerts = unreadNotifs + unreadChats;
 
+  // Real-time Notification Watcher
   useEffect(() => {
-    if (notifications.length > prevNotifCount.current || chatMessages.length > prevChatCount.current) {
+    if (notifications.length > prevNotifCount.current) {
+        const newNotif = notifications[0];
+        if (newNotif && !newNotif.read) {
+            setBellShake(true);
+            setActiveToast(newNotif);
+            setLastSyncTime(new Date());
+            setTimeout(() => setBellShake(false), 1000);
+            setTimeout(() => setActiveToast(null), 6000);
+        }
+    }
+    prevNotifCount.current = notifications.length;
+  }, [notifications]);
+
+  useEffect(() => {
+    if (chatMessages.length > prevChatCount.current) {
         setBellShake(true);
         setTimeout(() => setBellShake(false), 1000);
     }
-    prevNotifCount.current = notifications.length;
     prevChatCount.current = chatMessages.length;
-  }, [notifications.length, chatMessages.length]);
+  }, [chatMessages.length]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -63,47 +90,116 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
 
   const handleLogout = () => { logout(); navigate('/'); };
 
-  const navItems = useMemo(() => {
+  const handleNotificationClick = (n: Notification) => {
+      markNotificationRead(n.id);
+      setIsNotifOpen(false);
+      if (n.resourceType === 'lead' && n.relatedId) {
+          navigate('/crm/leads', { state: { openLeadId: n.relatedId } });
+      } else if (n.resourceType === 'client' && n.relatedId) {
+          navigate('/crm/clients');
+      }
+  };
+
+  const mainNavItems = useMemo(() => {
     if (!user) return [];
+    const isAdmin = user.role === UserRole.ADMIN;
     
-    // Exact order and naming from the provided screenshot
     const items: any[] = [
         { path: '/crm/dashboard', label: 'Dashboard', icon: LayoutGrid },
-        { path: '/crm/inbox', label: 'Requests', icon: Inbox },
-        { path: '/crm/clients', label: 'Clients', icon: Shield },
     ];
+
+    if (!isAdmin) {
+        items.push({ path: '/crm/inbox', label: 'Requests', icon: Inbox });
+    }
+
+    items.push({ path: '/crm/clients', label: 'Clients', icon: Shield });
 
     const products = user.productsSold || [];
     if (products.some(p => [ProductType.LIFE, ProductType.ANNUITY, ProductType.IUL, ProductType.FINAL_EXPENSE].includes(p))) {
       items.push({ path: '/crm/applications', label: 'Policies & Apps', icon: FileText });
     }
 
-    // "Earnings" as shown in screenshot
-    items.push({ path: '/crm/commissions', label: 'Earnings', icon: LineChart });
+    if (!isAdmin) {
+        items.push({ path: '/crm/commissions', label: 'Earnings', icon: LineChart });
+    }
 
-    // "Leads DB" as shown in screenshot
     items.push({ path: '/crm/leads', label: 'Leads DB', icon: Database });
-    
     items.push({ path: '/crm/calendar', label: 'Calendar', icon: Calendar });
     items.push({ path: '/crm/chat', label: 'Team Chat', icon: MessageCircle, badge: unreadChats });
     
     if (user.role !== UserRole.SUB_ADMIN) {
       items.push({ path: '/crm/profile', label: 'My Profile', icon: CircleUser });
     }
-
     return items;
   }, [user, unreadChats]);
 
+  const adminNavItems = useMemo(() => {
+    if (!user || (user.role !== UserRole.ADMIN && user.role !== UserRole.SUB_ADMIN)) return [];
+    const items: any[] = [
+        { path: '/crm/admin', label: 'User Terminal', icon: Users },
+        { path: '/crm/onboarding', label: 'Onboarding Feed', icon: ClipboardCheck },
+        { path: '/crm/admin/website', label: 'Site Config', icon: Settings },
+        { path: '/crm/admin/carriers', label: 'Carrier Setup', icon: ShieldCheck },
+        { path: '/crm/admin/testimonials', label: 'Client Reviews', icon: Award },
+        { path: '/crm/admin/signature', label: 'Signature Lab', icon: PenTool },
+        { path: '/crm/admin/marketing', label: 'API Integrations', icon: Webhook },
+    ];
+    return items;
+  }, [user]);
+
+  const renderNavLink = (item: any) => {
+    const isActive = location.pathname === item.path || (item.path !== '/crm/dashboard' && location.pathname.startsWith(item.path));
+    return (
+        <Link 
+            key={item.path} 
+            to={item.path} 
+            className={`flex items-center justify-between gap-4 px-5 py-3.5 text-sm font-bold rounded-2xl transition-all duration-200 group ${
+                isActive 
+                ? 'bg-[#3B82F6] text-white shadow-md' 
+                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+            }`}
+        >
+            <div className="flex items-center gap-4">
+                 <item.icon className={`h-5 w-5 transition-colors ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'}`} strokeWidth={2.5} /> 
+                 <span className="tracking-tight">{item.label}</span>
+            </div>
+            {item.badge > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center shadow-sm">{item.badge}</span>
+            )}
+        </Link>
+    );
+  };
+
   return (
     <div className="fixed inset-0 flex items-center justify-center p-0 sm:p-4 font-sans text-slate-900 overflow-hidden bg-slate-100">
+      
+      {activeToast && (
+          <div className="fixed top-8 right-8 z-[100] animate-slide-left w-80 bg-[#0B2240] text-white p-5 rounded-[2rem] shadow-2xl border border-white/20 flex flex-col gap-4 cursor-pointer hover:scale-105 transition-transform" onClick={() => handleNotificationClick(activeToast)}>
+              <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                      <div className="p-2 bg-blue-600 rounded-xl">
+                          <Zap className="h-4 w-4 text-white" />
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Terminal Alert</span>
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); setActiveToast(null); }} className="text-slate-400 hover:text-white"><X size={14}/></button>
+              </div>
+              <div>
+                  <h4 className="font-black text-sm uppercase tracking-tight">{activeToast.title}</h4>
+                  <p className="text-xs text-blue-100 mt-1 font-medium">{activeToast.message}</p>
+              </div>
+              <div className="flex items-center justify-end text-[10px] font-black text-blue-400 uppercase tracking-widest gap-1">
+                  View Source <ArrowRight size={10} />
+              </div>
+          </div>
+      )}
+
       <div className="w-full h-full max-w-[1920px] bg-white sm:rounded-[2.5rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.15)] flex relative overflow-hidden ring-1 ring-black/5">
         
-        {/* Sidebar - Dark Modern iOS Style matched to screenshot */}
         <aside className="hidden lg:flex flex-col w-72 bg-[#1B222E] text-white h-full overflow-y-auto py-10 z-10 flex-shrink-0 no-scrollbar border-r border-white/5">
             <div className="px-8 mb-12 flex items-center gap-4">
-                <div className="relative w-12 h-12 flex-shrink-0 drop-shadow-lg">
+                <div className="relative w-12 h-12 flex-shrink-0">
                     <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                        {/* Company Logo: Yellow house */}
                         <path d="M50 0L100 40V100H0V40L50 0Z" fill="#FBBF24"/>
                     </svg>
                 </div>
@@ -113,29 +209,17 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
                 </div>
             </div>
 
-            <nav className="flex-1 px-4 space-y-1">
-                {navItems.map(item => {
-                    const isActive = location.pathname.startsWith(item.path);
-                    return (
-                        <Link 
-                            key={item.path} 
-                            to={item.path} 
-                            className={`flex items-center justify-between gap-4 px-5 py-3.5 text-sm font-bold rounded-2xl transition-all duration-200 group ${
-                                isActive 
-                                ? 'bg-[#3B82F6] text-white shadow-[0_10px_20px_-5px_rgba(59,130,246,0.6)]' 
-                                : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                            }`}
-                        >
-                            <div className="flex items-center gap-4">
-                                 <item.icon className={`h-5 w-5 transition-colors ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'}`} strokeWidth={2.5} /> 
-                                 <span className="tracking-tight">{item.label}</span>
-                            </div>
-                            {item.badge > 0 && (
-                                <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center shadow-sm">{item.badge}</span>
-                            )}
-                        </Link>
-                    );
-                })}
+            <nav className="flex-1 px-4 space-y-8">
+                <div className="space-y-1">
+                    {mainNavItems.map(item => renderNavLink(item))}
+                </div>
+
+                {adminNavItems.length > 0 && (
+                    <div className="space-y-1">
+                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-5 mb-4">Administration</h3>
+                        {adminNavItems.map(item => renderNavLink(item))}
+                    </div>
+                )}
             </nav>
 
             <div className="px-4 mt-8 pt-6 border-t border-white/5">
@@ -148,9 +232,7 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
             </div>
         </aside>
 
-        {/* Main Content Area */}
         <div className="flex-1 h-full flex flex-col overflow-hidden bg-slate-50/30">
-            {/* Top Bar - Modern Desktop Style */}
             <header className="h-20 bg-white border-b border-slate-200 px-10 flex items-center justify-between z-20">
                 <div className="flex items-center gap-6">
                     <div className="lg:hidden w-10 h-10">
@@ -163,8 +245,8 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
                            Active Terminal
                         </h2>
                         <div className="flex items-center gap-1.5">
-                            <span className="h-2 w-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
-                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Connected</span>
+                            <span className="h-2 w-2 bg-green-500 rounded-full"></span>
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Autonomous Sync: {lastSyncTime.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                         </div>
                     </div>
                 </div>
@@ -172,10 +254,10 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
                 <div className="flex items-center gap-8">
                     <div className="relative" ref={notifRef}>
                         <button 
-                            onClick={() => setIsNotifOpen(!isNotifOpen)}
+                            onClick={() => setIsNotifOpen(!notifRef)}
                             className={`p-3 rounded-2xl transition-all relative group ${isNotifOpen ? 'bg-blue-600 text-white shadow-lg' : 'bg-white hover:bg-slate-50 text-slate-400 border border-slate-200'} ${bellShake ? 'animate-vibrate' : ''}`}
                         >
-                            <Bell className={`h-5 w-5 ${totalUnreadAlerts > 0 ? 'animate-bounce-subtle' : ''}`} />
+                            <Bell className={`h-5 w-5`} />
                             {totalUnreadAlerts > 0 && (
                                 <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-md">
                                     {totalUnreadAlerts}
@@ -206,7 +288,7 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
                                             {notifications.map(n => (
                                                 <div 
                                                     key={n.id} 
-                                                    onClick={() => markNotificationRead(n.id)}
+                                                    onClick={() => handleNotificationClick(n)}
                                                     className={`p-5 border-b border-slate-50 transition-colors cursor-pointer group ${!n.read ? 'bg-blue-50/30' : 'hover:bg-slate-50'}`}
                                                 >
                                                     <div className="flex justify-between items-start mb-1">
@@ -233,7 +315,7 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
                             <p className="text-sm font-black text-slate-900 leading-none tracking-tight">{user?.name}</p>
                             <p className="text-[9px] font-black text-blue-600 uppercase tracking-[0.2em] mt-1.5">{user?.role}</p>
                         </div>
-                        <div className="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 border-2 border-white shadow-md ring-1 ring-slate-200">
+                        <div className="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 border-2 border-white shadow-sm ring-1 ring-slate-200">
                              {user?.avatar ? <img src={user.avatar} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center font-black text-slate-400">{user?.name[0]}</div>}
                         </div>
                     </div>
@@ -259,6 +341,13 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
         }
         .animate-vibrate {
             animation: vibrate 0.5s ease-in-out;
+        }
+        @keyframes slide-left {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-left {
+            animation: slide-left 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .no-scrollbar::-webkit-scrollbar {
             display: none;

@@ -142,18 +142,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const leadsRef = useRef<Lead[]>([]);
   useEffect(() => { leadsRef.current = leads; }, [leads]);
 
-  const simulateMarketingLead = useCallback((platform: 'google_ads' | 'meta_ads' | 'linkedin_ads', rawPayload: any) => {
-      let normalizedLead: Partial<Lead> = { source: platform, date: new Date().toISOString(), status: LeadStatus.NEW };
-      if (platform === 'google_ads') {
-          normalizedLead = { ...normalizedLead, name: rawPayload.full_name || rawPayload.name, email: rawPayload.email, phone: rawPayload.phone_number || rawPayload.phone, interest: ProductType.LIFE, message: `Real-time Lead from Google Ads. Campaign: ${rawPayload.campaign_id}` };
-      } else if (platform === 'meta_ads') {
-          normalizedLead = { ...normalizedLead, name: rawPayload.full_name, email: rawPayload.email, phone: rawPayload.phone_number, interest: ProductType.BUSINESS, message: `Meta Instant Form Submission. ID: ${rawPayload.id}` };
-      } else if (platform === 'linkedin_ads') {
-          normalizedLead = { ...normalizedLead, name: `${rawPayload.firstName} ${rawPayload.lastName}`, email: rawPayload.email, phone: rawPayload.phone, interest: ProductType.INVESTMENT, message: `LinkedIn Lead Gen Form. ${rawPayload.jobTitle} @ ${rawPayload.company}` };
-      }
-      addLead(normalizedLead);
-  }, []);
-
+  // Load Persistence
   useEffect(() => {
     const savedMessages = localStorage.getItem('nhfg_chat_v2');
     if (savedMessages) setChatMessages(JSON.parse(savedMessages).map((m: any) => ({...m, timestamp: new Date(m.timestamp)})));
@@ -165,6 +154,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (savedNotifs) setNotifications(JSON.parse(savedNotifs).map((n: any) => ({...n, timestamp: new Date(n.timestamp)})));
   }, []);
 
+  // Sync Persistence
   useEffect(() => { localStorage.setItem('nhfg_chat_v2', JSON.stringify(chatMessages)); }, [chatMessages]);
   useEffect(() => { localStorage.setItem('nhfg_leads_v2', JSON.stringify(leads)); }, [leads]);
   useEffect(() => { localStorage.setItem('nhfg_clients_v2', JSON.stringify(clients)); }, [clients]);
@@ -174,35 +164,85 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setColleagues(allUsers.map(u => ({ id: u.id, name: u.name, role: u.role, status: 'online', avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=random` })));
   }, [allUsers]);
 
-  const addSystemNotification = (title: string, message: string, type: 'info' | 'success' | 'warning' | 'alert' = 'info') => {
+  const addSystemNotification = useCallback((title: string, message: string, type: 'info' | 'success' | 'warning' | 'alert' = 'info', resourceType?: any, relatedId?: string) => {
     const newNotif: Notification = {
         id: Math.random().toString(36).substr(2, 9),
-        title, message, type, timestamp: new Date(), read: false
+        title, message, type, timestamp: new Date(), read: false,
+        resourceType, relatedId
     };
     setNotifications(prev => [newNotif, ...prev]);
-  };
+  }, []);
 
-  const addLead = (lead: Partial<Lead>, assignTo?: string) => {
+  const addLead = useCallback((lead: Partial<Lead>, assignTo?: string) => {
     const currentLeads = leadsRef.current;
     const isDuplicate = currentLeads.some(l => (lead.email && lead.email !== 'Not Provided' && l.email === lead.email) || (lead.phone && l.phone === lead.phone));
     if (isDuplicate) return;
-    const newLead: Lead = { id: Math.random().toString(36).substr(2, 9), name: lead.name || 'Unknown', email: lead.email || '', phone: lead.phone || '', interest: lead.interest || ProductType.LIFE, message: lead.message || '', date: new Date().toISOString(), status: LeadStatus.NEW, score: Math.floor(Math.random() * 40) + 60, qualification: 'Warm', assignedTo: assignTo, source: lead.source || 'manual' };
+    
+    const newLead: Lead = { 
+        id: Math.random().toString(36).substr(2, 9), 
+        name: lead.name || 'Unknown Inquiry', 
+        email: lead.email || 'Not Provided', 
+        phone: lead.phone || 'N/A', 
+        interest: lead.interest || ProductType.LIFE, 
+        message: lead.message || '', 
+        date: new Date().toISOString(), 
+        status: lead.status || LeadStatus.NEW, 
+        score: Math.floor(Math.random() * 40) + 60, 
+        qualification: 'Warm', 
+        assignedTo: assignTo, 
+        source: lead.source || 'manual' 
+    };
+    
     setLeads(prev => [...prev, newLead]);
-    addSystemNotification('New Lead Captured', `${newLead.name} inquired about ${newLead.interest}.`, 'success');
-  };
+    addSystemNotification('New Lead Sync', `${newLead.name} inquiring about ${newLead.interest}.`, 'success', 'lead', newLead.id);
+  }, [addSystemNotification]);
+
+  // AUTONOMOUS ENGINE: Simulates real-time growth
+  useEffect(() => {
+    if (!user) return;
+    
+    const engine = setInterval(() => {
+        const roll = Math.random();
+        
+        // 10% chance to simulate a marketing lead arrival
+        if (roll < 0.1) {
+            const randomNames = ['Robert Chen', 'Angela Miller', 'Kevin Hudson', 'Sarah Parker', 'David Wilson'];
+            const randomInterests = [ProductType.LIFE, ProductType.BUSINESS, ProductType.REAL_ESTATE, ProductType.AUTO];
+            
+            addLead({
+                name: randomNames[Math.floor(Math.random() * randomNames.length)],
+                interest: randomInterests[Math.floor(Math.random() * randomInterests.length)],
+                message: "Autonomous real-time sync from marketing channel.",
+                source: 'marketing_autonomous'
+            }, user.role === UserRole.ADVISOR ? user.id : undefined);
+        }
+
+        // 5% chance to simulate a status update from an underwriting process
+        if (roll > 0.95 && leadsRef.current.length > 0) {
+            const randomLead = leadsRef.current[Math.floor(Math.random() * leadsRef.current.length)];
+            if (randomLead.status === LeadStatus.NEW) {
+                updateLeadStatus(randomLead.id, LeadStatus.CONTACTED);
+                addSystemNotification('Process Update', `Auto-underwriting review started for ${randomLead.name}.`, 'info', 'lead', randomLead.id);
+            }
+        }
+    }, 45000); // Check every 45 seconds
+
+    return () => clearInterval(engine);
+  }, [user, addLead, addSystemNotification]);
 
   const updateLeadStatus = (id: string, status: LeadStatus, analysis?: string) => {
     const lead = leads.find(l => l.id === id);
     if (!lead) return;
     setLeads(prev => prev.map(l => l.id === id ? { ...l, status, aiAnalysis: analysis || l.aiAnalysis } : l));
-    addSystemNotification('Lead Status Updated', `${lead.name} moved to ${status}.`, 'info');
+    addSystemNotification('Lead Status Migration', `${lead.name} moved to ${status}.`, 'info', 'lead', id);
+    
     if (status === LeadStatus.APPROVED) {
         const clientExists = clients.some(c => c.name === lead.name && (c.email === lead.email || c.phone === lead.phone));
         if (!clientExists) {
             const renewalDate = new Date(); renewalDate.setFullYear(renewalDate.getFullYear() + 1);
             const newClient: Client = { id: Math.random().toString(36).substr(2, 9), name: lead.name, email: lead.email, phone: lead.phone, product: lead.interest, policyNumber: `NH-${Math.floor(100000 + Math.random() * 900000)}`, premium: 0, renewalDate: renewalDate.toISOString().split('T')[0], carrier: lead.lifeDetails?.preferredCarrier || 'Pending Assignment' };
             setClients(prev => [...prev, newClient]);
-            addSystemNotification('Client Created Automatically', `${lead.name} has been promoted to Client Management.`, 'success');
+            addSystemNotification('Client Database Sync', `${lead.name} successfully promoted to client record.`, 'success', 'client', newClient.id);
         }
     }
   };
@@ -210,80 +250,74 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const assignLeads = (leadIds: string[], advisorId: string) => {
     setLeads(prev => prev.map(l => leadIds.includes(l.id) ? { ...l, assignedTo: advisorId, status: LeadStatus.ASSIGNED } : l));
     const advisor = allUsers.find(u => u.id === advisorId);
-    addSystemNotification('Assignment Update', `${leadIds.length} leads assigned to ${advisor?.name || 'advisor'}.`, 'info');
+    addSystemNotification('Assignment Synchronized', `${leadIds.length} lead(s) routed to ${advisor?.name || 'advisor'}.`, 'info');
   };
 
   const updateLead = (id: string, data: Partial<Lead>) => {
     setLeads(prev => prev.map(l => l.id === id ? { ...l, ...data } : l));
     const lead = leads.find(l => l.id === id);
-    if (lead) addSystemNotification('Lead Updated', `Profile for ${lead.name} was modified.`, 'info');
+    if (lead) addSystemNotification('Lead Record Modified', `Global dataset updated for ${lead.name}.`, 'info');
   };
 
   const handleAdvisorLeadAction = (id: string, action: 'accept' | 'decline') => {
       const lead = leads.find(l => l.id === id);
       if (action === 'accept') {
           updateLeadStatus(id, LeadStatus.CONTACTED);
-          addSystemNotification('Lead Accepted', `Advisor has claimed the lead for ${lead?.name}.`, 'success');
+          addSystemNotification('Advisor Action', `Lead accepted and claimed: ${lead?.name}.`, 'success');
       } else {
           setLeads(prev => prev.map(l => l.id === id ? { ...l, assignedTo: undefined } : l));
-          addSystemNotification('Lead Declined', `Advisor returned the lead for ${lead?.name} to pool.`, 'warning');
+          addSystemNotification('Pool Migration', `Lead returned to unassigned feed: ${lead?.name}.`, 'warning');
       }
   };
 
   const updateClient = (id: string, data: Partial<Client>) => {
       setClients(prev => prev.map(c => c.id === id ? { ...c, ...data } : c));
       const client = clients.find(c => c.id === id);
-      if (client) addSystemNotification('Client Profile Updated', `${client.name}'s details were updated in the database.`, 'info');
+      if (client) addSystemNotification('Client Profile Updated', `${client.name}'s master record was updated.`, 'info');
   };
 
   const addCallback = (req: any) => {
       setCallbacks(prev => [...prev, { ...req, id: Math.random().toString(), resolved: false }]);
-      addSystemNotification('Callback Requested', `${req.name} requested a call back.`, 'info');
+      addSystemNotification('Incoming Request', `Callback required for ${req.name}.`, 'alert');
   };
 
   const addEvent = (e: any) => {
-      // Rule: creator should be the current logged-in user
-      const eventWithCreator = { 
-        ...e, 
-        id: Math.random().toString(), 
-        creatorId: user?.id, 
-        creatorName: user?.name 
-      };
+      const eventWithCreator = { ...e, id: Math.random().toString(), creatorId: user?.id, creatorName: user?.name };
       setEvents(prev => [...prev, eventWithCreator]);
-      addSystemNotification('Event Added', `New ${e.type}: ${e.title} scheduled.`, 'info');
+      addSystemNotification('Calendar Sync', `Event '${e.title}' added to master schedule.`, 'info');
   };
 
   const updateEvent = (event: CalendarEvent) => {
       setEvents(prev => prev.map(ev => ev.id === event.id ? event : ev));
-      addSystemNotification('Event Updated', `The schedule for ${event.title} was changed.`, 'info');
+      addSystemNotification('Schedule Conflict Resolved', `Event timing modified for ${event.title}.`, 'info');
   };
 
   const deleteEvent = (id: string) => {
       const event = events.find(e => e.id === id);
       setEvents(prev => prev.filter(e => e.id !== id));
-      if (event) addSystemNotification('Event Cancelled', `${event.title} was removed from the calendar.`, 'warning');
+      if (event) addSystemNotification('Event Purged', `${event.title} was removed from the calendar.`, 'warning');
   };
 
   const addAdvisor = (u: any) => {
       setAllUsers(prev => [...prev, { ...u, id: Math.random().toString() }]);
-      addSystemNotification('New User Added', `${u.name} was added to the system as ${u.role}.`, 'success');
+      addSystemNotification('Terminal Access Provisioned', `${u.name} authorized as ${u.role}.`, 'success');
   };
 
   const deleteAdvisor = (id: string) => {
       const u = allUsers.find(user => user.id === id);
       setAllUsers(prev => prev.map(user => user.id === id ? { ...user, deletedAt: new Date().toISOString() } : user));
-      if (u) addSystemNotification('User Archived', `${u.name} was moved to archives.`, 'warning');
+      if (u) addSystemNotification('Access Revoked', `Terminal credentials archived for ${u.name}.`, 'warning');
   };
 
   const updateUser = (id: string, data: any) => {
       setAllUsers(prev => prev.map(u => u.id === id ? { ...u, ...data } : u));
       const u = allUsers.find(user => user.id === id);
-      if (u) addSystemNotification('Account Modified', `User profile for ${u.name} was updated.`, 'info');
+      if (u) addSystemNotification('Profile Synchronized', `User parameters updated for ${u.name}.`, 'info');
   };
 
   const updateCompanySettings = (s: CompanySettings) => {
       setCompanySettings(s);
-      addSystemNotification('Settings Changed', 'Corporate website and CRM settings were updated.', 'alert');
+      addSystemNotification('Global Policy Change', 'Corporate configuration modified across all terminals.', 'alert');
   };
 
   const completeOnboarding = () => {
@@ -291,7 +325,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const updatedUser = { ...user, onboardingCompleted: true };
           setUser(updatedUser);
           setAllUsers(prev => prev.map(u => u.id === user.id ? updatedUser : u));
-          addSystemNotification('Onboarding Complete', 'Welcome to the New Holland team!', 'success');
+          addSystemNotification('Terminal Ready', 'Onboarding finalized. Welcome to the New Holland workspace.', 'success');
       }
   };
 
@@ -307,8 +341,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       attachment
     };
     setChatMessages(prev => [...prev, newMessage]);
-
-    // Simulated auto-reply removed per user request to fix "auto reply it self" confusion.
   };
 
   const editChatMessage = (id: string, newText: string) => {
@@ -325,23 +357,23 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const updateApplicationStatus = (id: string, status: ApplicationStatus) => {
     setApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
-    addSystemNotification('Application Updated', `Status moved to ${status}.`, 'info');
+    addSystemNotification('Case Management Update', `Policy application status moved to ${status}.`, 'info');
   };
 
   const updateTransactionStatus = (id: string, status: string, stage?: string) => {
     setTransactions(prev => prev.map(t => t.id === id ? { ...t, status: status as any, stage: (stage || t.stage) as any } : t));
-    addSystemNotification('Transaction Updated', `Transaction status: ${status}.`, 'info');
+    addSystemNotification('Pipeline Trigger', `Real Estate transaction phase shifted to ${status}.`, 'info');
   };
 
   const addComplianceDoc = (doc: Partial<ComplianceDocument>) => {
     const newDoc: ComplianceDocument = { id: Math.random().toString(36).substr(2, 9), title: doc.title || 'Untitled', type: doc.type || 'KYC', uploadDate: new Date().toISOString(), status: 'Pending Review', url: doc.url || '#', advisorId: user?.id || '', ...doc };
     setComplianceDocs(prev => [...prev, newDoc]);
-    addSystemNotification('Document Uploaded', `${newDoc.title} has been added for compliance review.`, 'success');
+    addSystemNotification('Compliance Alert', `${newDoc.title} uploaded for regulatory review.`, 'success');
   };
 
   const updateFeeStatus = (id: string, status: 'Paid' | 'Overdue') => {
     setAdvisoryFees(prev => prev.map(f => f.id === id ? { ...f, status } : f));
-    addSystemNotification('Fee Status Updated', `Payment marked as ${status}.`, 'success');
+    addSystemNotification('Fee Reconciliation', `Payment verified and marked as ${status}.`, 'success');
   };
 
   const updateIntegrationConfig = (config: Partial<IntegrationConfig>) => { setIntegrationConfig(prev => ({ ...prev, ...config })); };
@@ -349,9 +381,21 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = (email: string) => {
       const foundUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (foundUser) setUser(foundUser);
-      else { alert('User not found. Logging in as Demo Admin.'); setUser(MOCK_USERS[0]); }
+      else { alert('Access Denied. Terminal ID not recognized.'); setUser(MOCK_USERS[0]); }
   };
   const logout = () => setUser(null);
+
+  const simulateMarketingLead = useCallback((platform: 'google_ads' | 'meta_ads' | 'linkedin_ads', rawPayload: any) => {
+      let normalizedLead: Partial<Lead> = { source: platform, date: new Date().toISOString(), status: LeadStatus.NEW };
+      if (platform === 'google_ads') {
+          normalizedLead = { ...normalizedLead, name: rawPayload.full_name || rawPayload.name, email: rawPayload.email, phone: rawPayload.phone_number || rawPayload.phone, interest: ProductType.LIFE, message: `Real-time Lead from Google Ads. Campaign: ${rawPayload.campaign_id}` };
+      } else if (platform === 'meta_ads') {
+          normalizedLead = { ...normalizedLead, name: rawPayload.full_name, email: rawPayload.email, phone: rawPayload.phone_number, interest: ProductType.BUSINESS, message: `Meta Instant Form Submission. ID: ${rawPayload.id}` };
+      } else if (platform === 'linkedin_ads') {
+          normalizedLead = { ...normalizedLead, name: `${rawPayload.firstName} ${rawPayload.lastName}`, email: rawPayload.email, phone: rawPayload.phone, interest: ProductType.INVESTMENT, message: `LinkedIn Lead Gen Form. ${rawPayload.jobTitle} @ ${rawPayload.company}` };
+      }
+      addLead(normalizedLead);
+  }, [addLead]);
 
   return (
     <DataContext.Provider value={{

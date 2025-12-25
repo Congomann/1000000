@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Menu, X, LogOut, User } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -41,8 +42,7 @@ export const Navbar: React.FC = () => {
               className="flex items-center gap-3 group cursor-pointer"
               title="Home"
             >
-              {/* Reverted Logo SVG - Solid Yellow House */}
-              <div className="relative w-10 h-10 flex-shrink-0 group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]">
+              <div className="relative w-10 h-10 flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
                 <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
                   <path d="M50 0L100 40V100H0V40L50 0Z" fill="#FBBF24"/>
                 </svg>
@@ -67,7 +67,7 @@ export const Navbar: React.FC = () => {
           <div className="hidden md:flex items-center gap-4 pl-6 border-l border-white/10 ml-6">
                 <button 
                   onClick={handleAuthAction}
-                  className="bg-white text-slate-900 hover:bg-blue-50 px-6 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 transition-all hover:scale-105 shadow-lg shadow-white/10"
+                  className="bg-white text-slate-900 hover:bg-blue-50 px-6 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 transition-all hover:scale-105 shadow-xl shadow-black/10"
                 >
                   <User size={16} /> 
                   {user ? (user.role === UserRole.CLIENT ? 'My Portal' : 'Dashboard') : 'Sign In'}

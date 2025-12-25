@@ -81,19 +81,17 @@ export const Home: React.FC = () => {
              </div>
         )}
         
-        {/* Glass Overlay for Text Readability - REMOVED GRAY FILTER */}
-        
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 flex flex-col justify-center h-full pt-32">
            <div className="max-w-5xl animate-slide-up">
-              <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-8 leading-[1.1] text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/70 drop-shadow-lg filter">
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-8 leading-[1.1] text-white">
                 {companySettings.heroTitle || 'Securing Your Future, Protecting Your Legacy.'}
               </h1>
-              <p className="text-xl md:text-3xl text-blue-100/95 mb-12 leading-relaxed max-w-3xl font-medium tracking-wide drop-shadow-md">
+              <p className="text-xl md:text-3xl text-blue-100/95 mb-12 leading-relaxed max-w-3xl font-medium tracking-wide">
                 {companySettings.heroSubtitle || 'New Holland Financial Group provides comprehensive insurance and financial solutions. From Life and E&O to Commercial Real Estate, we are your partners in growth.'}
               </p>
               
               <div className="flex flex-col sm:flex-row gap-6">
-                  <Link to="/products" className="px-10 py-5 bg-white text-slate-900 font-bold rounded-full text-lg hover:scale-105 transition-all shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_rgba(255,255,255,0.5)] flex items-center justify-center">
+                  <Link to="/products" className="px-10 py-5 bg-white text-slate-900 font-bold rounded-full text-lg hover:scale-105 transition-all shadow-xl flex items-center justify-center">
                       Explore Products <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                   <Link to="/advisors" className="px-10 py-5 bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold rounded-full text-lg hover:bg-white/20 hover:scale-105 transition-all flex items-center justify-center">
@@ -271,9 +269,9 @@ export const Home: React.FC = () => {
 
       {/* CTA Section - Floating Glass Card */}
       <div className="py-20 px-4">
-          <div className="max-w-7xl mx-auto bg-slate-900 rounded-[3rem] p-12 md:p-24 text-center relative overflow-hidden shadow-2xl shadow-blue-900/30">
-              <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500 rounded-full mix-blend-screen filter blur-[120px] opacity-20 animate-pulse"></div>
-              <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-500 rounded-full mix-blend-screen filter blur-[100px] opacity-20"></div>
+          <div className="max-w-7xl mx-auto bg-slate-900 rounded-[3rem] p-12 md:p-24 text-center relative overflow-hidden shadow-2xl shadow-blue-900/10">
+              <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500 rounded-full mix-blend-screen filter blur-[120px] opacity-10"></div>
+              <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-purple-500 rounded-full mix-blend-screen filter blur-[100px] opacity-10"></div>
               
               <div className="relative z-10">
                   <h2 className="text-4xl md:text-6xl font-black text-white mb-8 tracking-tight">Ready to Secure Your Future?</h2>
@@ -281,7 +279,7 @@ export const Home: React.FC = () => {
                       Contact us today for a free consultation. Our expert advisors are ready to help you navigate your needs.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                      <Link to="/contact" className="px-10 py-5 bg-[#FBBF24] text-slate-900 font-bold rounded-full text-lg hover:bg-yellow-300 transition-all shadow-xl shadow-yellow-500/20 hover:scale-105">
+                      <Link to="/contact" className="px-10 py-5 bg-[#FBBF24] text-slate-900 font-bold rounded-full text-lg hover:bg-yellow-300 transition-all shadow-xl hover:scale-105">
                           Get a Free Quote
                       </Link>
                       <Link to="/advisors" className="px-10 py-5 bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold rounded-full text-lg hover:bg-white/20 transition-all hover:scale-105">

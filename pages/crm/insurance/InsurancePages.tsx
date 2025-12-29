@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { useData } from '../../../context/DataContext';
 import { ApplicationStatus, LeadStatus, ProductType } from '../../../types';
-import { FileText, CheckCircle, Hourglass, XCircle, Briefcase, Car, Truck, AlertTriangle, RefreshCw, Plus, Search, Filter } from 'lucide-react';
+import { FileText, CheckCircle, Hourglass, XCircle, Briefcase, Car, Truck, AlertTriangle, RefreshCw, Plus, Search, Filter, Send } from 'lucide-react';
 
 const StatusBadge = ({ status }: { status: string }) => {
     let color = 'bg-slate-100 text-slate-700';
@@ -16,8 +16,17 @@ const StatusBadge = ({ status }: { status: string }) => {
 export const PoliciesApps: React.FC = () => {
     const { applications, updateApplicationStatus, user } = useData();
     
-    // In a real app, verify user.id matches lead.assignedTo for strict data visibility
-    const myApps = applications; // Using all for demo visibility
+    // Management-initiated apps start in PENDING (New Quote)
+    // Filter apps for current advisor
+    const myApps = useMemo(() => {
+        if (!user) return [];
+        return applications; // For demo, show all, but logic would filter by advisor
+    }, [applications, user]);
+
+    const handleSubmitToCarrier = (id: string) => {
+        updateApplicationStatus(id, ApplicationStatus.UNDERWRITING);
+        alert("Application securely transmitted to Carrier Gateway. Status shifted to Underwriting.");
+    };
 
     return (
         <div className="space-y-6">
@@ -34,8 +43,8 @@ export const PoliciesApps: React.FC = () => {
                         <tr>
                             <th className="px-6 py-4">Client</th>
                             <th className="px-6 py-4">Carrier</th>
-                            <th className="px-6 py-4">Policy #</th>
-                            <th className="px-6 py-4">Premium</th>
+                            <th className="px-6 py-4">Policy / Quote #</th>
+                            <th className="px-6 py-4">Est. Premium</th>
                             <th className="px-6 py-4">Status</th>
                             <th className="px-6 py-4 text-right">Actions</th>
                         </tr>
@@ -43,19 +52,34 @@ export const PoliciesApps: React.FC = () => {
                     <tbody className="divide-y divide-slate-100">
                         {myApps.map(app => (
                             <tr key={app.id} className="hover:bg-slate-50/50">
-                                <td className="px-6 py-4 font-bold text-slate-900">{app.clientName}</td>
+                                <td className="px-6 py-4">
+                                    <div className="font-bold text-slate-900">{app.clientName}</div>
+                                    {app.status === ApplicationStatus.PENDING && (
+                                        <span className="text-[10px] text-blue-500 font-bold uppercase tracking-tighter">Waiting for Advisor</span>
+                                    )}
+                                </td>
                                 <td className="px-6 py-4">{app.carrier}</td>
                                 <td className="px-6 py-4 font-mono text-xs">{app.policyNumber}</td>
                                 <td className="px-6 py-4 font-medium">${app.premium.toLocaleString()}</td>
                                 <td className="px-6 py-4"><StatusBadge status={app.status} /></td>
                                 <td className="px-6 py-4 text-right">
-                                    <select 
-                                        className="bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none"
-                                        value={app.status}
-                                        onChange={(e) => updateApplicationStatus(app.id, e.target.value as ApplicationStatus)}
-                                    >
-                                        {Object.values(ApplicationStatus).map(s => <option key={s} value={s}>{s}</option>)}
-                                    </select>
+                                    <div className="flex items-center justify-end gap-2">
+                                        {app.status === ApplicationStatus.PENDING && (
+                                            <button 
+                                                onClick={() => handleSubmitToCarrier(app.id)}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors shadow-sm"
+                                            >
+                                                <Send className="h-3 w-3" /> Submit App
+                                            </button>
+                                        )}
+                                        <select 
+                                            className="bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                                            value={app.status}
+                                            onChange={(e) => updateApplicationStatus(app.id, e.target.value as ApplicationStatus)}
+                                        >
+                                            {Object.values(ApplicationStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                                        </select>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -272,7 +296,7 @@ export const Claims: React.FC = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-[#0B2240]">Claims Center</h1>
+                    <h1 className="text-2xl font-bold text-[#0B2240]">Claims Center center</h1>
                     <p className="text-slate-500">Track and manage active insurance claims.</p>
                 </div>
                 <button className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-full font-bold text-sm hover:bg-red-700 transition-colors shadow-lg shadow-red-200">

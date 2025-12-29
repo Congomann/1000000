@@ -6,10 +6,10 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { 
     DollarSign, FileText, BadgeDollarSign, Calendar, ChevronRight, FileCheck, 
     Landmark, Briefcase, RefreshCw, Activity, PhoneIncoming, Zap, 
-    CheckCircle2, Server, Globe, Database, ShieldAlert, Key, Mail, UserPlus, 
-    AlertCircle, Search, MoreVertical, Terminal, ShieldCheck, Loader2
+    CheckCircle2, Globe, Database, Key, Mail, UserPlus, 
+    AlertCircle, Search, Terminal, ShieldCheck, Loader2, Building2, TrendingUp
 } from 'lucide-react';
-import { UserRole, ApplicationStatus, ProductType, LeadStatus, User } from '../../types';
+import { UserRole, ApplicationStatus, ProductType, User, AdvisorCategory } from '../../types';
 
 const StatCard = ({ icon: Icon, colorClass, bgClass, label, value, subtext }: any) => (
     <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100 flex items-center gap-6 hover:scale-[1.01] transition-all duration-300 group">
@@ -40,19 +40,17 @@ const SystemStatusCard = ({ label, status, icon: Icon, color }: { label: string,
 );
 
 export const Dashboard: React.FC = () => {
-    const { user, leads, metrics, callbacks, applications, notifications, allUsers, updateUser } = useData();
+    const { user, leads, metrics, callbacks, applications, notifications, allUsers, updateUser, addAdvisor } = useData();
     const [activeGraphTab, setActiveGraphTab] = useState<string>('ALL');
     const [lastSync, setLastSync] = useState(new Date());
     const navigate = useNavigate();
 
-    // Admin Dashboard States
     const [provisionName, setProvisionName] = useState('');
     const [provisionAlias, setProvisionAlias] = useState('');
     const [advisorSearch, setAdvisorSearch] = useState('');
     const [isProvisioning, setIsProvisioning] = useState(false);
 
     const isAdmin = user?.role === UserRole.ADMIN;
-    const myProducts = user?.productsSold || [];
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -64,11 +62,11 @@ export const Dashboard: React.FC = () => {
     const statCards = useMemo(() => {
         const cards: any[] = [];
         cards.push({ icon: DollarSign, color: "text-blue-600", bg: "bg-blue-50", label: "Written Production", value: `$${metrics.totalRevenue.toLocaleString()}`, sub: "Gross Written YTD" });
-        cards.push({ icon: FileText, color: "text-purple-600", bg: "bg-purple-50", label: "Active Apps", value: applications.filter(a => a.status !== ApplicationStatus.ISSUED).length, sub: "In Underwriting" });
+        cards.push({ icon: FileText, color: "text-purple-600", bg: "bg-purple-50", label: "Active Pipeline", value: user?.category === AdvisorCategory.REAL_ESTATE ? leads.length : applications.filter(a => a.status !== ApplicationStatus.ISSUED).length, sub: user?.category === AdvisorCategory.REAL_ESTATE ? "Potential Listings" : "In Underwriting" });
         cards.push({ icon: BadgeDollarSign, color: "text-green-600", bg: "bg-green-50", label: "Pending Payout", value: `$${metrics.totalCommission.toLocaleString()}`, sub: "Unpaid Commission" });
         cards.push({ icon: PhoneIncoming, color: "text-red-600", bg: "bg-red-50", label: "Callbacks", value: callbacks.filter(c => !c.resolved).length, sub: "Immediate Response" });
         return cards;
-    }, [metrics, applications, callbacks]);
+    }, [metrics, applications, callbacks, user, leads]);
 
     const graphData = useMemo(() => {
         return [
@@ -78,20 +76,42 @@ export const Dashboard: React.FC = () => {
     }, []);
 
     const authorizedTooling = useMemo(() => {
+        if (!user) return [];
         const tools: any[] = [];
-        if (myProducts.some(p => [ProductType.LIFE, ProductType.ANNUITY, ProductType.IUL].includes(p))) {
-            tools.push({ label: 'NEW QUOTE', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50', action: () => {} });
-            tools.push({ label: 'SUBMIT APP', icon: FileCheck, color: 'text-indigo-600', bg: 'bg-indigo-50', action: () => {} });
+        
+        if (user.category === AdvisorCategory.REAL_ESTATE) {
+            tools.push({ label: 'NEW LISTING', icon: Building2, color: 'text-amber-600', bg: 'bg-amber-50', action: () => navigate('/crm/properties') });
+            tools.push({ label: 'ESCROW TRACK', icon: Key, color: 'text-blue-600', bg: 'bg-blue-50', action: () => navigate('/crm/escrow') });
+            tools.push({ label: 'CALENDAR', icon: Calendar, color: 'text-orange-600', bg: 'bg-orange-50', action: () => navigate('/crm/calendar') });
+        } else if (user.category === AdvisorCategory.SECURITIES) {
+            tools.push({ label: 'PORTFOLIO SYNC', icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50', action: () => navigate('/crm/portfolio') });
+            tools.push({ label: 'COMPLIANCE', icon: ShieldCheck, color: 'text-indigo-600', bg: 'bg-indigo-50', action: () => navigate('/crm/compliance') });
+            tools.push({ label: 'BILLING', icon: BadgeDollarSign, color: 'text-blue-600', bg: 'bg-blue-50', action: () => navigate('/crm/fees') });
+        } else {
+            // Default/Insurance
+            tools.push({ label: 'NEW QUOTE', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50', action: () => navigate('/crm/intake') });
+            tools.push({ label: 'SUBMIT APP', icon: FileCheck, color: 'text-indigo-600', bg: 'bg-indigo-50', action: () => navigate('/crm/applications') });
+            tools.push({ label: 'CALENDAR', icon: Calendar, color: 'text-orange-600', bg: 'bg-orange-50', action: () => navigate('/crm/calendar') });
         }
-        tools.push({ label: 'CALENDAR', icon: Calendar, color: 'text-orange-600', bg: 'bg-orange-50', action: () => navigate('/crm/calendar') });
+        
         return tools;
-    }, [myProducts, navigate]);
+    }, [navigate, user]);
 
     const handleProvisionEmail = (e: React.FormEvent) => {
         e.preventDefault();
         setIsProvisioning(true);
         setTimeout(() => {
-            alert(`Email provisioned: ${provisionAlias}@newhollandfinancial.com for ${provisionName}`);
+            const finalEmail = `${provisionAlias.toLowerCase()}@newhollandfinancial.com`;
+            addAdvisor({
+                id: Math.random().toString(36).substr(2, 9),
+                name: provisionName,
+                email: finalEmail,
+                role: UserRole.ADVISOR,
+                category: AdvisorCategory.INSURANCE,
+                productsSold: [ProductType.LIFE],
+                micrositeEnabled: true,
+                onboardingCompleted: false
+            });
             setProvisionName('');
             setProvisionAlias('');
             setIsProvisioning(false);
@@ -100,7 +120,7 @@ export const Dashboard: React.FC = () => {
 
     const handleResetPassword = (name: string) => {
         if(window.confirm(`Issue a password reset secure link to ${name}?`)) {
-            alert("Reset link dispatched to advisor terminal.");
+            alert("Reset link dispatched to advisor terminal and secondary email.");
         }
     };
 
@@ -112,7 +132,6 @@ export const Dashboard: React.FC = () => {
     if (isAdmin) {
         return (
             <div className="space-y-10 pb-20">
-                {/* FLAT ADMIN BANNER */}
                 <div className="bg-slate-900 p-8 rounded-[3rem] text-white flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden border border-white/5">
                     <div className="flex items-center gap-5 relative z-10">
                         <div className="p-4 bg-white/10 rounded-[1.5rem] backdrop-blur-md">
@@ -121,7 +140,6 @@ export const Dashboard: React.FC = () => {
                         <div>
                             <h2 className="text-xl font-black uppercase tracking-tighter">System Operations Console</h2>
                             <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1 opacity-80 flex items-center gap-2">
-                               {/* Fix: Line 124 error fixed by adding ShieldCheck to imports */}
                                <ShieldCheck size={12} className="text-blue-400" /> Infrastructure Root Access: Level 1
                             </p>
                         </div>
@@ -134,7 +152,6 @@ export const Dashboard: React.FC = () => {
                     </div>
                 </div>
 
-                {/* SYSTEM HEALTH GRID */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <SystemStatusCard label="Website Health" status="Healthy" icon={Globe} color="text-blue-500" />
                     <SystemStatusCard label="CRM Database" status="Optimized" icon={Database} color="text-indigo-500" />
@@ -143,7 +160,6 @@ export const Dashboard: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Troubleshooting & Logs */}
                     <div className="lg:col-span-2 bg-white rounded-[3.5rem] p-10 shadow-sm border border-slate-100 flex flex-col h-[600px]">
                         <div className="flex justify-between items-center mb-8">
                             <div>
@@ -160,7 +176,7 @@ export const Dashboard: React.FC = () => {
                                 { time: '11:42 AM', event: 'Google Lead Webhook received', type: 'success' },
                                 { time: '11:30 AM', event: 'Daily database redundancy backup completed', type: 'info' },
                                 { time: '10:15 AM', event: 'CRM API latency surge detected (340ms)', type: 'warning' },
-                                { time: '09:02 AM', event: 'Plaid Link connection reset for advisor 102', type: 'info' },
+                                { time: '09:45 AM', event: 'Email dispatch server throttle released', type: 'success' },
                                 { time: '08:45 AM', event: 'System core synchronization optimized', type: 'success' },
                                 { time: 'Yesterday', event: 'SSL certificate verification successful', type: 'success' },
                                 { time: 'Yesterday', event: 'Meta Ads integration polling restart', type: 'info' }
@@ -182,7 +198,6 @@ export const Dashboard: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Advisor Identity Management */}
                     <div className="space-y-8 flex flex-col h-[600px]">
                         <div className="bg-slate-900 rounded-[3rem] p-10 flex flex-col flex-1 shadow-2xl border border-white/5">
                             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8">Advisor Identity Control</h4>
@@ -228,7 +243,6 @@ export const Dashboard: React.FC = () => {
                                 ))}
                             </div>
 
-                            {/* Provision Section */}
                             <div className="mt-auto pt-6 border-t border-white/10">
                                 <h5 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-4">Provision Corporate Mail</h5>
                                 <form onSubmit={handleProvisionEmail} className="space-y-3">
@@ -247,14 +261,13 @@ export const Dashboard: React.FC = () => {
                                             value={provisionAlias}
                                             onChange={e => setProvisionAlias(e.target.value)}
                                         />
-                                        <span className="text-[10px] font-black text-slate-500 uppercase">@nhfg.com</span>
+                                        <span className="text-[9px] font-black text-slate-500 uppercase">@newhollandfinancial.com</span>
                                     </div>
                                     <button 
                                         type="submit"
                                         disabled={isProvisioning}
                                         className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                                     >
-                                        {/* Fix: Line 256 error fixed by adding Loader2 to imports */}
                                         {isProvisioning ? <Loader2 size={14} className="animate-spin" /> : <><UserPlus size={14} /> Provision Mailbox</>}
                                     </button>
                                 </form>
@@ -266,7 +279,6 @@ export const Dashboard: React.FC = () => {
         );
     }
 
-    // ADVISOR DASHBOARD (EXISTING GROWTH ANALYTICS)
     return (
         <div className="space-y-10 pb-10">
             <div className="bg-slate-900 p-8 rounded-[3rem] text-white flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden border border-white/5">
@@ -350,18 +362,18 @@ export const Dashboard: React.FC = () => {
 
                  <div className="space-y-8 flex flex-col">
                     <div className="bg-slate-100 rounded-[3.5rem] p-10 flex flex-col flex-1 shadow-inner border border-slate-200/50">
-                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-10">Authorized Tooling</h4>
-                        <div className="grid grid-cols-2 gap-4">
+                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-10 text-center">Authorized Tooling</h4>
+                        <div className="flex flex-col gap-6 items-center">
                             {authorizedTooling.map((tool, idx) => (
                                 <button 
                                     key={idx}
                                     onClick={tool.action}
-                                    className="flex flex-col items-center justify-center p-6 bg-white hover:bg-slate-50 rounded-[2.5rem] border border-slate-200/50 transition-all group shadow-sm hover:shadow-md"
+                                    className="flex flex-col items-center justify-center p-8 bg-white hover:bg-slate-50 rounded-[3rem] border border-slate-200/50 transition-all group shadow-sm hover:shadow-md w-full max-w-[200px]"
                                 >
-                                    <div className={`p-4 rounded-2xl ${tool.bg} ${tool.color} group-hover:scale-110 transition-transform mb-4 shadow-sm`}>
-                                        <tool.icon className="h-6 w-6" strokeWidth={2.5} />
+                                    <div className={`p-5 rounded-[1.5rem] ${tool.bg} ${tool.color} group-hover:scale-110 transition-transform mb-4 shadow-sm`}>
+                                        <tool.icon className="h-8 w-8" strokeWidth={2.5} />
                                     </div>
-                                    <span className="text-[9px] font-black text-slate-700 uppercase tracking-[0.2em] text-center">{tool.label}</span>
+                                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-[0.2em] text-center">{tool.label}</span>
                                 </button>
                             ))}
                         </div>

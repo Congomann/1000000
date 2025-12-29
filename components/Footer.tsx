@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, ChevronDown } from 'lucide-react';
@@ -112,6 +113,8 @@ export const Footer: React.FC = () => {
                 <li><Link to="/about" className="hover:text-blue-400 transition-colors">About Us</Link></li>
                 <li><Link to="/join" className="hover:text-blue-400 transition-colors">Join Our Team</Link></li>
                 <li><Link to="/login" className="hover:text-blue-400 transition-colors">Agent Portal</Link></li>
+                <li><Link to="/privacy" className="hover:text-blue-400 transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/terms" className="hover:text-blue-400 transition-colors">Terms of Use</Link></li>
              </ul>
           </div>
 

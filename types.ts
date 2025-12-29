@@ -1,4 +1,5 @@
 
+
 export enum LeadStatus {
   NEW = 'New',
   CONTACTED = 'Contacted',
@@ -82,9 +83,6 @@ export interface LifeDetails {
   smokerStatus: 'Non-Smoker' | 'Smoker' | 'Former Smoker';
   ssn: string;
   netWorth: number;
-  bankName: string;
-  routingNumber: string;
-  accountNumber: string;
   healthIssues: string;
   height?: string;
   weight?: string;
@@ -445,7 +443,8 @@ export interface AdvisoryFee {
     advisorId: string;
 }
 
-// Fix: Adding missing accounting and banking types
+// FIX: Added missing accounting and banking related types and interfaces
+
 export enum AccountType {
   ASSET = 'Asset',
   LIABILITY = 'Liability',
@@ -514,7 +513,6 @@ export interface BankTransaction {
   status: 'pending' | 'reconciled';
   isRuleMatch?: boolean;
   matchedRuleId?: string;
-  journalEntryId?: string;
 }
 
 export interface ExpenseCategory {
@@ -525,14 +523,16 @@ export interface ExpenseCategory {
   keywords: string[];
 }
 
+export interface BankRuleCondition {
+  field: 'merchant' | 'amount';
+  operator: 'contains' | 'equals';
+  value: string;
+}
+
 export interface BankRule {
   id: string;
   name: string;
-  conditions: {
-    field: 'merchant' | 'amount';
-    operator: 'contains' | 'equals';
-    value: string;
-  }[];
+  conditions: BankRuleCondition[];
   assignCategory: string;
   userId: string;
 }

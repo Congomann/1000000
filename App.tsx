@@ -32,7 +32,10 @@ import { EmailSignature } from './pages/admin/EmailSignature';
 import { MarketingIntegrations } from './pages/admin/MarketingIntegrations'; 
 import { JoinTeam } from './pages/website/JoinTeam'; 
 import { Onboarding } from './pages/crm/Onboarding'; 
-import { AdvisorOnboardingFlow } from './pages/crm/AdvisorOnboardingFlow'; // New Import
+import { AdvisorOnboardingFlow } from './pages/crm/AdvisorOnboardingFlow'; 
+import { LegalCompliance } from './pages/crm/LegalCompliance';
+import { PrivacyPolicy } from './pages/website/PrivacyPolicy';
+import { TermsOfUse } from './pages/website/TermsOfUse';
 import { PoliciesApps, CommercialQuotes, PoliciesRenewals, AutoQuotes, FleetManager, Claims } from './pages/crm/insurance/InsurancePages'; 
 import { PropertyPipeline, TransactionsEscrow } from './pages/crm/real-estate/RealEstatePages'; 
 import { PortfolioMgmt, ComplianceDocs, AdvisoryFees } from './pages/crm/securities/SecuritiesPages'; 
@@ -110,6 +113,8 @@ const App: React.FC = () => {
             <Route path="/resources" element={<PublicLayout><Resources /></PublicLayout>} />
             <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
             <Route path="/join" element={<PublicLayout><JoinTeam /></PublicLayout>} />
+            <Route path="/privacy" element={<PublicLayout><PrivacyPolicy /></PublicLayout>} />
+            <Route path="/terms" element={<PublicLayout><TermsOfUse /></PublicLayout>} />
             
             {/* Auth Routes */}
             <Route path="/login" element={<Login />} />
@@ -128,6 +133,7 @@ const App: React.FC = () => {
               <Route path="commissions" element={<Commissions />} />
               <Route path="calendar" element={<Calendar />} />
               <Route path="profile" element={<ProfileSettings />} />
+              <Route path="legal" element={<LegalCompliance />} />
               
               {/* Insurance Workflow Routes */}
               <Route path="applications" element={<PoliciesApps />} />

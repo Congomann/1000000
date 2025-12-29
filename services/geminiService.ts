@@ -2,13 +2,13 @@
 import { GoogleGenAI, FunctionDeclaration, Type } from "@google/genai";
 import { Lead, ProductType } from '../types';
 
-// Fix: Initialization with named parameter apiKey obtained exclusively from process.env.API_KEY.
+// Initialization with named parameter apiKey obtained exclusively from process.env.API_KEY.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const analyzeLead = async (lead: Lead): Promise<string> => {
   try {
-    // Fix: Using gemini-3-flash-preview for basic text task.
-    const modelId = 'gemini-3-flash-preview';
+    // Upgraded to gemini-3-pro-preview with max thinking budget for deep strategic insights and complex reasoning.
+    const modelId = 'gemini-3-pro-preview';
 
     const prompt = `
       You are a senior financial advisor assistant. Analyze the following lead for New Holland Financial Group.
@@ -27,13 +27,16 @@ export const analyzeLead = async (lead: Lead): Promise<string> => {
       Keep the tone professional, insightful, and actionable. Limit response to 150 words.
     `;
 
-    // Fix: Using ai.models.generateContent with both model name and prompt.
+    // Using ai.models.generateContent with thinkingConfig enabled to maximize reasoning capabilities.
     const response = await ai.models.generateContent({
       model: modelId,
       contents: prompt,
+      config: {
+        thinkingConfig: { thinkingBudget: 32768 }
+      }
     });
 
-    // Fix: Directly accessing .text property on response.
+    // Directly accessing .text property on response.
     return response.text || "Could not generate analysis.";
   } catch (error) {
     console.error("Gemini analysis failed", error);
@@ -75,8 +78,9 @@ export const getChatResponse = async (
   context: string
 ): Promise<{ text: string, leadData?: any }> => {
   try {
-    // Fix: Using gemini-3-flash-preview for chat interaction.
-    const modelId = 'gemini-3-flash-preview';
+    // Upgraded to gemini-3-pro-preview with max thinking budget for complex multi-language reasoning, 
+    // emotional intelligence, and accurate tool orchestration.
+    const modelId = 'gemini-3-pro-preview';
 
     const systemInstruction = `
       You are a helpful and professional AI assistant for New Holland Financial Group.
@@ -98,17 +102,18 @@ export const getChatResponse = async (
       - If the user speaks Swahili, use polite and formal Swahili (Kiswahili sanifu).
     `;
 
-    // Initialize chat with history
+    // Initialize chat with history and thinkingConfig to handle complex customer queries.
     const chat = ai.chats.create({
       model: modelId,
       config: {
         systemInstruction: systemInstruction,
-        tools: [{ functionDeclarations: [createLeadTool] }]
+        tools: [{ functionDeclarations: [createLeadTool] }],
+        thinkingConfig: { thinkingBudget: 32768 }
       },
       history: history,
     });
 
-    // Fix: Use chat.sendMessage correctly.
+    // Use chat.sendMessage correctly.
     const result = await chat.sendMessage({
       message: currentMessage,
     });
@@ -126,7 +131,7 @@ export const getChatResponse = async (
       }
     }
 
-    // Fix: Accessing .text property directly.
+    // Accessing .text property directly.
     return { text: result.text || "I apologize, but I am unable to respond at the moment." };
   } catch (error) {
     console.error("Gemini chat error:", error);

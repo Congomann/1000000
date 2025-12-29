@@ -25,10 +25,16 @@ import {
   Award,
   PenTool,
   Webhook,
-  ClipboardCheck
+  ClipboardCheck,
+  Scale,
+  Building2,
+  Key,
+  TrendingUp,
+  FileCheck,
+  BadgeDollarSign
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
-import { UserRole, ProductType, Notification } from '../types';
+import { UserRole, ProductType, Notification, AdvisorCategory } from '../types';
 
 interface CRMLayoutProps {
   children: React.ReactNode;
@@ -55,7 +61,6 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
   const unreadNotifs = notifications.filter(n => !n.read).length;
   const totalUnreadAlerts = unreadNotifs + unreadChats;
 
-  // Real-time Notification Watcher
   useEffect(() => {
     if (notifications.length > prevNotifCount.current) {
         const newNotif = notifications[0];
@@ -114,9 +119,20 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
 
     items.push({ path: '/crm/clients', label: 'Clients', icon: Shield });
 
-    const products = user.productsSold || [];
-    if (products.some(p => [ProductType.LIFE, ProductType.ANNUITY, ProductType.IUL, ProductType.FINAL_EXPENSE].includes(p))) {
+    // Category Specific Nav Items
+    if (user.category === AdvisorCategory.INSURANCE || isAdmin) {
       items.push({ path: '/crm/applications', label: 'Policies & Apps', icon: FileText });
+    }
+
+    if (user.category === AdvisorCategory.REAL_ESTATE) {
+      items.push({ path: '/crm/properties', label: 'Property Pipeline', icon: Building2 });
+      items.push({ path: '/crm/escrow', label: 'Escrow Tracker', icon: Key });
+    }
+
+    if (user.category === AdvisorCategory.SECURITIES) {
+      items.push({ path: '/crm/portfolio', label: 'Portfolio Mgmt', icon: TrendingUp });
+      items.push({ path: '/crm/compliance', label: 'Compliance Vault', icon: FileCheck });
+      items.push({ path: '/crm/fees', label: 'Advisory Billing', icon: BadgeDollarSign });
     }
 
     if (!isAdmin) {
@@ -126,7 +142,8 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
     items.push({ path: '/crm/leads', label: 'Leads DB', icon: Database });
     items.push({ path: '/crm/calendar', label: 'Calendar', icon: Calendar });
     items.push({ path: '/crm/chat', label: 'Team Chat', icon: MessageCircle, badge: unreadChats });
-    
+    items.push({ path: '/crm/legal', label: 'Legal & Compliance', icon: Scale });
+
     if (user.role !== UserRole.SUB_ADMIN) {
       items.push({ path: '/crm/profile', label: 'My Profile', icon: CircleUser });
     }
@@ -134,7 +151,7 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
   }, [user, unreadChats]);
 
   const adminNavItems = useMemo(() => {
-    if (!user || (user.role !== UserRole.ADMIN && user.role !== UserRole.SUB_ADMIN)) return [];
+    if (!user || user.role !== UserRole.ADMIN) return [];
     const items: any[] = [
         { path: '/crm/admin', label: 'User Terminal', icon: Users },
         { path: '/crm/onboarding', label: 'Onboarding Feed', icon: ClipboardCheck },
@@ -172,7 +189,6 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center p-0 sm:p-4 font-sans text-slate-900 overflow-hidden bg-slate-100">
-      
       {activeToast && (
           <div className="fixed top-8 right-8 z-[100] animate-slide-left w-80 bg-[#0B2240] text-white p-5 rounded-[2rem] shadow-2xl border border-white/20 flex flex-col gap-4 cursor-pointer hover:scale-105 transition-transform" onClick={() => handleNotificationClick(activeToast)}>
               <div className="flex items-center justify-between">
@@ -195,7 +211,6 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
       )}
 
       <div className="w-full h-full max-w-[1920px] bg-white sm:rounded-[2.5rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.15)] flex relative overflow-hidden ring-1 ring-black/5">
-        
         <aside className="hidden lg:flex flex-col w-72 bg-[#1B222E] text-white h-full overflow-y-auto py-10 z-10 flex-shrink-0 no-scrollbar border-r border-white/5">
             <div className="px-8 mb-12 flex items-center gap-4">
                 <div className="relative w-12 h-12 flex-shrink-0">
@@ -254,8 +269,8 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
                 <div className="flex items-center gap-8">
                     <div className="relative" ref={notifRef}>
                         <button 
-                            onClick={() => setIsNotifOpen(!notifRef)}
-                            className={`p-3 rounded-2xl transition-all relative group ${isNotifOpen ? 'bg-blue-600 text-white shadow-lg' : 'bg-white hover:bg-slate-50 text-slate-400 border border-slate-200'} ${bellShake ? 'animate-vibrate' : ''}`}
+                            onClick={() => setIsNotifOpen(!isNotifOpen)}
+                            className={`p-3 rounded-2xl transition-all relative group ${isNotifOpen ? 'bg-blue-600 text-white shadow-lg' : 'bg-white hover:bg-slate-50 text-slate-400 border border-slate-200'}`}
                         >
                             <Bell className={`h-5 w-5`} />
                             {totalUnreadAlerts > 0 && (
@@ -315,7 +330,7 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
                             <p className="text-sm font-black text-slate-900 leading-none tracking-tight">{user?.name}</p>
                             <p className="text-[9px] font-black text-blue-600 uppercase tracking-[0.2em] mt-1.5">{user?.role}</p>
                         </div>
-                        <div className="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 border-2 border-white shadow-sm ring-1 ring-slate-200">
+                        <div className="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 border-2 border-white shadow-md ring-1 ring-slate-200">
                              {user?.avatar ? <img src={user.avatar} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center font-black text-slate-400">{user?.name[0]}</div>}
                         </div>
                     </div>
@@ -329,19 +344,6 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
       </div>
       
       <style>{`
-        @keyframes vibrate {
-            0% { transform: rotate(0deg); }
-            10% { transform: rotate(10deg); }
-            20% { transform: rotate(-10deg); }
-            30% { transform: rotate(10deg); }
-            40% { transform: rotate(-10deg); }
-            50% { transform: rotate(10deg); }
-            60% { transform: rotate(-10deg); }
-            100% { transform: rotate(0deg); }
-        }
-        .animate-vibrate {
-            animation: vibrate 0.5s ease-in-out;
-        }
         @keyframes slide-left {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }

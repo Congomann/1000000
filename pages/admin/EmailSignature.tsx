@@ -446,7 +446,8 @@ export const EmailSignature: React.FC = () => {
                                                                 rel="noopener noreferrer"
                                                                 style={{ display: 'block', width: '34px', height: '34px', borderRadius: '50%', backgroundColor: STYLES.colors.blue, textAlign: 'center', textDecoration: 'none' }}
                                                             >
-                                                                <table role="presentation" cellPadding="0" cellSpacing="0" width="100%" height="100%">
+                                                                {/* FIX: Moved height attribute to style to avoid TypeScript error */}
+                                                                <table role="presentation" cellPadding="0" cellSpacing="0" width="100%" style={{ height: '100%' }}>
                                                                     <tr>
                                                                         <td align="center" valign="middle" style={{ lineHeight: '34px', color: '#ffffff' }}>
                                                                             {getSocialIconSvg(link.platform)}

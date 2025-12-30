@@ -39,6 +39,7 @@ import { TermsOfUse } from './pages/website/TermsOfUse';
 import { PoliciesApps, CommercialQuotes, PoliciesRenewals, AutoQuotes, FleetManager, Claims } from './pages/crm/insurance/InsurancePages'; 
 import { PropertyPipeline, TransactionsEscrow } from './pages/crm/real-estate/RealEstatePages'; 
 import { PortfolioMgmt, ComplianceDocs, AdvisoryFees } from './pages/crm/securities/SecuritiesPages'; 
+import { LoanApplications, RateTools, RefinanceCalc } from './pages/crm/mortgage/MortgagePages';
 
 // Protected Route Component for CRM
 const ProtectedCRMRoute: React.FC = () => {
@@ -147,6 +148,11 @@ const App: React.FC = () => {
               <Route path="properties" element={<PropertyPipeline />} />
               <Route path="escrow" element={<TransactionsEscrow />} />
               
+              {/* Mortgage Workflow Routes */}
+              <Route path="loans" element={<LoanApplications />} />
+              <Route path="rates" element={<RateTools />} />
+              <Route path="refi-calc" element={<RefinanceCalc />} />
+
               {/* Securities Workflow Routes */}
               <Route path="portfolio" element={<PortfolioMgmt />} />
               <Route path="compliance" element={<ComplianceDocs />} />

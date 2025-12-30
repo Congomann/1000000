@@ -1,5 +1,4 @@
 
-
 export enum LeadStatus {
   NEW = 'New',
   CONTACTED = 'Contacted',
@@ -443,8 +442,6 @@ export interface AdvisoryFee {
     advisorId: string;
 }
 
-// FIX: Added missing accounting and banking related types and interfaces
-
 export enum AccountType {
   ASSET = 'Asset',
   LIABILITY = 'Liability',
@@ -535,4 +532,22 @@ export interface BankRule {
   conditions: BankRuleCondition[];
   assignCategory: string;
   userId: string;
+}
+
+export interface LoanApplication {
+    id: string;
+    clientName: string;
+    loanAmount: number;
+    loanType: 'Purchase' | 'Refinance' | 'HELOC' | 'Cash-Out Refi';
+    status: 'Applied' | 'Processing' | 'Underwriting' | 'Approved' | 'Closed' | 'Declined';
+    interestRate: number;
+    currentRate?: number;
+    propertyValue: number;
+    ltv: number;
+    creditScore: number;
+    advisorId: string;
+    createdAt: string;
+    strategicGoal?: 'Lower Payment' | 'Equity Access' | 'Debt Consolidation' | 'Wealth Building';
+    monthlySavings?: number;
+    lifetimeInterestSavings?: number;
 }

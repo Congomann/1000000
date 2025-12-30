@@ -31,7 +31,10 @@ import {
   Key,
   TrendingUp,
   FileCheck,
-  BadgeDollarSign
+  BadgeDollarSign,
+  Landmark,
+  Calculator,
+  Percent
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { UserRole, ProductType, Notification, AdvisorCategory } from '../types';
@@ -126,7 +129,13 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
 
     if (user.category === AdvisorCategory.REAL_ESTATE) {
       items.push({ path: '/crm/properties', label: 'Property Pipeline', icon: Building2 });
-      items.push({ path: '/crm/escrow', label: 'Escrow Tracker', icon: Key });
+      items.push({ path: '/crm/escrow', label: 'Transactions & Escrow', icon: Key });
+    }
+
+    if (user.category === AdvisorCategory.MORTGAGE) {
+        items.push({ path: '/crm/loans', label: 'Loan Applications', icon: FileText });
+        items.push({ path: '/crm/rates', label: 'Rate Tools', icon: Percent });
+        items.push({ path: '/crm/refi-calc', label: 'Refinance Calc', icon: Calculator });
     }
 
     if (user.category === AdvisorCategory.SECURITIES) {
@@ -136,7 +145,7 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
     }
 
     if (!isAdmin) {
-        items.push({ path: '/crm/commissions', label: 'Earnings', icon: LineChart });
+        items.push({ path: '/crm/commissions', label: 'Commissions', icon: LineChart });
     }
 
     items.push({ path: '/crm/leads', label: 'Leads DB', icon: Database });
@@ -145,7 +154,7 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
     items.push({ path: '/crm/legal', label: 'Legal & Compliance', icon: Scale });
 
     if (user.role !== UserRole.SUB_ADMIN) {
-      items.push({ path: '/crm/profile', label: 'My Profile', icon: CircleUser });
+      items.push({ path: '/crm/profile', label: 'Profile', icon: CircleUser });
     }
     return items;
   }, [user, unreadChats]);

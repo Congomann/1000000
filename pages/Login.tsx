@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
@@ -122,6 +123,7 @@ export const Login: React.FC = () => {
                <button type="button" onClick={() => setEmail('newbie@nhfg.com')} className="bg-blue-50 text-blue-700 py-2 px-3 rounded-xl text-xs font-black hover:bg-blue-100 transition-colors border border-blue-200 shadow-sm animate-pulse">✨ New Approved Advisor</button>
                <button type="button" onClick={() => setEmail('insurance@nhfg.com')} className="bg-slate-50 text-slate-600 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-slate-100 transition-colors border border-slate-200">Insurance Advisor</button>
                <button type="button" onClick={() => setEmail('realestate@nhfg.com')} className="bg-amber-50 text-amber-700 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-amber-100 transition-colors border border-amber-200">Real Estate Advisor</button>
+               <button type="button" onClick={() => setEmail('mortgage@nhfg.com')} className="bg-cyan-50 text-cyan-700 py-2 px-3 rounded-xl text-xs font-bold hover:bg-cyan-100 transition-colors border border-cyan-200">Mortgage Advisor</button>
                <button type="button" onClick={() => setEmail('securities@nhfg.com')} className="bg-green-50 text-green-700 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-green-100 transition-colors border border-green-200">Securities Advisor</button>
                
                <button type="button" onClick={() => setEmail('manager@nhfg.com')} className="bg-purple-50 text-purple-700 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-purple-100 transition-colors border border-purple-200">Manager</button>

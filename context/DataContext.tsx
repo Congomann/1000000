@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useRef } from 'react';
-import { Lead, Client, CallbackRequest, DashboardMetrics, ProductType, LeadStatus, User, UserRole, Notification, Commission, CalendarEvent, Email, Colleague, ChatMessage, AdvisorCategory, CompanySettings, Resource, Carrier, AdvisorAssignment, Testimonial, Application, ApplicationStatus, PerformanceTargets, LifeDetails, ChatAttachment, JobApplication, PropertyListing, EscrowTransaction, ClientPortfolio, ComplianceDocument, AdvisoryFee, IntegrationConfig, IntegrationLog } from '../types';
+import { Lead, Client, CallbackRequest, DashboardMetrics, ProductType, LeadStatus, User, UserRole, Notification, Commission, CalendarEvent, Email, Colleague, ChatMessage, AdvisorCategory, CompanySettings, Resource, Carrier, AdvisorAssignment, Testimonial, Application, ApplicationStatus, PerformanceTargets, LifeDetails, ChatAttachment, JobApplication, PropertyListing, EscrowTransaction, ClientPortfolio, ComplianceDocument, AdvisoryFee, IntegrationConfig, IntegrationLog, LoanApplication } from '../types';
 
 interface DataContextType {
   user: User | null;
@@ -84,6 +84,12 @@ interface DataContextType {
   deleteAdvisoryFee: (id: string) => void;
   updateFeeStatus: (id: string, status: 'Paid' | 'Overdue') => void;
   
+  // Mortgage
+  loanApplications: LoanApplication[];
+  addLoanApplication: (app: Partial<LoanApplication>) => void;
+  updateLoanApplication: (id: string, app: Partial<LoanApplication>) => void;
+  deleteLoanApplication: (id: string) => void;
+
   markNotificationRead: (id: string) => void;
   clearNotifications: () => void;
   completeOnboarding: () => void;
@@ -110,6 +116,7 @@ const MOCK_USERS: User[] = [
   { id: '1', name: 'Admin User', email: 'admin@nhfg.com', role: UserRole.ADMIN, category: AdvisorCategory.ADMIN, avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200', onboardingCompleted: true },
   { id: '2', name: 'John Advisor', email: 'insurance@nhfg.com', role: UserRole.ADVISOR, category: AdvisorCategory.INSURANCE, productsSold: [ProductType.LIFE, ProductType.ANNUITY], micrositeEnabled: true, avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200', onboardingCompleted: true },
   { id: '3', name: 'Sarah RealEstate', email: 'realestate@nhfg.com', role: UserRole.ADVISOR, category: AdvisorCategory.REAL_ESTATE, productsSold: [ProductType.REAL_ESTATE], micrositeEnabled: true, avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200', onboardingCompleted: true },
+  { id: '8', name: 'Sarah Mortgage', email: 'mortgage@nhfg.com', role: UserRole.ADVISOR, category: AdvisorCategory.MORTGAGE, productsSold: [ProductType.MORTGAGE], micrositeEnabled: true, avatar: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=200', onboardingCompleted: true },
   { id: '7', name: 'New Approved Advisor', email: 'newbie@nhfg.com', role: UserRole.ADVISOR, category: AdvisorCategory.INSURANCE, onboardingCompleted: false, avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200' },
   { id: '4', name: 'Mike Securities', email: 'securities@nhfg.com', role: UserRole.ADVISOR, category: AdvisorCategory.SECURITIES, productsSold: [ProductType.SECURITIES, ProductType.INVESTMENT], micrositeEnabled: true, avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200', onboardingCompleted: true },
   { id: '5', name: 'Michael Manager', email: 'manager@nhfg.com', role: UserRole.MANAGER, category: AdvisorCategory.INSURANCE, onboardingCompleted: true },
@@ -136,8 +143,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [portfolios, setPortfolios] = useState<ClientPortfolio[]>([]);
   const [complianceDocs, setComplianceDocs] = useState<ComplianceDocument[]>([]);
   const [advisoryFees, setAdvisoryFees] = useState<AdvisoryFee[]>([]);
-  
-  // FIX: Added missing advisorAssignments state definition
+  const [loanApplications, setLoanApplications] = useState<LoanApplication[]>([]);
   const [advisorAssignments, setAdvisorAssignments] = useState<AdvisorAssignment[]>([]);
 
   const [companySettings, setCompanySettings] = useState<CompanySettings>({
@@ -164,7 +170,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (savedPortfolios) {
       setPortfolios(JSON.parse(savedPortfolios));
     } else {
-      // Add realistic mock portfolios for Mike Securities (ID 4)
       const mockPorts: ClientPortfolio[] = [
         {
           id: 'p1', clientId: 'c1', clientName: 'High Growth Venture Fund', totalValue: 1250000, ytdReturn: 14.2, riskProfile: 'Aggressive', advisorId: '4', lastRebalanced: new Date().toISOString(),
@@ -188,7 +193,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (savedFees) {
       setAdvisoryFees(JSON.parse(savedFees));
     } else {
-      // Add realistic mock advisory fees
       const mockFees: AdvisoryFee[] = [
         { id: 'f1', clientId: 'c1', clientName: 'Apex Global Assets', aum: 5000000, feeRate: 1.0, billingPeriod: 'Q1', amount: 12500, status: 'Paid', dueDate: '2024-03-31', advisorId: '4' },
         { id: 'f2', clientId: 'c2', clientName: 'Miller Family Trust', aum: 1200000, feeRate: 0.85, billingPeriod: 'Q1', amount: 2550, status: 'Invoiced', dueDate: '2024-04-15', advisorId: '4' },
@@ -196,8 +200,22 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       ];
       setAdvisoryFees(mockFees);
     }
+
+    const savedLoans = localStorage.getItem('nhfg_loans');
+    if (savedLoans) {
+        setLoanApplications(JSON.parse(savedLoans));
+    } else {
+        const mockLoans: LoanApplication[] = [
+            { id: 'L1', clientName: 'Ethan Wright', loanAmount: 450000, propertyValue: 600000, loanType: 'Refinance', status: 'Underwriting', interestRate: 5.25, currentRate: 7.25, ltv: 75, creditScore: 740, advisorId: '8', createdAt: new Date().toISOString(), strategicGoal: 'Lower Payment', monthlySavings: 420.50, lifetimeInterestSavings: 151200 },
+            { id: 'L2', clientName: 'Maria Garcia', loanAmount: 320000, propertyValue: 550000, loanType: 'Cash-Out Refi', status: 'Processing', interestRate: 5.85, currentRate: 6.5, ltv: 58, creditScore: 710, advisorId: '8', createdAt: new Date().toISOString(), strategicGoal: 'Equity Access', monthlySavings: 110.00, lifetimeInterestSavings: 32000 },
+            { id: 'L3', clientName: 'James Wilson', loanAmount: 150000, propertyValue: 400000, loanType: 'HELOC', status: 'Applied', interestRate: 8.5, ltv: 37, creditScore: 680, advisorId: '8', createdAt: new Date().toISOString(), strategicGoal: 'Debt Consolidation', monthlySavings: 850.00 },
+            { id: 'L4', clientName: 'Robert Johnson', loanAmount: 850000, propertyValue: 1200000, loanType: 'Purchase', status: 'Approved', interestRate: 6.12, ltv: 70, creditScore: 780, advisorId: '8', createdAt: new Date().toISOString(), strategicGoal: 'Wealth Building' },
+            { id: 'L5', clientName: 'Angela White', loanAmount: 210000, propertyValue: 450000, loanType: 'Refinance', status: 'Closed', interestRate: 4.85, currentRate: 6.25, ltv: 46, creditScore: 725, advisorId: '8', createdAt: new Date().toISOString(), strategicGoal: 'Lower Payment', monthlySavings: 315.00, lifetimeInterestSavings: 113400 },
+            { id: 'L6', clientName: 'Samuel Green', loanAmount: 500000, propertyValue: 520000, loanType: 'Purchase', status: 'Declined', interestRate: 7.25, ltv: 96, creditScore: 580, advisorId: '8', createdAt: new Date().toISOString() }
+        ];
+        setLoanApplications(mockLoans);
+    }
     
-    // Other loads...
     const savedMessages = localStorage.getItem('nhfg_chat_v2');
     if (savedMessages) setChatMessages(JSON.parse(savedMessages).map((m: any) => ({...m, timestamp: new Date(m.timestamp)})));
     const savedLeads = localStorage.getItem('nhfg_leads_v2');
@@ -218,6 +236,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => { localStorage.setItem('nhfg_apps_v2', JSON.stringify(applications)); }, [applications]);
   useEffect(() => { localStorage.setItem('nhfg_portfolios', JSON.stringify(portfolios)); }, [portfolios]);
   useEffect(() => { localStorage.setItem('nhfg_fees', JSON.stringify(advisoryFees)); }, [advisoryFees]);
+  useEffect(() => { localStorage.setItem('nhfg_loans', JSON.stringify(loanApplications)); }, [loanApplications]);
 
   const addSystemNotification = useCallback((title: string, message: string, type: 'info' | 'success' | 'warning' | 'alert' = 'info', resourceType?: any, relatedId?: string) => {
     const newNotif: Notification = {
@@ -310,6 +329,37 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const updateFeeStatus = (id: string, status: 'Paid' | 'Overdue') => {
     setAdvisoryFees(prev => prev.map(f => f.id === id ? { ...f, status } : f));
+  };
+
+  // Mortgage CRUD
+  const addLoanApplication = (app: Partial<LoanApplication>) => {
+      const newApp: LoanApplication = {
+          id: `L${loanApplications.length + 1}`,
+          clientName: app.clientName || 'New Application',
+          loanAmount: app.loanAmount || 0,
+          propertyValue: app.propertyValue || 0,
+          loanType: app.loanType || 'Purchase',
+          status: app.status || 'Applied',
+          interestRate: app.interestRate || 0,
+          currentRate: app.currentRate || 0,
+          ltv: app.ltv || 80,
+          creditScore: app.creditScore || 0,
+          advisorId: user?.id || '8',
+          createdAt: new Date().toISOString(),
+          strategicGoal: app.strategicGoal,
+          monthlySavings: app.monthlySavings,
+          lifetimeInterestSavings: app.lifetimeInterestSavings
+      };
+      setLoanApplications(prev => [...prev, newApp]);
+      addSystemNotification('Loan Application Created', `New loan app for ${newApp.clientName} initiated.`, 'success');
+  };
+
+  const updateLoanApplication = (id: string, app: Partial<LoanApplication>) => {
+      setLoanApplications(prev => prev.map(a => a.id === id ? { ...a, ...app } : a));
+  };
+
+  const deleteLoanApplication = (id: string) => {
+      setLoanApplications(prev => prev.filter(a => a.id !== id));
   };
 
   const login = (email: string) => {
@@ -485,15 +535,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               newAssignments.push({ id: Math.random().toString(36).substr(2, 9), advisorId: advId, carrierName: c.name, category: c.category, assignedBy: user?.name || 'Admin', assignedAt: new Date().toISOString() });
           });
       });
-      // FIX: Correctly call setAdvisorAssignments
       setAdvisorAssignments(prev => [...prev, ...newAssignments]);
   };
   const getAdvisorAssignments = (advisorId: string) => {
-      // FIX: Correctly reference advisorAssignments state
       return advisorAssignments.filter(a => a.advisorId === advisorId);
   };
   const toggleGoogleSync = () => setIsGoogleConnected(prev => !prev);
-  // FIX: Removed duplicate updateIntegrationConfig definition (redundant with line 422)
   
   const simulateMarketingLead = useCallback((platform: 'google_ads' | 'meta_ads' | 'linkedin_ads', rawPayload: any) => {
     const logId = Math.random().toString(36).substr(2, 9);
@@ -510,7 +557,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <DataContext.Provider value={{
       user, allUsers, leads, clients, callbacks, metrics: { totalRevenue: 1250000, activeClients: 450, pendingLeads: 24, monthlyPerformance: [], totalCommission: 85000 },
       notifications, commissions: [], events, emails: [], colleagues, chatMessages, availableCarriers: [], 
-      // FIX: Correctly reference advisorAssignments state
       advisorAssignments,
       assignCarriers, getAdvisorAssignments, companySettings, resources, likeResource, dislikeResource, shareResource, addResourceComment, addResource, deleteResource,
       testimonials, addTestimonial, approveTestimonial, deleteTestimonial, submitTestimonialEdit, approveTestimonialEdit, rejectTestimonialEdit,
@@ -518,6 +564,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       addEvent, updateEvent, deleteEvent, isGoogleConnected, toggleGoogleSync, sendChatMessage, editChatMessage, deleteChatMessage, markChatRead, addAdvisor, deleteAdvisor, updateUser, restoreUser, permanentlyDeleteUser,
       updateCompanySettings, jobApplications, submitJobApplication, updateJobApplicationStatus, applications, updateApplicationStatus,
       performanceTargets: { monthly: 50000, quarterly: 150000, presidentsClub: 1000000 }, properties, transactions, updateTransactionStatus, portfolios, addPortfolio, updatePortfolio, deletePortfolio, complianceDocs, addComplianceDoc, advisoryFees, addAdvisoryFee, updateAdvisoryFee, deleteAdvisoryFee, updateFeeStatus,
+      loanApplications, addLoanApplication, updateLoanApplication, deleteLoanApplication,
       markNotificationRead: (id) => setNotifications(n => n.map(not => not.id === id ? {...not, read: true} : not)), clearNotifications: () => setNotifications([]),
       integrationConfig, updateIntegrationConfig, integrationLogs, simulateMarketingLead, completeOnboarding
     }}>

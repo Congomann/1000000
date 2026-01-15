@@ -3,24 +3,49 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { ArrowRight, Lock, Mail } from 'lucide-react';
+import { UserRole } from '../types';
 
 export const Login: React.FC = () => {
-  const { login } = useData();
+  const { login, allUsers } = useData();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  const executeLogin = (targetEmail: string) => {
+    const targetUser = allUsers.find(u => u.email.toLowerCase() === targetEmail.toLowerCase());
+    
+    if (targetUser) {
+      login(targetUser.email);
+      // Strict routing based on the matched user's role
+      if (targetUser.role === UserRole.CLIENT) {
+        navigate('/client-portal');
+      } else if (targetUser.role === UserRole.ADMIN || targetUser.role === UserRole.SUB_ADMIN || targetUser.role === UserRole.ADVISOR || targetUser.role === UserRole.MANAGER) {
+        navigate('/crm/dashboard');
+      } else {
+        // Fallback for generic CRM access
+        navigate('/crm/dashboard');
+      }
+    } else {
+      // If user isn't in DB yet, attempt a generic login and default to dashboard
+      login(targetEmail);
+      navigate('/crm/dashboard');
+    }
+  };
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    login(email);
-    navigate('/crm/dashboard');
+    executeLogin(email);
+  };
+
+  const handleQuickLogin = (email: string) => {
+      setEmail(email);
+      executeLogin(email);
   };
 
   return (
     <div className="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-[#F9FAFB]">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-8">
-         {/* Reverted Logo - Solid Yellow House */}
          <div className="w-20 h-20 mx-auto mb-6 drop-shadow-md">
             <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
               <path d="M50 0L100 40V100H0V40L50 0Z" fill="#FBBF24"/>
@@ -69,7 +94,7 @@ export const Login: React.FC = () => {
                   name="password"
                   type="password"
                   autoComplete="current-password"
-                  required={false} // Optional for demo
+                  required={false}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="appearance-none block w-full pl-11 px-4 py-4 bg-white border border-slate-300 rounded-2xl placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0A62A7] focus:border-transparent transition-all text-base text-slate-900"
@@ -92,7 +117,7 @@ export const Login: React.FC = () => {
               </div>
 
               <div className="text-sm">
-                <a href="#" className="font-medium text-[#0A62A7] hover:text-blue-500">
+                <a href="#" className="font-medium text-[#0A62A7] hover:text-blue-50">
                   Forgot password?
                 </a>
               </div>
@@ -108,7 +133,6 @@ export const Login: React.FC = () => {
             </div>
           </form>
 
-          {/* Role Selection Helpers for Demo */}
           <div className="mt-8">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -120,16 +144,16 @@ export const Login: React.FC = () => {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3">
-               <button type="button" onClick={() => setEmail('newbie@nhfg.com')} className="bg-blue-50 text-blue-700 py-2 px-3 rounded-xl text-xs font-black hover:bg-blue-100 transition-colors border border-blue-200 shadow-sm animate-pulse">✨ New Approved Advisor</button>
-               <button type="button" onClick={() => setEmail('insurance@nhfg.com')} className="bg-slate-50 text-slate-600 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-slate-100 transition-colors border border-slate-200">Insurance Advisor</button>
-               <button type="button" onClick={() => setEmail('realestate@nhfg.com')} className="bg-amber-50 text-amber-700 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-amber-100 transition-colors border border-amber-200">Real Estate Advisor</button>
-               <button type="button" onClick={() => setEmail('mortgage@nhfg.com')} className="bg-cyan-50 text-cyan-700 py-2 px-3 rounded-xl text-xs font-bold hover:bg-cyan-100 transition-colors border border-cyan-200">Mortgage Advisor</button>
-               <button type="button" onClick={() => setEmail('securities@nhfg.com')} className="bg-green-50 text-green-700 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-green-100 transition-colors border border-green-200">Securities Advisor</button>
+               <button type="button" onClick={() => handleQuickLogin('newbie@nhfg.com')} className="bg-blue-50 text-blue-700 py-2 px-3 rounded-xl text-xs font-black hover:bg-blue-100 transition-colors border border-blue-200 shadow-sm animate-pulse">✨ New Approved Advisor</button>
+               <button type="button" onClick={() => handleQuickLogin('insurance@nhfg.com')} className="bg-slate-50 text-slate-600 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-slate-100 transition-colors border border-slate-200">Insurance Advisor</button>
+               <button type="button" onClick={() => handleQuickLogin('realestate@nhfg.com')} className="bg-amber-50 text-amber-700 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-amber-100 transition-colors border border-amber-200">Real Estate Advisor</button>
+               <button type="button" onClick={() => handleQuickLogin('mortgage@nhfg.com')} className="bg-cyan-50 text-cyan-700 py-2 px-3 rounded-xl text-xs font-bold hover:bg-cyan-100 transition-colors border border-cyan-200">Mortgage Advisor</button>
+               <button type="button" onClick={() => handleQuickLogin('securities@nhfg.com')} className="bg-green-50 text-green-700 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-green-100 transition-colors border border-green-200">Securities Advisor</button>
                
-               <button type="button" onClick={() => setEmail('manager@nhfg.com')} className="bg-purple-50 text-purple-700 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-purple-100 transition-colors border border-purple-200">Manager</button>
-               <button type="button" onClick={() => setEmail('subadmin@nhfg.com')} className="bg-indigo-50 text-indigo-700 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-indigo-100 transition-colors border border-indigo-200">Sub-Admin</button>
+               <button type="button" onClick={() => handleQuickLogin('manager@nhfg.com')} className="bg-purple-50 text-purple-700 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-purple-100 transition-colors border border-purple-200">Manager</button>
+               <button type="button" onClick={() => handleQuickLogin('subadmin@nhfg.com')} className="bg-indigo-50 text-indigo-700 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-indigo-100 transition-colors border border-indigo-200">Sub-Admin</button>
                
-               <button type="button" onClick={() => setEmail('admin@nhfg.com')} className="bg-red-50 text-red-700 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-red-100 transition-colors border border-red-200">System Admin</button>
+               <button type="button" onClick={() => handleQuickLogin('admin@nhfg.com')} className="bg-red-50 text-red-700 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-red-100 transition-colors border border-red-200">System Admin</button>
             </div>
           </div>
         </div>

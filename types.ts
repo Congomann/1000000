@@ -2,6 +2,7 @@
 export enum LeadStatus {
   NEW = 'New',
   CONTACTED = 'Contacted',
+  UNAVAILABLE = 'Unavailable',
   PROPOSAL = 'Proposal',
   APPROVED = 'Approved', 
   CLOSED = 'Closed',
@@ -104,10 +105,16 @@ export interface Lead {
   priority?: 'High' | 'Medium' | 'Low';
   notes?: string;
   source?: string;
+  campaign?: string;
+  adGroup?: string;
+  adId?: string;
+  platformData?: string;
   lifeDetails?: Partial<LifeDetails>;
   realEstateDetails?: any;
   securitiesDetails?: any;
   customDetails?: any;
+  isArchived?: boolean;
+  deletedAt?: string;
   externalMetadata?: {
     leadId?: string;
     campaignId?: string;
@@ -121,7 +128,7 @@ export interface Lead {
 export interface IntegrationLog {
   id: string;
   timestamp: string;
-  platform: 'google_ads' | 'meta_ads' | 'linkedin_ads';
+  platform: 'google_ads' | 'meta_ads' | 'tiktok_ads' | 'linkedin_ads';
   event: string;
   status: 'success' | 'failure';
   payload: any;
@@ -137,6 +144,11 @@ export interface IntegrationConfig {
   metaAds: {
     enabled: boolean;
     verifyToken: string;
+    accessToken: string;
+  };
+  tiktokAds: {
+    enabled: boolean;
+    webhookUrl: string;
     accessToken: string;
   };
   linkedinAds: {
@@ -177,6 +189,9 @@ export interface DashboardMetrics {
   pendingLeads: number;
   monthlyPerformance: { month: string; revenue: number; leads: number }[];
   totalCommission: number;
+  totalAUM?: number;
+  avgPortfolioReturn?: number;
+  activePortfolios?: number;
 }
 
 export interface Notification {

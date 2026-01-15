@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { DataProvider, useData } from './context/DataContext';
@@ -36,10 +35,29 @@ import { AdvisorOnboardingFlow } from './pages/crm/AdvisorOnboardingFlow';
 import { LegalCompliance } from './pages/crm/LegalCompliance';
 import { PrivacyPolicy } from './pages/website/PrivacyPolicy';
 import { TermsOfUse } from './pages/website/TermsOfUse';
-import { PoliciesApps, CommercialQuotes, PoliciesRenewals, AutoQuotes, FleetManager, Claims } from './pages/crm/insurance/InsurancePages'; 
-import { PropertyPipeline, TransactionsEscrow } from './pages/crm/real-estate/RealEstatePages'; 
-import { PortfolioMgmt, ComplianceDocs, AdvisoryFees } from './pages/crm/securities/SecuritiesPages'; 
-import { LoanApplications, RateTools, RefinanceCalc } from './pages/crm/mortgage/MortgagePages';
+import { 
+  PoliciesApps, 
+  CommercialQuotes, 
+  PoliciesRenewals, 
+  AutoQuotes, 
+  FleetManager, 
+  Claims 
+} from './pages/crm/insurance/InsurancePages'; 
+import { 
+  PropertyPipeline, 
+  TransactionsEscrow 
+} from './pages/crm/real-estate/RealEstatePages'; 
+import { 
+  PortfolioMgmt, 
+  ComplianceDocs, 
+  AdvisoryFees 
+} from './pages/crm/securities/SecuritiesPages'; 
+import { 
+  LoanApplications, 
+  RateTools, 
+  RefinanceCalc 
+} from './pages/crm/mortgage/MortgagePages';
+import { AIChatWidget } from './components/AIChatWidget';
 
 // Protected Route Component for CRM
 const ProtectedCRMRoute: React.FC = () => {
@@ -50,7 +68,6 @@ const ProtectedCRMRoute: React.FC = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // Only Admins, Managers and Advisors can access CRM
   const allowedRoles = [UserRole.ADMIN, UserRole.MANAGER, UserRole.SUB_ADMIN, UserRole.ADVISOR];
   if (!allowedRoles.includes(user.role)) {
     return <Navigate to="/client-portal" replace />;
@@ -61,12 +78,10 @@ const ProtectedCRMRoute: React.FC = () => {
       return <Navigate to="/crm/onboarding-flow" replace />;
   }
 
-  // If already completed or not an advisor, but trying to access onboarding flow, go to dashboard
   if (user.onboardingCompleted && location.pathname === '/crm/onboarding-flow') {
       return <Navigate to="/crm/dashboard" replace />;
   }
 
-  // If on onboarding flow, don't wrap in CRMLayout as it has its own shell
   if (location.pathname === '/crm/onboarding-flow') {
       return <Outlet />;
   }
@@ -78,16 +93,16 @@ const ProtectedCRMRoute: React.FC = () => {
   );
 };
 
-// Protected Route for Admin - STRICTLY ADMIN ONLY
+// Protected Route for Admin
 const AdminRoute: React.FC = () => {
     const { user } = useData();
-    if (user?.role !== UserRole.ADMIN) {
+    if (user?.role !== UserRole.ADMIN && user?.role !== UserRole.SUB_ADMIN) {
         return <Navigate to="/crm/dashboard" replace />;
     }
     return <Outlet />;
 };
 
-// Layout wrapper for public pages to include Navbar and Footer
+// Layout wrapper for public pages
 const PublicLayout: React.FC<{children: React.ReactNode}> = ({ children }) => {
   return (
     <div className="flex flex-col min-h-screen">
@@ -96,6 +111,7 @@ const PublicLayout: React.FC<{children: React.ReactNode}> = ({ children }) => {
         {children}
       </main>
       <Footer />
+      <AIChatWidget />
     </div>
   );
 };
@@ -119,7 +135,7 @@ const App: React.FC = () => {
             
             {/* Auth Routes */}
             <Route path="/login" element={<Login />} />
-            <Route path="/client-portal" element={<ClientPortal />} />
+            <Route path="/client-portal" element={<PublicLayout><ClientPortal /></PublicLayout>} />
 
             {/* Protected CRM Routes */}
             <Route path="/crm" element={<ProtectedCRMRoute />}>
@@ -158,7 +174,7 @@ const App: React.FC = () => {
               <Route path="compliance" element={<ComplianceDocs />} />
               <Route path="fees" element={<AdvisoryFees />} />
               
-              {/* Admin Routes - Strictly Admin Only */}
+              {/* Admin Routes */}
               <Route element={<AdminRoute />}>
                   <Route path="admin" element={<AdminUsers />} />
                   <Route path="admin/website" element={<WebsiteSettings />} />
@@ -169,6 +185,7 @@ const App: React.FC = () => {
                   <Route path="onboarding" element={<Onboarding />} />
               </Route>
             </Route>
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>
     </DataProvider>

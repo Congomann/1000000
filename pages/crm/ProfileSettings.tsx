@@ -1,11 +1,7 @@
 
-
-
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useData } from '../../context/DataContext';
-import { SocialLink, User, UserRole, Carrier, ProductType, Testimonial } from '../../types';
+import { SocialLink, User, UserRole, ProductType, Testimonial } from '../../types';
 import { Save, Plus, Trash2, Camera, Shield, CheckCircle2, Languages, Briefcase, Award, X, Edit2, Star, AlertTriangle, Globe, MapPin } from 'lucide-react';
 
 export const ProfileSettings: React.FC = () => {
@@ -22,6 +18,7 @@ export const ProfileSettings: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isAdmin = user?.role === UserRole.ADMIN;
 
   useEffect(() => {
     if (user) {
@@ -37,11 +34,9 @@ export const ProfileSettings: React.FC = () => {
         productsSold: user.productsSold || [],
         languages: user.languages || [],
         micrositeEnabled: user.micrositeEnabled,
-        // Migration: If license_state is empty but array exists, join array or use count
         license_state: user.license_state || (user.license_states && user.license_states.length > 0 ? `${user.license_states.length} States` : '')
       });
 
-      // Load Carriers
       const assignments = getAdvisorAssignments(user.id);
       const grouped = assignments.reduce((acc, curr) => {
           if (!acc[curr.category]) acc[curr.category] = [];
@@ -171,7 +166,6 @@ export const ProfileSettings: React.FC = () => {
               </button>
             </div>
 
-
             <div className="flex-1 w-full space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -238,27 +232,16 @@ export const ProfileSettings: React.FC = () => {
             
             <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
                 <div>
-                    <p className="font-bold text-slate-700">Advisor Microsite</p>
-                    <p className="text-xs text-slate-500">Enable or disable your public-facing profile page.</p>
+                    <p className="font-bold text-slate-700">Advisor Microsite Status</p>
+                    <p className="text-xs text-slate-500">Public visibility of your personal advisor page.</p>
                 </div>
                 
-                {user?.role === UserRole.ADMIN ? (
-                     <button 
-                        type="button"
-                        onClick={() => setFormData(prev => ({...prev, micrositeEnabled: !prev.micrositeEnabled}))}
-                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${formData.micrositeEnabled ? 'bg-green-500' : 'bg-slate-300'}`}
-                     >
-                         <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.micrositeEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
-                     </button>
-                ) : (
-                     <div className="flex items-center gap-2">
-                         {formData.micrositeEnabled ? <CheckCircle2 className="h-4 w-4 text-green-600"/> : <X className="h-4 w-4 text-slate-400"/>}
-                         <span className={`text-sm font-bold ${formData.micrositeEnabled ? 'text-green-700' : 'text-slate-500'}`}>
-                             {formData.micrositeEnabled ? 'Live' : 'Disabled'}
-                         </span>
-                         <span className="text-[10px] text-slate-400 bg-white px-2 py-1 rounded border border-slate-200 ml-2">Admin Managed</span>
-                     </div>
-                )}
+                <div className="flex items-center gap-3">
+                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${formData.micrositeEnabled ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-500'}`}>
+                        {formData.micrositeEnabled ? 'Online' : 'Disabled'}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase border border-slate-200 px-2 py-1 rounded bg-white">Admin Managed</span>
+                </div>
             </div>
         </div>
 
@@ -287,7 +270,7 @@ export const ProfileSettings: React.FC = () => {
           </div>
         </div>
 
-        {/* Licensed States */}
+        {/* Licensing */}
         <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
           <div className="flex items-center gap-3 mb-6">
              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><MapPin className="h-6 w-6" /></div>
@@ -308,7 +291,7 @@ export const ProfileSettings: React.FC = () => {
           </div>
         </div>
 
-        {/* Languages Spoken */}
+        {/* Languages */}
         <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
           <div className="flex items-center gap-3 mb-6">
              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Languages className="h-6 w-6" /></div>
@@ -335,7 +318,7 @@ export const ProfileSettings: React.FC = () => {
           </div>
         </div>
 
-        {/* Carrier Assignments Section (Read Only for Advisors) */}
+        {/* Carriers */}
         {user?.role === UserRole.ADVISOR && (
             <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
                 <div className="flex items-center gap-3 mb-6">
@@ -369,7 +352,7 @@ export const ProfileSettings: React.FC = () => {
             </div>
         )}
         
-        {/* Testimonials Management Section */}
+        {/* Testimonials */}
         <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
             <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Award className="h-6 w-6" /></div>
@@ -388,7 +371,7 @@ export const ProfileSettings: React.FC = () => {
                                 t.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
                                 'bg-blue-100 text-blue-700'
                             }`}>{t.status.replace('_', ' ')}</span>
-                            {t.status === 'approved' && <button onClick={() => openEditModal(t)} className="p-2 hover:bg-slate-200 rounded-full"><Edit2 className="h-4 w-4 text-slate-500" /></button>}
+                            {t.status === 'approved' && <button type="button" onClick={() => openEditModal(t)} className="p-2 hover:bg-slate-200 rounded-full"><Edit2 className="h-4 w-4 text-slate-500" /></button>}
                             {t.status === 'pending_edit' && <div className="p-2 bg-blue-100 rounded-full"><AlertTriangle className="h-4 w-4 text-blue-500"/></div>}
                         </div>
                     </div>
@@ -397,7 +380,7 @@ export const ProfileSettings: React.FC = () => {
             </div>
         </div>
 
-        {/* Bio Section */}
+        {/* Bio */}
         <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
           <h3 className="text-lg font-bold text-[#0B2240] mb-4">About Me / Bio</h3>
           <textarea
@@ -480,7 +463,7 @@ export const ProfileSettings: React.FC = () => {
       {isEditModalOpen && editingTestimonial && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 relative">
-                <button onClick={() => setIsEditModalOpen(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600"><X/></button>
+                <button type="button" onClick={() => setIsEditModalOpen(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-600"><X/></button>
                 <h3 className="text-xl font-bold mb-4">Edit Testimonial</h3>
                 <p className="text-sm text-slate-500 mb-6">Your edits will be submitted to an administrator for approval before going public.</p>
                 <form onSubmit={handleTestimonialEditSubmit} className="space-y-4">

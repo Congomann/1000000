@@ -5,7 +5,7 @@ import { useData } from '../../context/DataContext';
 import { 
     Users, Wallet, TrendingUp, Activity, ArrowUpRight, 
     MonitorCheck, BarChart3, ShieldAlert, Cpu, ArrowRight,
-    Search, Bell, LayoutGrid, Webhook, Bug, RefreshCw, MessageSquarePlus, ChevronRight
+    Search, Bell, LayoutGrid, Webhook, Bug, RefreshCw, MessageSquarePlus, ChevronRight, AlertCircle, Clock, Info
 } from 'lucide-react';
 import { UserRole, LeadStatus } from '../../types';
 
@@ -85,6 +85,23 @@ export const Dashboard: React.FC = () => {
         else if (n.resourceType === 'job_application') navigate('/crm/onboarding');
     };
 
+    const getPriorityIcon = (type: string) => {
+        switch (type) {
+            case 'alert': return <AlertCircle size={14} />;
+            case 'warning': return <Clock size={14} />;
+            default: return <Info size={14} />;
+        }
+    };
+
+    const getPriorityColor = (type: string) => {
+        switch (type) {
+            case 'alert': return 'text-red-500 bg-red-50 border-red-100';
+            case 'warning': return 'text-orange-500 bg-orange-50 border-orange-100';
+            case 'success': return 'text-green-500 bg-green-50 border-green-100';
+            default: return 'text-blue-500 bg-blue-50 border-blue-100';
+        }
+    };
+
     return (
         <div className="space-y-12 pb-20 animate-fade-in">
             {/* Main Stats Grid */}
@@ -101,21 +118,36 @@ export const Dashboard: React.FC = () => {
             {/* Content Section */}
             <div className="grid grid-cols-1 gap-10">
                 <div className="bg-white/40 backdrop-blur-md p-10 rounded-[3.5rem] shadow-sm border border-white/50 flex flex-col">
-                    <div className="mb-10">
-                        <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tighter">Real-time Terminal Activity</h3>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-1">Autonomous System Feed</p>
+                    <div className="flex justify-between items-center mb-10">
+                        <div>
+                            <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tighter">Real-time Terminal Activity</h3>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-1">Autonomous System Feed</p>
+                        </div>
+                        <div className="flex gap-2">
+                             <div className="flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-600 rounded-full border border-red-100 text-[9px] font-black uppercase tracking-widest">
+                                 <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>
+                                 High Priority
+                             </div>
+                        </div>
                     </div>
                     <div className="flex-1 flex flex-col gap-6">
-                        {notifications.slice(0, 5).map((activity, i) => (
+                        {notifications.slice(0, 8).map((activity, i) => (
                             <div 
                                 key={activity.id} 
                                 onClick={() => handleActivityClick(activity)}
                                 className="flex items-start gap-5 text-left p-6 bg-white/60 rounded-[2rem] border border-white/80 hover:shadow-md hover:bg-white transition-all cursor-pointer group"
                             >
-                                <div className={`mt-2 h-2.5 w-2.5 rounded-full shrink-0 ${activity.type === 'success' ? 'bg-green-400' : activity.type === 'alert' ? 'bg-red-400' : 'bg-blue-400'}`}></div>
+                                <div className={`mt-1 p-2.5 rounded-xl shrink-0 border transition-colors ${getPriorityColor(activity.type)}`}>
+                                    {getPriorityIcon(activity.type)}
+                                </div>
                                 <div className="flex-1">
                                     <div className="flex justify-between">
-                                        <p className="text-base font-bold text-slate-700 leading-tight group-hover:text-slate-900">{activity.title}</p>
+                                        <div className="flex items-center gap-3">
+                                            <p className="text-base font-bold text-slate-700 leading-tight group-hover:text-slate-900">{activity.title}</p>
+                                            {activity.type === 'alert' && (
+                                                <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[8px] font-black uppercase rounded tracking-tighter">Immediate Action</span>
+                                            )}
+                                        </div>
                                         <p className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em]">{new Date(activity.timestamp).toLocaleTimeString()}</p>
                                     </div>
                                     <p className="text-xs text-slate-500 font-medium mt-1">{activity.message}</p>

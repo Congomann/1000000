@@ -57,10 +57,10 @@ export const Navbar: React.FC = () => {
           <div className="hidden md:block">
             <div className="flex items-center space-x-1">
               <Link to="/" className="text-slate-300 hover:text-white hover:bg-white/10 px-5 py-2.5 rounded-full text-sm font-medium transition-all">Home</Link>
-              <Link to="/about" className="text-slate-300 hover:text-white hover:bg-white/10 px-5 py-2.5 rounded-full text-sm font-medium transition-all">About Us</Link>
               <Link to="/products" className="text-slate-300 hover:text-white hover:bg-white/10 px-5 py-2.5 rounded-full text-sm font-medium transition-all">Products</Link>
               <Link to="/advisors" className="text-slate-300 hover:text-white hover:bg-white/10 px-5 py-2.5 rounded-full text-sm font-medium transition-all">Advisors</Link>
               <Link to="/resources" className="text-slate-300 hover:text-white hover:bg-white/10 px-5 py-2.5 rounded-full text-sm font-medium transition-all">Resources</Link>
+              <Link to="/about" className="text-slate-300 hover:text-white hover:bg-white/10 px-5 py-2.5 rounded-full text-sm font-medium transition-all">About Us</Link>
             </div>
           </div>
 
@@ -94,10 +94,10 @@ export const Navbar: React.FC = () => {
           <div className="md:hidden mt-3 bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-4 shadow-2xl animate-slide-up pointer-events-auto">
             <div className="space-y-1">
               <Link to="/" onClick={() => setIsOpen(false)} className="block hover:bg-white/10 px-4 py-3 rounded-xl text-base font-medium text-slate-200">Home</Link>
-              <Link to="/about" onClick={() => setIsOpen(false)} className="block hover:bg-white/10 px-4 py-3 rounded-xl text-base font-medium text-slate-200">About Us</Link>
               <Link to="/products" onClick={() => setIsOpen(false)} className="block hover:bg-white/10 px-4 py-3 rounded-xl text-base font-medium text-slate-200">Products</Link>
               <Link to="/advisors" onClick={() => setIsOpen(false)} className="block hover:bg-white/10 px-4 py-3 rounded-xl text-base font-medium text-slate-200">Advisors</Link>
               <Link to="/resources" onClick={() => setIsOpen(false)} className="block hover:bg-white/10 px-4 py-3 rounded-xl text-base font-medium text-slate-200">Resources</Link>
+              <Link to="/about" onClick={() => setIsOpen(false)} className="block hover:bg-white/10 px-4 py-3 rounded-xl text-base font-medium text-slate-200">About Us</Link>
               
               <div className="h-px bg-white/10 my-2"></div>
               

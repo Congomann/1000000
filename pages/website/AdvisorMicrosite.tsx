@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { ProductType } from '../../types';
-import { Mail, Phone, CheckCircle2, ArrowLeft, Star, Send, Share2, X, ShieldCheck, MapPin, Check, User, Copy, Link as LinkIcon, Languages, BadgeCheck, ArrowRight, Smartphone, MessageSquare, PhoneIncoming, FileText } from 'lucide-react';
+import { Mail, Phone, CheckCircle2, ArrowLeft, Star, Send, Share2, X, ShieldCheck, MapPin, Check, User, Copy, Link as LinkIcon, Languages, BadgeCheck, ArrowRight, Smartphone, MessageSquare, PhoneIncoming, FileText, BadgeCheck as VerifiedBadge } from 'lucide-react';
 
 const FacebookIcon = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 24 24" fill="currentColor" className={className || "h-5 w-5"}>
@@ -54,7 +54,6 @@ export const AdvisorMicrosite: React.FC = () => {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [copyText, setCopyText] = useState('Copy Link');
 
-  // Normalize slug matching
   const advisor = allUsers.find(u => u.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') === slug);
 
   useEffect(() => {
@@ -63,20 +62,16 @@ export const AdvisorMicrosite: React.FC = () => {
 
   const handleShare = async () => {
     if (!advisor) return;
-
     const shareData = {
         title: `${advisor.name} - ${advisor.title || 'Advisor'}`,
         text: `Check out the profile for ${advisor.name}, a ${advisor.title || 'Advisor'} at New Holland Financial Group!`,
         url: window.location.href,
     };
-
     if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
         try {
             await navigator.share(shareData);
         } catch (error: any) {
-            if (error.name !== 'AbortError') {
-                setIsShareModalOpen(true);
-            }
+            if (error.name !== 'AbortError') setIsShareModalOpen(true);
         }
     } else {
         setIsShareModalOpen(true);
@@ -97,20 +92,16 @@ export const AdvisorMicrosite: React.FC = () => {
     return <Navigate to="/advisors" replace />;
   }
 
-  // Determine Call Routing: Advisor Phone -> Fallback to Company Phone
   const callPhoneNumber = advisor.phone || companySettings.phone;
   const cleanPhone = callPhoneNumber.replace(/\D/g, '');
-
   const advisorTestimonials = testimonials.filter(t => t.advisorId === advisor.id && t.status === 'approved');
   
-  // Form States
   const [quoteForm, setQuoteForm] = useState({ name: '', phone: '', email: '', interest: advisor.productsSold?.[0] || ProductType.LIFE, message: '' });
   const [callbackForm, setCallbackForm] = useState({ name: '', phone: '', email: '', time: 'Anytime' });
   const [testimonialForm, setTestimonialForm] = useState({ name: '', rating: 0, text: '' });
 
   const handleQuoteSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Rule 2: Quote assigned to specific advisor with source tag
     addLead({
         name: quoteForm.name,
         email: quoteForm.email,
@@ -119,7 +110,6 @@ export const AdvisorMicrosite: React.FC = () => {
         message: `Quote Request from microsite. Message: ${quoteForm.message}`,
         source: `advisor:${advisor.id}`
     }, advisor.id);
-    
     setFormSubmitted('quote');
     setQuoteForm({ name: '', phone: '', email: '', interest: advisor.productsSold?.[0] || ProductType.LIFE, message: '' });
     setTimeout(() => setFormSubmitted(null), 5000);
@@ -128,8 +118,6 @@ export const AdvisorMicrosite: React.FC = () => {
   const handleCallbackSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     addCallback({ name: callbackForm.name, phone: callbackForm.phone, timeRequested: callbackForm.time });
-    
-    // Rule 2: Callback leads assigned to specific advisor with source tag
     addLead({ 
         name: callbackForm.name, 
         phone: callbackForm.phone, 
@@ -138,7 +126,6 @@ export const AdvisorMicrosite: React.FC = () => {
         message: `Callback requested for ${callbackForm.time}`,
         source: `advisor:${advisor.id}`
     }, advisor.id);
-
     setFormSubmitted('callback');
     setCallbackForm({ name: '', phone: '', email: '', time: 'Anytime' });
     setTimeout(() => setFormSubmitted(null), 5000);
@@ -173,21 +160,19 @@ export const AdvisorMicrosite: React.FC = () => {
 
   return (
     <div className="bg-slate-50 min-h-screen font-sans">
-      {/* Back Button */}
       <div className="fixed top-24 left-4 z-40 md:left-8">
           <Link to="/advisors" className="bg-white/80 backdrop-blur-md p-3 rounded-full shadow-lg border border-slate-200 text-slate-600 hover:text-blue-600 hover:scale-110 transition-all flex items-center justify-center">
               <ArrowLeft className="h-5 w-5" />
           </Link>
       </div>
 
-      {/* Hero Section */}
       <div className="relative bg-[#0B2240] text-white overflow-hidden pb-20 pt-32 lg:pt-40 rounded-b-[3rem] shadow-2xl">
           <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
           <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-500 rounded-full mix-blend-overlay filter blur-[100px] opacity-30"></div>
           
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
               <div className="flex flex-col md:flex-row gap-10 items-center">
-                  <div className="relative group">
+                  <div className="relative">
                       <div className="w-48 h-48 md:w-64 md:h-64 rounded-full p-2 bg-gradient-to-br from-blue-400 to-transparent">
                           <img 
                             src={advisor.avatar || `https://ui-avatars.com/api/?name=${advisor.name}&background=random`} 
@@ -198,62 +183,43 @@ export const AdvisorMicrosite: React.FC = () => {
                   </div>
                   
                   <div className="text-center md:text-left flex-1">
-                      <div className="inline-flex items-center gap-2 bg-blue-500/20 px-4 py-1.5 rounded-full border border-blue-400/30 mb-4 backdrop-blur-sm">
-                          <CheckCircle2 className="h-4 w-4 text-blue-300" />
-                          <span className="text-xs font-bold text-blue-100 tracking-wide uppercase">Verified Advisor</span>
+                      <div className="inline-flex items-center gap-2 bg-[#1A3A5F] px-4 py-1.5 rounded-full border border-blue-400/30 mb-6 backdrop-blur-sm">
+                          <div className="w-4 h-4 rounded-full border border-blue-300 flex items-center justify-center">
+                              <Check className="h-2.5 w-2.5 text-blue-300" />
+                          </div>
+                          <span className="text-[10px] font-black text-blue-100 tracking-widest uppercase">Verified Advisor</span>
                       </div>
-                      <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-2">{advisor.name}</h1>
-                      <p className="text-xl text-blue-200 font-medium mb-6">{advisor.title || `${advisor.category} Specialist`}</p>
                       
-                      <div className="flex flex-wrap justify-center md:justify-start gap-4 mb-8">
-                          {((advisor.license_states && advisor.license_states.length > 0) || advisor.license_state) && (
-                              <div className="flex items-center gap-2 text-sm text-slate-300 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
-                                  <MapPin className="h-4 w-4 text-red-400" />
-                                  {advisor.license_state 
-                                    ? `Licensed in ${advisor.license_state}`
-                                    : `Licensed in ${advisor.license_states?.length} States`
-                                  }
-                              </div>
-                          )}
-                          
-                          {advisor.yearsOfExperience && (
-                              <div className="flex items-center gap-2 text-sm text-slate-300 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
-                                  <ShieldCheck className="h-4 w-4 text-yellow-400" />
-                                  {advisor.yearsOfExperience} Years Experience
-                              </div>
-                          )}
-                          {advisor.languages && advisor.languages.length > 0 && (
-                              <div className="flex items-center gap-2 text-sm text-slate-300 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
-                                  <Languages className="h-4 w-4 text-purple-400" />
-                                  Speaks {advisor.languages.join(', ')}
-                              </div>
-                          )}
+                      <div className="flex flex-col md:flex-row items-center md:items-end gap-3 mb-2">
+                        <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-tight">{advisor.name}</h1>
+                        <VerifiedBadge className="h-8 w-8 text-blue-400 mb-1.5 fill-blue-400/10" />
                       </div>
-
+                      
+                      <p className="text-xl text-blue-200 font-medium mb-10">{advisor.title || `${advisor.category} Specialist`}</p>
+                      
                       <div className="flex flex-wrap gap-4 justify-center md:justify-start">
                           <button 
                             onClick={() => scrollToSection('quote-form')} 
-                            className="px-8 py-3 bg-[#FBBF24] text-slate-900 rounded-full font-bold shadow-lg shadow-yellow-500/20 hover:bg-yellow-300 transition-all flex items-center gap-2 transform hover:scale-105"
+                            className="px-10 py-4 bg-[#FBBF24] text-slate-900 rounded-full font-black text-xs uppercase tracking-widest shadow-xl shadow-yellow-500/20 hover:bg-yellow-300 transition-all flex items-center gap-2 transform hover:scale-105"
                           >
                               <FileText className="h-4 w-4" /> Get a Free Quote
                           </button>
                           
-                          {/* Speak to Agent - Direct Dial */}
                           <a 
                             href={`tel:${cleanPhone}`}
-                            className="px-8 py-3 bg-white text-[#0B2240] rounded-full font-bold shadow-lg hover:bg-blue-50 transition-all flex items-center gap-2"
+                            className="px-10 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full font-black text-xs uppercase tracking-widest shadow-xl hover:bg-white/20 transition-all flex items-center gap-2"
                           >
                               <Phone className="h-4 w-4" /> Speak to Agent
                           </a>
 
                           <button 
                             onClick={() => scrollToSection('callback-form')} 
-                            className="px-8 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full font-bold shadow-lg hover:bg-white/20 transition-all flex items-center gap-2"
+                            className="px-10 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full font-black text-xs uppercase tracking-widest shadow-xl hover:bg-white/20 transition-all flex items-center gap-2"
                           >
                               <PhoneIncoming className="h-4 w-4" /> Request Call Back
                           </button>
 
-                          <button onClick={handleShare} className="p-3 bg-white/10 rounded-full hover:bg-white/20 transition-all text-white border border-white/10" title="Share Profile">
+                          <button onClick={handleShare} className="p-4 bg-white/10 rounded-full hover:bg-white/20 transition-all text-white border border-white/10 shadow-xl" title="Share Profile">
                               <Share2 className="h-5 w-5" />
                           </button>
                       </div>
@@ -264,25 +230,21 @@ export const AdvisorMicrosite: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 -mt-10 relative z-20">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              
-              {/* Left Column: Info & Bio */}
               <div className="lg:col-span-2 space-y-8">
-                  {/* About Card */}
-                  <div className="bg-white rounded-[2rem] p-8 shadow-xl border border-slate-100">
-                      <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <div className="bg-white rounded-[2rem] p-10 shadow-2xl border border-slate-100">
+                      <h2 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
                           <User className="h-6 w-6 text-blue-600" /> About Me
                       </h2>
-                      <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed whitespace-pre-wrap">
+                      <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed whitespace-pre-wrap font-medium">
                           {advisor.bio || "I am dedicated to helping my clients achieve their financial goals through comprehensive planning and tailored insurance solutions."}
                       </div>
                       
-                      {/* Social Links */}
                       {advisor.socialLinks && advisor.socialLinks.length > 0 && (
-                          <div className="mt-8 pt-6 border-t border-slate-100">
-                              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Connect with me</h3>
-                              <div className="flex gap-3">
+                          <div className="mt-10 pt-8 border-t border-slate-100">
+                              <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Connect with me</h3>
+                              <div className="flex gap-4">
                                   {advisor.socialLinks.map((link, idx) => (
-                                      <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="p-3 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all">
+                                      <a key={idx} href={link.url} target="_blank" rel="noopener noreferrer" className="p-4 bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600 rounded-2xl transition-all border border-slate-100">
                                           {getSocialIcon(link.platform)}
                                       </a>
                                   ))}
@@ -291,138 +253,133 @@ export const AdvisorMicrosite: React.FC = () => {
                       )}
                   </div>
 
-                  {/* Expertise */}
-                  <div className="bg-white rounded-[2rem] p-8 shadow-xl border border-slate-100">
-                      <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                  <div className="bg-white rounded-[2rem] p-10 shadow-2xl border border-slate-100">
+                      <h2 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
                           <BadgeCheck className="h-6 w-6 text-green-600" /> Areas of Expertise
                       </h2>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {advisor.productsSold?.map(product => (
-                              <div key={product} className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                                  <div className="bg-white p-2 rounded-lg shadow-sm text-blue-600">
+                              <div key={product} className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                                  <div className="bg-white p-2.5 rounded-xl shadow-sm text-blue-600">
                                       <Check className="h-4 w-4" />
                                   </div>
-                                  <span className="font-bold text-slate-700">{product}</span>
+                                  <span className="font-bold text-slate-800 text-sm">{product}</span>
                               </div>
                           ))}
                       </div>
                   </div>
 
-                  {/* Testimonials */}
-                  <div className="bg-white rounded-[2rem] p-8 shadow-xl border border-slate-100">
-                      <div className="flex justify-between items-center mb-8">
-                          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                  <div className="bg-white rounded-[2rem] p-10 shadow-2xl border border-slate-100">
+                      <div className="flex justify-between items-center mb-10">
+                          <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
                               <Star className="h-6 w-6 text-yellow-400 fill-yellow-400" /> Client Reviews
                           </h2>
-                          <div className="text-sm font-bold text-slate-500">
-                              {advisorTestimonials.length} Reviews
+                          <div className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                              {advisorTestimonials.length} Verified Reviews
                           </div>
                       </div>
 
-                      <div className="space-y-6 mb-10">
+                      <div className="space-y-6 mb-12">
                           {advisorTestimonials.length > 0 ? advisorTestimonials.map(t => (
-                              <div key={t.id} className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                                  <div className="flex justify-between items-start mb-2">
-                                      <div className="font-bold text-slate-900">{t.clientName}</div>
-                                      <div className="flex">
+                              <div key={t.id} className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 relative group overflow-hidden">
+                                  <div className="absolute top-0 right-0 p-8 opacity-5"><Star size={100} /></div>
+                                  <div className="flex justify-between items-start mb-4 relative z-10">
+                                      <div className="font-black text-slate-900 text-lg">{t.clientName}</div>
+                                      <div className="flex gap-1">
                                           {[...Array(5)].map((_, i) => (
                                               <Star key={i} className={`h-4 w-4 ${i < t.rating ? 'text-yellow-400 fill-yellow-400' : 'text-slate-200'}`} />
                                           ))}
                                       </div>
                                   </div>
-                                  <p className="text-slate-600 italic">"{t.reviewText}"</p>
-                                  <p className="text-xs text-slate-400 mt-2">{new Date(t.date).toLocaleDateString()}</p>
+                                  <p className="text-slate-600 italic leading-relaxed text-sm relative z-10">"{t.reviewText}"</p>
+                                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-6 relative z-10">{new Date(t.date).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })}</p>
                               </div>
                           )) : (
-                              <div className="text-center py-8 text-slate-400 italic">No reviews yet. Be the first!</div>
+                              <div className="text-center py-12 text-slate-300 italic font-medium">No reviews yet. Be the first to share your experience!</div>
                           )}
                       </div>
 
-                      {/* Add Review Form */}
-                      <div className="bg-[#0B2240]/5 p-6 rounded-2xl border border-blue-100">
-                          <h3 className="font-bold text-[#0B2240] mb-4">Leave a Review</h3>
+                      <div className="bg-[#0B2240]/5 p-8 rounded-[2.5rem] border border-blue-100/50">
+                          <h3 className="text-lg font-black text-[#0B2240] mb-6 uppercase tracking-tight">Submit Feedback</h3>
                           {formSubmitted === 'testimonial' ? (
-                              <div className="flex items-center gap-2 text-green-600 font-bold bg-green-50 p-4 rounded-xl">
-                                  <CheckCircle2 className="h-5 w-5" /> Thank you for your feedback!
+                              <div className="flex items-center gap-3 text-green-700 font-black bg-green-50 p-6 rounded-2xl border border-green-100">
+                                  <CheckCircle2 className="h-6 w-6" /> Your review has been submitted for verification.
                               </div>
                           ) : (
-                              <form onSubmit={handleTestimonialSubmit} className="space-y-4">
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <form onSubmit={handleTestimonialSubmit} className="space-y-5">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                       <input 
-                                          className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                          placeholder="Your Name"
+                                          className="w-full p-4 bg-white rounded-2xl border border-slate-200 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none shadow-inner"
+                                          placeholder="Full Name"
                                           required
                                           value={testimonialForm.name}
                                           onChange={e => setTestimonialForm({...testimonialForm, name: e.target.value})}
                                       />
-                                      <div className="flex items-center gap-1 bg-white p-2.5 rounded-xl border border-slate-200 justify-center">
-                                          <span className="text-xs font-bold text-slate-400 mr-2">Rating:</span>
+                                      <div className="flex items-center gap-1 bg-white p-4 rounded-2xl border border-slate-200 justify-center shadow-inner">
+                                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-3">Rating:</span>
                                           {[1,2,3,4,5].map(r => (
                                               <button key={r} type="button" onClick={() => setTestimonialForm({...testimonialForm, rating: r})}>
-                                                  <Star className={`h-5 w-5 hover:scale-110 transition-transform ${testimonialForm.rating >= r ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'}`} />
+                                                  <Star className={`h-6 w-6 transition-all hover:scale-125 ${testimonialForm.rating >= r ? 'text-yellow-400 fill-yellow-400' : 'text-slate-200'}`} />
                                               </button>
                                           ))}
                                       </div>
                                   </div>
                                   <textarea 
-                                      className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
-                                      rows={3}
-                                      placeholder="Share your experience working with me..."
+                                      className="w-full p-5 bg-white rounded-2xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none resize-none shadow-inner"
+                                      rows={4}
+                                      placeholder="How was your experience?"
                                       required
                                       value={testimonialForm.text}
                                       onChange={e => setTestimonialForm({...testimonialForm, text: e.target.value})}
                                   ></textarea>
-                                  <button type="submit" className="w-full py-3 bg-[#0B2240] text-white rounded-xl font-bold text-sm hover:bg-blue-900 transition-colors shadow-lg">Submit Review</button>
+                                  <button type="submit" className="w-full py-4 bg-[#0B2240] text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-900 transition-colors shadow-xl shadow-blue-900/10">Submit Experience</button>
                               </form>
                           )}
                       </div>
                   </div>
               </div>
 
-              {/* Right Column: Contact Forms */}
               <div className="space-y-8" id="contact-section">
-                  
-                  {/* Quick Quote Form */}
-                  <div id="quote-form" className="bg-white rounded-[2rem] p-8 shadow-xl border-t-8 border-blue-600 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 p-4 opacity-10"><Send className="h-24 w-24 text-blue-600" /></div>
-                      <h2 className="text-xl font-bold text-slate-900 mb-2 relative z-10">Get a Free Quote</h2>
-                      <p className="text-sm text-slate-500 mb-6 relative z-10">Fill out the form below and I'll get back to you with a personalized plan.</p>
+                  <div id="quote-form" className="bg-white rounded-[3rem] p-10 shadow-2xl border-t-[12px] border-blue-600 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-6 opacity-5"><Send className="h-32 w-32 text-blue-600" /></div>
+                      <h2 className="text-2xl font-black text-slate-900 mb-2 relative z-10 uppercase tracking-tight">Get a Free Quote</h2>
+                      <p className="text-sm text-slate-500 mb-10 relative z-10 font-medium">Connect directly with {advisor.name.split(' ')[0]} for a custom strategy.</p>
                       
                       {formSubmitted === 'quote' ? (
-                          <div className="bg-green-50 p-6 rounded-2xl text-center">
-                              <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                                  <CheckCircle2 className="h-6 w-6" />
+                          <div className="bg-green-50 p-10 rounded-[2.5rem] text-center border border-green-100 animate-fade-in">
+                              <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                                  <CheckCircle2 className="h-8 w-8" />
                               </div>
-                              <h3 className="font-bold text-slate-900">Request Sent!</h3>
-                              <p className="text-xs text-slate-500 mt-1">I will be in touch shortly.</p>
+                              <h3 className="text-xl font-black text-slate-900">Success!</h3>
+                              <p className="text-sm text-slate-500 mt-2 font-medium">Your request has been received. {advisor.name.split(' ')[0]} will contact you shortly.</p>
                           </div>
                       ) : (
-                          <form onSubmit={handleQuoteSubmit} className="space-y-4 relative z-10">
+                          <form onSubmit={handleQuoteSubmit} className="space-y-5 relative z-10">
                               <div>
-                                  <label className="text-xs font-bold text-slate-500 uppercase ml-1">Name</label>
+                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1.5 block">Full Name</label>
                                   <input 
-                                      className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                      placeholder="Full Name"
+                                      className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none shadow-inner"
+                                      placeholder="Ethan Hunt"
                                       required
                                       value={quoteForm.name}
                                       onChange={e => setQuoteForm({...quoteForm, name: e.target.value})}
                                   />
                               </div>
                               <div>
-                                  <label className="text-xs font-bold text-slate-500 uppercase ml-1">Email</label>
+                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1.5 block">Email Address</label>
                                   <input 
                                       type="email"
-                                      className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                      placeholder="email@example.com"
+                                      className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none shadow-inner"
+                                      placeholder="ethan@example.com"
                                       required
                                       value={quoteForm.email}
                                       onChange={e => setQuoteForm({...quoteForm, email: e.target.value})}
                                   />
                               </div>
                               <div>
-                                  <label className="text-xs font-bold text-slate-500 uppercase ml-1">Interest</label>
+                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1.5 block">Product Focus</label>
                                   <select 
-                                      className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                      className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-black text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none appearance-none cursor-pointer shadow-inner"
                                       value={quoteForm.interest}
                                       onChange={e => setQuoteForm({...quoteForm, interest: e.target.value as ProductType})}
                                   >
@@ -430,50 +387,51 @@ export const AdvisorMicrosite: React.FC = () => {
                                   </select>
                               </div>
                               <div>
-                                  <label className="text-xs font-bold text-slate-500 uppercase ml-1">Message</label>
+                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1.5 block">Additional Details</label>
                                   <textarea 
-                                      className="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
-                                      rows={3}
-                                      placeholder="How can I help you?"
+                                      className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none resize-none shadow-inner"
+                                      rows={4}
+                                      placeholder="How can I assist you today?"
                                       value={quoteForm.message}
                                       onChange={e => setQuoteForm({...quoteForm, message: e.target.value})}
                                   ></textarea>
                               </div>
-                              <button type="submit" className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 group">
-                                  Submit Request <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                              <button type="submit" className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.25em] shadow-2xl shadow-blue-900/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-3 group active:scale-95">
+                                  Submit Inquiry <ArrowRight className="h-4 w-4 group-hover:translate-x-2 transition-transform" />
                               </button>
                           </form>
                       )}
                   </div>
 
-                  {/* Callback Request */}
-                  <div id="callback-form" className="bg-[#0B2240] rounded-[2rem] p-8 shadow-xl text-white relative overflow-hidden">
-                      <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-500 rounded-full mix-blend-overlay filter blur-[50px] opacity-30"></div>
-                      <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Smartphone className="h-5 w-5" /> Request a Call</h2>
+                  <div id="callback-form" className="bg-[#0B2240] rounded-[3rem] p-10 shadow-2xl text-white relative overflow-hidden group">
+                      <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-blue-500 rounded-full mix-blend-overlay filter blur-[60px] opacity-20 transition-all group-hover:scale-125"></div>
+                      <h2 className="text-2xl font-black mb-4 flex items-center gap-3 uppercase tracking-tight"><Smartphone className="h-6 w-6 text-blue-400" /> Secure Callback</h2>
+                      <p className="text-xs text-blue-200/70 mb-8 uppercase font-black tracking-widest">Connect with an agent on your schedule</p>
                       
                       {formSubmitted === 'callback' ? (
-                          <div className="bg-white/10 p-6 rounded-2xl text-center backdrop-blur-md border border-white/10">
-                              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-400" />
-                              <p className="font-bold">Callback Scheduled!</p>
+                          <div className="bg-white/10 p-10 rounded-[2.5rem] text-center backdrop-blur-md border border-white/10">
+                              <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-green-400" />
+                              <p className="font-black text-lg">Call Scheduled!</p>
+                              <p className="text-xs text-blue-200 mt-2">Expect a call at your chosen time.</p>
                           </div>
                       ) : (
-                          <form onSubmit={handleCallbackSubmit} className="space-y-4 relative z-10">
+                          <form onSubmit={handleCallbackSubmit} className="space-y-5 relative z-10">
                               <input 
-                                  className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder-blue-200 focus:bg-white/20 outline-none transition-all"
-                                  placeholder="Your Name"
+                                  className="w-full p-4 bg-white/10 border border-white/20 rounded-2xl text-sm text-white placeholder-blue-300 font-bold focus:bg-white/20 outline-none transition-all shadow-inner"
+                                  placeholder="Full Name"
                                   required
                                   value={callbackForm.name}
                                   onChange={e => setCallbackForm({...callbackForm, name: e.target.value})}
                               />
                               <input 
-                                  className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder-blue-200 focus:bg-white/20 outline-none transition-all"
-                                  placeholder="Phone Number"
+                                  className="w-full p-4 bg-white/10 border border-white/20 rounded-2xl text-sm text-white placeholder-blue-300 font-bold focus:bg-white/20 outline-none transition-all shadow-inner"
+                                  placeholder="Contact Phone"
                                   required
                                   value={callbackForm.phone}
                                   onChange={e => setCallbackForm({...callbackForm, phone: e.target.value})}
                               />
                               <select 
-                                  className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-sm text-white placeholder-blue-200 focus:bg-white/20 outline-none transition-all [&>option]:text-slate-900"
+                                  className="w-full p-4 bg-white/10 border border-white/20 rounded-2xl text-sm text-white placeholder-blue-300 font-black focus:bg-white/20 outline-none transition-all [&>option]:text-slate-900 shadow-inner appearance-none cursor-pointer"
                                   value={callbackForm.time}
                                   onChange={e => setCallbackForm({...callbackForm, time: e.target.value})}
                               >
@@ -482,8 +440,8 @@ export const AdvisorMicrosite: React.FC = () => {
                                   <option value="Afternoon">Afternoon (12pm - 5pm)</option>
                                   <option value="Evening">Evening (5pm - 8pm)</option>
                               </select>
-                              <button type="submit" className="w-full py-3 bg-white text-[#0B2240] rounded-xl font-bold hover:bg-blue-50 transition-colors shadow-lg">
-                                  Call Me Back
+                              <button type="submit" className="w-full py-5 bg-white text-[#0B2240] rounded-2xl font-black text-xs uppercase tracking-[0.25em] hover:bg-blue-50 transition-colors shadow-2xl active:scale-95">
+                                  Request Callback
                               </button>
                           </form>
                       )}
@@ -492,36 +450,35 @@ export const AdvisorMicrosite: React.FC = () => {
           </div>
       </div>
 
-      {/* Share Modal */}
       {isShareModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-              <div className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl relative">
-                  <button onClick={() => setIsShareModalOpen(false)} className="absolute top-4 right-4 p-2 bg-slate-100 rounded-full hover:bg-slate-200"><X className="h-4 w-4"/></button>
-                  <h3 className="text-xl font-bold text-slate-900 mb-6 text-center">Share Profile</h3>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0B2240]/80 backdrop-blur-md p-4 animate-fade-in">
+              <div className="bg-white rounded-[3rem] p-10 w-full max-w-sm shadow-2xl relative border border-white/20">
+                  <button onClick={() => setIsShareModalOpen(false)} className="absolute top-6 right-6 p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-all"><X className="h-5 w-5 text-slate-400"/></button>
+                  <h3 className="text-2xl font-black text-slate-900 mb-8 text-center uppercase tracking-tight">Spread the Word</h3>
                   
-                  <div className="grid grid-cols-4 gap-4 mb-6">
-                      <a href={`https://www.facebook.com/sharer/sharer.php?u=${window.location.href}`} target="_blank" className="flex flex-col items-center gap-2 group">
-                          <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform"><FacebookIcon className="h-6 w-6" /></div>
-                          <span className="text-xs font-bold text-slate-500">Facebook</span>
+                  <div className="grid grid-cols-4 gap-4 mb-10">
+                      <a href={`https://www.facebook.com/sharer/sharer.php?u=${window.location.href}`} target="_blank" className="flex flex-col items-center gap-3 group">
+                          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all"><FacebookIcon className="h-6 w-6" /></div>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">FB</span>
                       </a>
-                      <a href={`https://twitter.com/intent/tweet?url=${window.location.href}&text=Check out ${advisor.name}`} target="_blank" className="flex flex-col items-center gap-2 group">
-                          <div className="w-12 h-12 bg-sky-500 rounded-full flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform"><TwitterIcon className="h-6 w-6" /></div>
-                          <span className="text-xs font-bold text-slate-500">Twitter</span>
+                      <a href={`https://twitter.com/intent/tweet?url=${window.location.href}&text=Check out ${advisor.name}`} target="_blank" className="flex flex-col items-center gap-3 group">
+                          <div className="w-12 h-12 bg-sky-500 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 group-hover:-rotate-6 transition-all"><TwitterIcon className="h-6 w-6" /></div>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">X</span>
                       </a>
-                      <a href={`https://www.linkedin.com/shareArticle?mini=true&url=${window.location.href}`} target="_blank" className="flex flex-col items-center gap-2 group">
-                          <div className="w-12 h-12 bg-blue-700 rounded-full flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform"><LinkedInIcon className="h-6 w-6" /></div>
-                          <span className="text-xs font-bold text-slate-500">LinkedIn</span>
+                      <a href={`https://www.linkedin.com/shareArticle?mini=true&url=${window.location.href}`} target="_blank" className="flex flex-col items-center gap-3 group">
+                          <div className="w-12 h-12 bg-blue-700 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all"><LinkedInIcon className="h-6 w-6" /></div>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">IN</span>
                       </a>
-                      <a href={`mailto:?subject=Check out ${advisor.name}&body=${window.location.href}`} className="flex flex-col items-center gap-2 group">
-                          <div className="w-12 h-12 bg-slate-500 rounded-full flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform"><Mail className="h-6 w-6" /></div>
-                          <span className="text-xs font-bold text-slate-500">Email</span>
+                      <a href={`mailto:?subject=Check out ${advisor.name}&body=${window.location.href}`} className="flex flex-col items-center gap-3 group">
+                          <div className="w-12 h-12 bg-slate-500 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 group-hover:-rotate-6 transition-all"><Mail className="h-6 w-6" /></div>
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mail</span>
                       </a>
                   </div>
 
-                  <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                      <LinkIcon className="h-4 w-4 text-slate-400" />
-                      <input className="flex-1 bg-transparent text-xs text-slate-600 outline-none" value={window.location.href} readOnly />
-                      <button onClick={handleCopyLink} className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                  <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200 shadow-inner">
+                      <LinkIcon className="h-5 w-5 text-slate-400" />
+                      <input className="flex-1 bg-transparent text-xs font-bold text-slate-600 outline-none truncate" value={window.location.href} readOnly />
+                      <button onClick={handleCopyLink} className="text-[10px] font-black text-blue-600 hover:text-blue-800 flex items-center gap-1 uppercase tracking-widest">
                           {copyText === 'Copied!' ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                           {copyText}
                       </button>

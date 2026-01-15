@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { useData } from '../../../context/DataContext';
 import { Landmark, FileText, Percent, Calculator, Search, Filter, ArrowUpRight, CheckCircle2, XCircle, Clock, Plus, ArrowRight, DollarSign, RefreshCw, TrendingUp, Edit2, Trash2, X, ChevronDown, Award, PieChart, Wallet, Briefcase, Zap, ShieldCheck, Check } from 'lucide-react';
@@ -278,8 +279,8 @@ export const LoanApplications: React.FC = () => {
                                                 <div key={i} className="flex gap-5 relative group">
                                                     {i !== 5 && <div className={`absolute left-[13px] top-[26px] h-[calc(100%+40px)] w-0.5 ${step.status === 'done' ? 'bg-blue-600' : 'bg-slate-100'}`} />}
                                                     <div className={`w-7 h-7 rounded-full flex items-center justify-center z-10 border-2 transition-all ${step.status === 'done' ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-100' : step.status === 'active' ? 'bg-white border-blue-600 text-blue-600 ring-4 ring-blue-50' : 'bg-white border-slate-200 text-slate-300'}`}>
-                                                        {/* FIX: Use Check icon for completed steps */}
-                                                        {step.status === 'done' ? <Check size={14} strokeWidth={4} /> : <div className={`w-1.5 h-1.5 rounded-full ${step.status === 'active' ? 'bg-blue-600 animate-pulse' : 'bg-slate-200'}`} />}
+                                                        {/* Check icon for completed steps with bounce animation */}
+                                                        {step.status === 'done' ? <Check size={14} strokeWidth={4} className="animate-bounce-subtle" /> : <div className={`w-1.5 h-1.5 rounded-full ${step.status === 'active' ? 'bg-blue-600 animate-pulse' : 'bg-slate-200'}`} />}
                                                     </div>
                                                     <span className={`text-xs font-black uppercase tracking-widest ${step.status === 'active' ? 'text-blue-600' : step.status === 'done' ? 'text-slate-800' : 'text-slate-400'}`}>{step.label}</span>
                                                 </div>

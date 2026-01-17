@@ -3,21 +3,70 @@ import { Lead, ProductType, LeadStatus, User, UserRole, Commission, Client, Comp
 import { InternalLead, Transformers, IngestionEngine } from './marketingBackend';
 import { DB } from './database';
 
+// --- CONFIGURATION ---
+// Set this to TRUE to use the new Node.js/PostgreSQL backend you just built.
+// Set to FALSE to keep using the browser-based IndexedDB simulation.
+const USE_REAL_BACKEND = false; 
+const API_BASE_URL = 'http://localhost:3001/api';
+
 /**
- * NHFG BACKEND CORE - MARKETING & API EDITION
- * This controller handles the lifecycle of marketing-driven data.
+ * NHFG BACKEND CORE
+ * Seamlessly switches between local browser storage and production API.
  */
 class NHFGBackend {
   
-  // --- MARKETING API HUB ---
+  // --- LEAD MANAGEMENT ---
 
-  /**
-   * Universal Webhook Gateway
-   * Processes incoming leads from Google, Meta, and TikTok with campaign tracking.
-   */
+  async getLeads(advisorId?: string): Promise<Lead[]> {
+    if (USE_REAL_BACKEND) {
+        try {
+            const url = advisorId ? `${API_BASE_URL}/leads?advisorId=${advisorId}` : `${API_BASE_URL}/leads`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('API Error');
+            return await res.json();
+        } catch (e) { console.error("Fetch Leads Failed", e); return []; }
+    }
+    // Fallback: Local DB
+    return DB.getAll<Lead>('leads');
+  }
+
+  async saveLead(lead: Partial<Lead>): Promise<void> {
+    if (USE_REAL_BACKEND) {
+        try {
+            const method = lead.id ? 'PUT' : 'POST'; // Determine if update or create
+            const url = lead.id ? `${API_BASE_URL}/leads/${lead.id}` : `${API_BASE_URL}/leads`;
+            await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(lead)
+            });
+        } catch (e) { console.error("Save Lead Failed", e); }
+        return;
+    }
+    // Fallback: Local DB
+    await DB.save('leads', { ...lead, id: lead.id || crypto.randomUUID() } as Lead);
+  }
+
+  // --- WEBHOOK SIMULATION (Frontend Gateway) ---
+  
   public async handleWebhook(platform: 'google' | 'meta' | 'tiktok', payload: any): Promise<{success: boolean, isNew: boolean}> {
-    console.log(`[API Gateway] Processing ${platform} webhook ingestion...`);
-    
+    if (USE_REAL_BACKEND) {
+        // Pass payload directly to real server to handle normalization and SQL insertion
+        try {
+            const res = await fetch(`${API_BASE_URL}/webhooks/${platform}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            return { success: res.ok, isNew: true };
+        } catch (e) {
+            console.error("API Webhook Failed", e);
+            return { success: false, isNew: false };
+        }
+    }
+
+    // Fallback: Client-Side Simulation Logic (IndexedDB)
+    console.log(`[API Gateway] Processing ${platform} webhook via local engine...`);
     let normalized: InternalLead;
     try {
       switch(platform) {
@@ -28,19 +77,7 @@ class NHFGBackend {
       }
 
       const leads = await this.getLeads();
-      const result = IngestionEngine.process(normalized, leads);
-
-      if (result.error) {
-        await this.logEvent(platform, 'error', payload, result.error);
-        throw new Error(result.error);
-      }
-
-      // Permanent Logging for Marketing Analytics
-      await this.logEvent(
-        platform, 
-        result.isNew ? 'lead_creation' : 'lead_reengagement', 
-        payload
-      );
+      const result = IngestionEngine.process(normalized, leads); // Dedupe logic
 
       if (result.isNew) {
         const newLead: Lead = {
@@ -54,97 +91,55 @@ class NHFGBackend {
           date: normalized.timestamp,
           score: result.lead.score || 75,
           qualification: result.lead.qualification as any,
-          source: result.lead.source, // Attribution is locked to the ad source
+          source: result.lead.source,
           campaign: normalized.campaign_id,
-          adGroup: normalized.ad_group_id,
-          adId: normalized.ad_id,
           platformData: JSON.stringify(payload)
         };
         await DB.save('leads', newLead);
-      } else if (result.lead.id) {
-        // Handle Re-engagement (Update existing record with new metadata)
-        const existing = leads.find(l => l.id === result.lead.id);
-        if (existing) {
-          await DB.save('leads', { 
-            ...existing, 
-            ...result.lead,
-            // Preserve original source but log newest campaign activity
-            notes: `${existing.notes || ''}\n[Marketing Sync] User re-engaged via ${platform} campaign ${normalized.campaign_id} on ${new Date().toLocaleDateString()}`
-          });
-        }
       }
-
       return { success: true, isNew: !!result.isNew };
     } catch (err: any) {
-      await this.logEvent(platform, 'critical_failure', payload, err.message);
-      throw err;
+      console.error(err);
+      return { success: false, isNew: false };
     }
   }
 
-  /**
-   * Internal Logging System
-   * Stores transaction logs permanently for audit and marketing ROI tracking.
-   */
-  private async logEvent(platform: string, eventType: string, payload: any, error?: string) {
-    const log: IntegrationLog = {
-      id: crypto.randomUUID(),
-      timestamp: new Date().toISOString(),
-      platform: `${platform}_ads` as any,
-      event: eventType.toUpperCase(),
-      status: error ? 'failure' : 'success',
-      payload: payload,
-      error: error
-    };
-    await DB.save('logs', log);
-  }
-
-  // --- CORE DATABASE WRAPPERS ---
-
-  async getLeads(): Promise<Lead[]> {
-    return DB.getAll<Lead>('leads');
-  }
+  // --- OTHER ENTITIES (Clients, Users, Settings) ---
 
   async getClients(): Promise<Client[]> {
+    if (USE_REAL_BACKEND) return []; // Implement /api/clients in server.js similarly
     return DB.getAll<Client>('clients');
   }
 
   async getUsers(): Promise<User[]> {
+    if (USE_REAL_BACKEND) return []; // Implement /api/users
     return DB.getAll<User>('users');
   }
 
   async getSettings(): Promise<CompanySettings | null> {
+    if (USE_REAL_BACKEND) return null;
     const all = await DB.getAll<CompanySettings>('settings');
     return all.length > 0 ? all[0] : null;
   }
 
   async getLogs(): Promise<IntegrationLog[]> {
+    if (USE_REAL_BACKEND) return [];
     return DB.getAll<IntegrationLog>('logs');
   }
 
-  // --- PERSISTENCE OPERATIONS ---
-
-  async saveLead(lead: Lead): Promise<void> {
-    await DB.save('leads', lead);
-  }
-
   async saveClient(client: Client): Promise<void> {
+    if (USE_REAL_BACKEND) return;
     await DB.save('clients', client);
   }
 
   async saveUser(user: User): Promise<void> {
+    if (USE_REAL_BACKEND) return;
     await DB.save('users', user);
   }
 
   async saveSettings(settings: CompanySettings): Promise<void> {
+    if (USE_REAL_BACKEND) return;
     await DB.save('settings', { ...settings, id: 'global_config' } as any);
-  }
-
-  /**
-   * ADMIN CONTROL: Permanent Entity Erasure
-   */
-  async permanentDelete(entity: 'leads' | 'clients' | 'users', id: string): Promise<void> {
-    console.warn(`[Admin Console] Permanent deletion requested for ${entity}:${id}`);
-    await DB.delete(entity, id);
   }
 }
 

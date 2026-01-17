@@ -29,15 +29,14 @@ const TwitterIcon = () => (
 );
 
 const TikTokIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
-       <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93v6.16c0 2.52-1.12 4.84-2.9 6.24-1.72 1.35-4.03 2.08-6.3 1.83-2.15-.2-4.13-1.28-5.52-3.03-1.23-1.6-1.87-3.62-1.74-5.63.13-2.02.97-3.95 2.38-5.46.22-.23.46-.44.71-.64.08-.05.15-.09.22-.13V6.99c-.19.12-.37.26-.55.4a9.12 9.12 0 0 0-3.32 5.51c-.68 2.37-.2 4.96 1.35 6.94 1.53 1.95 4.02 3.12 6.57 3.07 2.63-.05 5.09-1.34 6.58-3.46 1.32-1.92 1.9-4.32 1.56-6.66V4.73c.01.01.02.01.03.01h.01v-4.72Z"></path>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
   </svg>
 );
 
 export const Footer: React.FC = () => {
   const { companySettings } = useData();
 
-  // Updated to Blue Circle / White Icon style per screenshot request
   const SocialLink = ({ href, icon: Icon }: { href: string, icon: any }) => (
       <a 
         href={href} 
@@ -58,7 +57,6 @@ export const Footer: React.FC = () => {
             <a href="/" className="flex items-center gap-3 group mb-6">
               <div className="relative w-10 h-10 flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
                 <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full shadow-lg">
-                  {/* Reverted footer logo */}
                   <path d="M50 0L100 40V100H0V40L50 0Z" fill="#FBBF24"/>
                 </svg>
               </div>
@@ -86,7 +84,6 @@ export const Footer: React.FC = () => {
               <li><Link to="/" className="hover:text-blue-400 transition-colors">Home</Link></li>
               <li><Link to="/about" className="hover:text-blue-400 transition-colors">About Us</Link></li>
               
-              {/* Shop Insurance Dropdown */}
               <li className="group relative">
                   <Link to="/products" className="hover:text-blue-400 transition-colors flex items-center gap-2 font-medium text-slate-300">
                       Shop Insurance
@@ -123,12 +120,12 @@ export const Footer: React.FC = () => {
             <h3 className="text-sm font-bold text-white tracking-widest uppercase mb-6">Contact Us</h3>
             <ul className="space-y-4 text-slate-400 text-sm">
                 <li>
-                   <span className="block text-slate-500 text-xs mb-1">Phone</span>
-                   <span className="text-white">{companySettings.phone}</span>
+                   <span className="block text-slate-500 text-xs mb-1 font-bold">Phone</span>
+                   <span className="text-white font-bold">{companySettings.phone}</span>
                 </li>
                 <li className="break-words">
-                   <span className="block text-slate-500 text-xs mb-1">Email</span>
-                   <span className="text-white">{companySettings.email}</span>
+                   <span className="block text-slate-500 text-xs mb-1 font-bold">Email</span>
+                   <span className="text-white font-bold">{companySettings.email}</span>
                 </li>
             </ul>
           </div>

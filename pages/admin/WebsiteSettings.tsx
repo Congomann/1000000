@@ -83,7 +83,33 @@ export const WebsiteSettings: React.FC = () => {
       }
   };
 
-  // Handle File Upload via FileReader
+  // Helper to read file and update state
+  const readFile = (file: File, isVideo: boolean) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+          const result = reader.result as string;
+          if (settingsForm.heroBackgroundType === 'video' && isVideo) {
+              const currentPlaylist = settingsForm.heroVideoPlaylist || [];
+              if (currentPlaylist.length >= 3) {
+                  setUploadError('Maximum of 3 videos allowed in rotation.');
+                  return;
+              }
+              setSettingsForm(prev => ({
+                  ...prev,
+                  heroVideoPlaylist: [...(prev.heroVideoPlaylist || []), result]
+              }));
+          } else {
+              setSettingsForm(prev => ({
+                  ...prev,
+                  heroBackgroundUrl: result,
+                  heroBackgroundType: isVideo ? 'video' : 'image'
+              }));
+          }
+      };
+      reader.readAsDataURL(file);
+  };
+
+  // Handle File Upload via FileReader with Duration Check
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUploadError('');
     const file = e.target.files?.[0];
@@ -96,33 +122,29 @@ export const WebsiteSettings: React.FC = () => {
             return;
         }
 
-        if (file.size > 1024 * 1024 * 1024) {
-            setUploadError('File size too large (>1GB).');
+        if (file.size > 250 * 1024 * 1024) { // 250MB Limit
+            setUploadError('File size too large (>250MB).');
             return;
         }
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            const result = reader.result as string;
-            if (settingsForm.heroBackgroundType === 'video' && isVideo) {
-                const currentPlaylist = settingsForm.heroVideoPlaylist || [];
-                if (currentPlaylist.length >= 5) {
-                    setUploadError('Maximum of 5 videos allowed in rotation.');
+        if (isVideo) {
+             const video = document.createElement('video');
+             video.preload = 'metadata';
+             video.onloadedmetadata = function() {
+                window.URL.revokeObjectURL(video.src);
+                if (video.duration > 300) { // 300 seconds = 5 minutes
+                    setUploadError('Video duration exceeds 5 minutes limit.');
                     return;
                 }
-                setSettingsForm(prev => ({
-                    ...prev,
-                    heroVideoPlaylist: [...(prev.heroVideoPlaylist || []), result]
-                }));
-            } else {
-                setSettingsForm(prev => ({
-                    ...prev,
-                    heroBackgroundUrl: result,
-                    heroBackgroundType: isVideo ? 'video' : 'image'
-                }));
-            }
-        };
-        reader.readAsDataURL(file);
+                readFile(file, true);
+             }
+             video.onerror = function() {
+                 setUploadError('Invalid video file.');
+             }
+             video.src = URL.createObjectURL(file);
+        } else {
+            readFile(file, false);
+        }
     }
   };
 
@@ -232,8 +254,8 @@ export const WebsiteSettings: React.FC = () => {
   const addVideoToPlaylist = () => {
       if (!newVideoUrl) return;
       const currentPlaylist = settingsForm.heroVideoPlaylist || [];
-      if (currentPlaylist.length >= 5) {
-          setUploadError('Maximum of 5 videos allowed in rotation.');
+      if (currentPlaylist.length >= 3) {
+          setUploadError('Maximum of 3 videos allowed in rotation.');
           return;
       }
       setSettingsForm(prev => ({
@@ -417,7 +439,7 @@ export const WebsiteSettings: React.FC = () => {
                                 </div>
                              ) : (
                                 <div className="flex flex-col gap-3">
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Video Playlist (Max 5)</label>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Video Playlist (Max 3, Max 5 min each)</label>
                                     
                                     <div className="space-y-2 mb-2">
                                         {(settingsForm.heroVideoPlaylist || []).map((vid, idx) => (
@@ -433,6 +455,9 @@ export const WebsiteSettings: React.FC = () => {
                                                 </button>
                                             </div>
                                         ))}
+                                        {(settingsForm.heroVideoPlaylist || []).length === 0 && (
+                                            <p className="text-xs text-slate-400 italic">No videos in playlist.</p>
+                                        )}
                                     </div>
 
                                     <div className="flex gap-2">
@@ -449,7 +474,7 @@ export const WebsiteSettings: React.FC = () => {
                                         <button 
                                             type="button" 
                                             onClick={addVideoToPlaylist}
-                                            disabled={(settingsForm.heroVideoPlaylist || []).length >= 5 || !newVideoUrl}
+                                            disabled={(settingsForm.heroVideoPlaylist || []).length >= 3 || !newVideoUrl}
                                             className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition-colors disabled:opacity-50"
                                         >
                                             Add
@@ -458,7 +483,7 @@ export const WebsiteSettings: React.FC = () => {
 
                                     <div className="flex items-center gap-3">
                                         <span className="text-xs font-bold text-slate-400 uppercase">OR</span>
-                                        <label className={`flex-1 cursor-pointer flex items-center justify-center gap-2 bg-white border border-dashed border-slate-300 rounded-xl py-2.5 hover:bg-slate-50 hover:border-blue-300 transition-all group relative ${(settingsForm.heroVideoPlaylist || []).length >= 5 ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                        <label className={`flex-1 cursor-pointer flex items-center justify-center gap-2 bg-white border border-dashed border-slate-300 rounded-xl py-2.5 hover:bg-slate-50 hover:border-blue-300 transition-all group relative ${(settingsForm.heroVideoPlaylist || []).length >= 3 ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                             <Upload className="h-4 w-4 text-slate-400 group-hover:text-blue-500" />
                                             <span className="text-sm text-slate-600 group-hover:text-blue-600 font-medium">Upload Video File</span>
                                             <input 
@@ -466,10 +491,11 @@ export const WebsiteSettings: React.FC = () => {
                                                 className="hidden" 
                                                 accept="video/mp4,video/webm"
                                                 onChange={handleFileUpload}
-                                                disabled={(settingsForm.heroVideoPlaylist || []).length >= 5}
+                                                disabled={(settingsForm.heroVideoPlaylist || []).length >= 3}
                                             />
                                         </label>
                                     </div>
+                                    <p className="text-xs text-slate-400 mt-1">Max size 250MB (Demo). Max duration 5 mins.</p>
                                 </div>
                              )}
 

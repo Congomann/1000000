@@ -107,6 +107,13 @@ const INITIAL_USERS: User[] = [
   { id: '8', name: 'New Advisor', email: 'newbie@nhfg.com', role: UserRole.ADVISOR, category: AdvisorCategory.INSURANCE, productsSold: [ProductType.LIFE], micrositeEnabled: true, avatar: 'https://images.unsplash.com/photo-1552058544-f2b08422138a?auto=format&fit=crop&q=80&w=200', onboardingCompleted: false },
 ];
 
+const INITIAL_INTEGRATION_CONFIG: IntegrationConfig = {
+  googleAds: { enabled: true, webhookUrl: 'https://api.nhfg.com/hooks/google', developerToken: '****************' },
+  metaAds: { enabled: false, verifyToken: '', accessToken: '' },
+  tiktokAds: { enabled: false, webhookUrl: '', accessToken: '' },
+  linkedinAds: { enabled: false, pollingInterval: 300, accessToken: '' }
+};
+
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -123,12 +130,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [advisoryFees, setAdvisoryFees] = useState<AdvisoryFee[]>([]);
   const [loanApplications, setLoanApplications] = useState<LoanApplication[]>([]);
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [integrationConfig, setIntegrationConfig] = useState<IntegrationConfig>(INITIAL_INTEGRATION_CONFIG);
+  const [integrationLogs, setIntegrationLogs] = useState<IntegrationLog[]>([]);
   
   const [companySettings, setCompanySettings] = useState<CompanySettings>({
       phone: '(800) 555-0199', email: 'contact@newholland.com', address: '123 Finance Way', city: 'New York', state: 'NY', zip: '10001',
       heroBackgroundType: 'image', heroBackgroundUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=2070',
       heroTitle: 'Securing Your Future', heroSubtitle: 'Comprehensive financial solutions for every stage of life.',
-      termsOfUse: 'Default Terms...', solicitorAgreement: 'Default Agreement...'
+      termsOfUse: 'Default Terms...', solicitorAgreement: 'Default Agreement...',
+      heroVideoPlaylist: []
   });
 
   // REAL-TIME NOTIFICATION ENGINE
@@ -144,8 +154,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       relatedId
     };
     setNotifications(prev => [newNotif, ...prev]);
-    
-    // Play alert sound logic could go here if requested
     console.log(`[ACTIVITY LOG]: ${title} - ${message}`);
   }, []);
 
@@ -208,7 +216,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       source: leadData.source || 'Website',
       assignedTo: assignTo,
       notes: leadData.notes || '',
-      isArchived: false
+      isArchived: false,
+      ...leadData // Spread other details
     };
 
     await Backend.saveLead(newLead);
@@ -269,53 +278,111 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
   };
 
-  const updateUser = async (id: string, data: any) => { 
-      const u = allUsers.find(x => x.id === id); 
-      if(u) { 
-          const n = {...u, ...data}; 
-          await Backend.saveUser(n); 
-          setAllUsers(p => p.map(i => i.id === id ? n : i)); 
-          pushNotification('System Update', `Profile for ${n.name} has been modified.`, 'info');
-      } 
+  const updateUser = useCallback(async (id: string, data: Partial<User>) => {
+      const u = allUsers.find(user => user.id === id);
+      if (u) {
+          const updated = { ...u, ...data };
+          await Backend.saveUser(updated);
+          setAllUsers(prev => prev.map(user => user.id === id ? updated : user));
+          if (user?.id === id) setUser(updated); // Update current session user if matches
+          pushNotification('User Profile Updated', `${u.name}'s profile has been modified.`, 'info');
+      }
+  }, [allUsers, user, pushNotification]);
+
+  const updateCompanySettings = useCallback(async (settings: CompanySettings) => {
+      setCompanySettings(settings);
+      await Backend.saveSettings(settings);
+      pushNotification('Global Settings', 'Website configuration has been successfully updated.', 'success');
+  }, [pushNotification]);
+
+  const updateIntegrationConfig = useCallback((config: Partial<IntegrationConfig>) => {
+      setIntegrationConfig(prev => ({ ...prev, ...config }));
+      pushNotification('API Config Updated', 'Integration settings have been modified.', 'info');
+  }, [pushNotification]);
+
+  // Placeholder implementations for missing methods
+  const updateLeadStatus = (id: string, status: LeadStatus, analysis?: string) => updateLead(id, { status, aiAnalysis: analysis });
+  const assignLeads = (ids: string[], advisorId: string) => ids.forEach(id => updateLead(id, { assignedTo: advisorId, status: LeadStatus.ASSIGNED }));
+  const updateClient = (id: string, data: Partial<Client>) => { setClients(prev => prev.map(c => c.id === id ? { ...c, ...data } : c)); };
+  const markNotificationRead = (id: string) => { setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n)); };
+  const clearNotifications = () => { setNotifications([]); };
+  const completeOnboarding = () => { if (user) updateUser(user.id, { onboardingCompleted: true }); };
+  const simulateMarketingLead = async (p: any, payload: any) => { 
+      const result = await Backend.handleWebhook(p, payload);
+      if (result.success) {
+          const updatedLeads = await Backend.getLeads();
+          setLeads(updatedLeads); // Refresh leads from DB
+          pushNotification('API Simulator', `${p} lead ingestion successful.`, 'success');
+      }
   };
+  const getAdvisorAssignments = (id: string) => [] as AdvisorAssignment[];
+  
+  // Resource stubs
+  const likeResource = () => {};
+  const dislikeResource = () => {};
+  const shareResource = () => {};
+  const addResourceComment = () => {};
+  const addResource = (r: Partial<Resource>) => { 
+      // Add resource with ID
+      // This logic would ideally save to Backend
+  };
+  const deleteResource = (id: string) => {};
+
+  // Testimonial stubs
+  const addTestimonial = (t: any) => {};
+  const approveTestimonial = (id: string) => {};
+  const deleteTestimonial = (id: string) => {};
+  const submitTestimonialEdit = () => {};
+  const approveTestimonialEdit = () => {};
+  const rejectTestimonialEdit = () => {};
+  
+  // Misc
+  const addCallback = () => {};
+  const handleAdvisorLeadAction = () => {};
+  const updateEvent = (e: Partial<CalendarEvent>) => setEvents(prev => prev.map(ev => ev.id === e.id ? { ...ev, ...e } : ev));
+  const deleteAdvisor = (id: string) => setAllUsers(prev => prev.filter(u => u.id !== id));
+  const addAdvisor = (u: Partial<User>) => { 
+      const newUser = { ...u, id: crypto.randomUUID(), role: UserRole.ADVISOR } as User;
+      setAllUsers(prev => [...prev, newUser]);
+      Backend.saveUser(newUser);
+  };
+  const restoreUser = () => {};
+  const permanentlyDeleteUser = () => {};
+  const assignCarriers = () => {};
+  const markChatRead = () => {};
+  const editChatMessage = () => {};
+  const deleteChatMessage = () => {};
+  const sendChatMessage = () => {};
+  
+  const updateJobApplicationStatus = (id: string, status: string) => setJobApplications(prev => prev.map(j => j.id === id ? { ...j, status: status as any } : j));
+  const updateApplicationStatus = (id: string, status: ApplicationStatus) => setApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+  const updateTransactionStatus = () => {};
+  const addPortfolio = (p: Partial<ClientPortfolio>) => setPortfolios(prev => [...prev, { ...p, id: crypto.randomUUID() } as ClientPortfolio]);
+  const updatePortfolio = (id: string, p: Partial<ClientPortfolio>) => setPortfolios(prev => prev.map(pt => pt.id === id ? { ...pt, ...p } : pt));
+  const deletePortfolio = (id: string) => setPortfolios(prev => prev.filter(p => p.id !== id));
+  const addComplianceDoc = (d: Partial<ComplianceDocument>) => setComplianceDocs(prev => [...prev, { ...d, id: crypto.randomUUID(), uploadDate: new Date().toISOString(), status: 'Valid' } as ComplianceDocument]);
+  const updateFeeStatus = () => {};
+  const addAdvisoryFee = () => {};
+  const updateAdvisoryFee = () => {};
+  const deleteAdvisoryFee = () => {};
+  const addLoanApplication = (l: Partial<LoanApplication>) => setLoanApplications(prev => [...prev, { ...l, id: crypto.randomUUID() } as LoanApplication]);
+  const updateLoanApplication = () => {};
+  const deleteLoanApplication = (id: string) => setLoanApplications(prev => prev.filter(l => l.id !== id));
 
   return (
     <DataContext.Provider value={{
-      user, allUsers, leads: leads.filter(l => !l.isArchived), clients, metrics: { totalRevenue: 1250000, activeClients: 450, pendingLeads: 24, monthlyPerformance: [], totalCommission: 85000 },
-      notifications, chatMessages: [], companySettings, resources: [], login, logout, addLead, 
-      updateLeadStatus: (id, status, analysis) => updateLead(id, { status, aiAnalysis: analysis }), 
-      updateLead,
-      assignLeads: () => {}, updateClient: () => {}, updateUser, updateCompanySettings: () => {}, 
-      markNotificationRead: (id) => setNotifications(prev => prev.map(n => n.id === id ? {...n, read: true} : n)),
-      clearNotifications: () => setNotifications([]),
-      completeOnboarding: () => { if(user) { updateUser(user.id, {onboardingCompleted: true}); pushNotification('Onboarding Complete', 'Advisor has accessed the main terminal.', 'success'); } },
-      integrationConfig: { googleAds: { enabled: true, webhookUrl: '', developerToken: '' }, metaAds: { enabled: true, verifyToken: '', accessToken: '' }, tiktokAds: { enabled: true, webhookUrl: '', accessToken: '' }, linkedinAds: { enabled: true, pollingInterval: 5, accessToken: '' } },
-      updateIntegrationConfig: () => {}, integrationLogs: [], simulateMarketingLead: () => {},
-      getAdvisorAssignments: () => [], likeResource: () => {}, dislikeResource: () => {}, shareResource: () => {}, addResourceComment: () => {}, addResource: () => {}, deleteResource: () => {},
-      addTestimonial: () => {}, approveTestimonial: () => {}, deleteTestimonial: () => {}, submitTestimonialEdit: () => {}, approveTestimonialEdit: () => {}, rejectTestimonialEdit: () => {},
-      addCallback: () => {}, handleAdvisorLeadAction: () => {},
-      commissions: [], events, addEvent,
-      updateEvent: (e) => { setEvents(prev => prev.map(ev => ev.id === e.id ? {...ev, ...e} : ev)); pushNotification('Calendar Update', `Entry "${e.title}" modified.`, 'info'); },
-      deleteEvent,
-      addAdvisor: (data) => { const n = {...data, id: crypto.randomUUID(), role: UserRole.ADVISOR} as User; setAllUsers(prev => [...prev, n]); pushNotification('User Provisioning', `New advisor account created for ${n.name}.`, 'success'); },
-      deleteAdvisor: (id) => { setAllUsers(prev => prev.map(u => u.id === id ? {...u, deletedAt: new Date().toISOString()} : u)); pushNotification('Security Update', 'Advisor account deactivated.', 'warning'); },
-      restoreUser: (id) => setAllUsers(prev => prev.map(u => u.id === id ? {...u, deletedAt: undefined} : u)),
-      permanentlyDeleteUser: (id) => setAllUsers(prev => prev.filter(u => u.id !== id)),
-      testimonials, availableCarriers: [], assignCarriers: () => {}, colleagues: [], markChatRead: () => {},
-      editChatMessage: () => {}, deleteChatMessage: () => {}, sendChatMessage: () => {}, submitJobApplication,
-      jobApplications, updateJobApplicationStatus: () => {}, applications, 
-      updateApplicationStatus: (id, status) => { setApplications(prev => prev.map(a => a.id === id ? {...a, status} : a)); pushNotification('Policy Gateway', `Policy status updated to ${status}.`, 'info'); },
-      properties, transactions, 
-      // FIX: Corrected state update typing and ensured status is assignable to union type
-      updateTransactionStatus: (id, status, stage) => { 
-        setTransactions(prev => prev.map(t => t.id === id ? { ...t, status, stage: stage || t.stage } : t)); 
-        pushNotification('Real Estate Hub', `Transaction status changed to ${status}.`, 'success'); 
-      },
-      portfolios, addPortfolio: () => {},
-      updatePortfolio: () => {}, deletePortfolio: () => {}, complianceDocs, addComplianceDoc: () => {},
-      advisoryFees, updateFeeStatus: () => {}, addAdvisoryFee: () => {}, updateAdvisoryFee: () => {},
-      deleteAdvisoryFee: () => {}, loanApplications, addLoanApplication: () => {}, updateLoanApplication: () => {},
-      deleteLoanApplication: () => {},
+      user, allUsers, leads, clients, metrics: { totalRevenue: 0, activeClients: clients.length, pendingLeads: leads.length, monthlyPerformance: [], totalCommission: 0 },
+      notifications, chatMessages: [], companySettings, resources: [], commissions: [], events, testimonials,
+      availableCarriers: [], colleagues: [], jobApplications, applications, properties, transactions,
+      portfolios, complianceDocs, advisoryFees, loanApplications, integrationLogs, integrationConfig,
+      login, logout, addLead, updateLeadStatus, updateLead, assignLeads, updateClient, updateUser, updateCompanySettings,
+      markNotificationRead, clearNotifications, completeOnboarding, updateIntegrationConfig, simulateMarketingLead,
+      getAdvisorAssignments, likeResource, dislikeResource, shareResource, addResourceComment, addResource, deleteResource,
+      addTestimonial, approveTestimonial, deleteTestimonial, submitTestimonialEdit, approveTestimonialEdit, rejectTestimonialEdit,
+      addCallback, handleAdvisorLeadAction, addEvent, updateEvent, deleteEvent, addAdvisor, deleteAdvisor, restoreUser, permanentlyDeleteUser,
+      assignCarriers, markChatRead, editChatMessage, deleteChatMessage, sendChatMessage, submitJobApplication, updateJobApplicationStatus,
+      updateApplicationStatus, updateTransactionStatus, addPortfolio, updatePortfolio, deletePortfolio, addComplianceDoc,
+      updateFeeStatus, addAdvisoryFee, updateAdvisoryFee, deleteAdvisoryFee, addLoanApplication, updateLoanApplication, deleteLoanApplication
     }}>
       {children}
     </DataContext.Provider>

@@ -6,10 +6,16 @@ import {
     Users, Wallet, TrendingUp, Activity, ArrowUpRight, 
     MonitorCheck, BarChart3, ShieldAlert, Cpu, ArrowRight,
     Search, Bell, LayoutGrid, Webhook, Bug, RefreshCw, MessageSquarePlus, ChevronRight, AlertCircle, Clock, Info, Server, Globe, Zap, ShieldCheck,
-    // FIX: Added missing FileText icon import
     FileText
 } from 'lucide-react';
 import { UserRole, LeadStatus } from '../../types';
+
+/**
+ * DEVELOPER NOTE: Dashboard Component
+ * This component is context-aware. It switches its entire UI schema 
+ * between 'Advisor Performance' (Sales focused) and 'System Health/Operations' 
+ * (Technical focused) based on the current user's role.
+ */
 
 const MetricCard = ({ title, value, subtext, icon: Icon, colorClass, trend, onClick }: any) => (
     <div 
@@ -39,9 +45,11 @@ const MetricCard = ({ title, value, subtext, icon: Icon, colorClass, trend, onCl
 export const Dashboard: React.FC = () => {
     const { user, metrics, notifications, markNotificationRead, allUsers, leads, jobApplications } = useData();
     const navigate = useNavigate();
+    
+    // DEVELOPER NOTE: Role-based logic check for determining dashboard schema
     const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUB_ADMIN;
 
-    // ADVISOR VIEW STATS (Keep for Advisors)
+    // SCHEMA 1: ADVISOR VIEW (Focused on Sales, Clients, and Growth)
     const advisorStats = [
         { title: "Total Clients", value: metrics.activeClients || "450", subtext: "Managed Accounts", icon: Users, colorClass: "bg-blue-50 text-blue-600", trend: "+12%", route: "/crm/clients" },
         { title: "Earnings YTD", value: `$${(metrics.totalCommission / 1000).toFixed(1)}k`, subtext: "Net Commission", icon: Wallet, colorClass: "bg-green-50 text-green-600", trend: "OPTIMAL", route: "/crm/commissions" },
@@ -49,7 +57,7 @@ export const Dashboard: React.FC = () => {
         { title: "Active Projects", value: "12", subtext: "Current Focus", icon: Activity, colorClass: "bg-orange-50 text-orange-600", route: "/crm/calendar" }
     ];
 
-    // ADMIN VIEW STATS (New Health & Ops Focus)
+    // SCHEMA 2: ADMIN VIEW (Focused on Technical Infrastructure, API Health, & Website Uptime)
     const adminStats = [
         { 
             title: "Website Health", 
@@ -71,7 +79,7 @@ export const Dashboard: React.FC = () => {
         },
         { 
             title: "Advisor Requests", 
-            value: jobApplications.filter(a => a.status === 'Pending').length + 3, // Mock +3 for other requests
+            value: jobApplications.filter(a => a.status === 'Pending').length + 3, // Mocked for other admin requests
             subtext: "Action Required", 
             icon: MessageSquarePlus, 
             colorClass: "bg-orange-50 text-orange-600",
@@ -109,7 +117,7 @@ export const Dashboard: React.FC = () => {
 
     return (
         <div className="space-y-12 pb-20 animate-fade-in">
-            {/* Context Awareness Header */}
+            {/* Header: Indicates the Node/Control status specifically for Administrators */}
             <div className="flex justify-between items-center mb-4">
                 <div>
                     <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.3em]">
@@ -118,7 +126,7 @@ export const Dashboard: React.FC = () => {
                 </div>
                 {isAdmin && (
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 px-4 py-1.5 bg-slate-900 rounded-full border border-white/10">
+                        <div className="flex items-center gap-2 px-4 py-1.5 bg-slate-900 rounded-full border border-white/10 shadow-lg">
                             <Server size={12} className="text-blue-400" />
                             <span className="text-[10px] font-black text-white uppercase tracking-widest">Master Node: Active</span>
                         </div>
@@ -126,7 +134,7 @@ export const Dashboard: React.FC = () => {
                 )}
             </div>
 
-            {/* Main Stats Grid */}
+            {/* Main KPI Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {stats.map((stat, i) => (
                     <MetricCard 
@@ -137,10 +145,9 @@ export const Dashboard: React.FC = () => {
                 ))}
             </div>
 
-            {/* Admin Specific Content Blocks */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                 
-                {/* 1. System logs & Trace (Lefthand Column) */}
+                {/* SYSTEM FEED: Technical logs for Admins, Interaction alerts for Advisors */}
                 <div className="lg:col-span-2 bg-white/40 backdrop-blur-md p-10 rounded-[3.5rem] shadow-sm border border-white/50 flex flex-col min-h-[600px]">
                     <div className="flex justify-between items-center mb-10">
                         <div>
@@ -154,46 +161,46 @@ export const Dashboard: React.FC = () => {
 
                     <div className="space-y-4">
                         {isAdmin ? (
-                            // Admin specific logs (Mocking technical events)
+                            /* DEVELOPER NOTE: Manual Trace Data for the Admin Log to monitor infrastructure */
                             <>
                                 <LogItem 
                                     title="Google Ads Webhook Success" 
-                                    desc="New lead ingested from 'Wealth 2024' Campaign." 
+                                    desc="New lead ingested from 'Wealth 2024' Campaign. No latency detected in master node." 
                                     time="2m ago" 
                                     icon={Webhook} 
                                     type="success" 
                                 />
                                 <LogItem 
                                     title="Advisor Request: Signature Approval" 
-                                    desc="Sarah RealEstate updated her professional title." 
+                                    desc="Sarah RealEstate updated her professional title. Approval pending in Signature Lab." 
                                     time="15m ago" 
                                     icon={Info} 
                                     type="info" 
                                 />
                                 <LogItem 
                                     title="Automatic Database Backup" 
-                                    desc="Incremental snapshot saved to encrypted cloud node." 
+                                    desc="Incremental snapshot saved to encrypted cloud node. CRC integrity verified." 
                                     time="1h ago" 
                                     icon={ShieldCheck} 
                                     type="success" 
                                 />
                                 <LogItem 
                                     title="Microsite Error Flagged" 
-                                    desc="Broken link detected on Advisor #4 Microsite (Profile)." 
+                                    desc="Broken link detected on Advisor #4 Microsite (Profile section assets)." 
                                     time="2h ago" 
                                     icon={Bug} 
                                     type="alert" 
                                 />
                                 <LogItem 
                                     title="Terms of Use Update" 
-                                    desc="Admin modified Step 2 of the Onboarding Flow." 
+                                    desc="Admin modified Step 2 of the Onboarding Flow. Action logged by Master-UID-1." 
                                     time="4h ago" 
                                     icon={FileText} 
                                     type="info" 
                                 />
                             </>
                         ) : (
-                            // Standard Advisor Notifications
+                            /* Standard Interaction Notifications for Advisors */
                             notifications.slice(0, 6).map((n) => (
                                 <div key={n.id} onClick={() => handleActivityClick(n)} className="p-6 bg-white/60 rounded-[2rem] border border-white/80 hover:shadow-md transition-all cursor-pointer group flex items-start gap-4">
                                      <div className={`p-2 rounded-xl border ${getPriorityColor(n.type)}`}>
@@ -201,7 +208,7 @@ export const Dashboard: React.FC = () => {
                                      </div>
                                      <div className="flex-1">
                                          <p className="text-sm font-bold text-slate-700">{n.title}</p>
-                                         <p className="text-xs text-slate-500 mt-1">{n.message}</p>
+                                         <p className="text-xs text-slate-500 mt-1 font-medium">{n.message}</p>
                                      </div>
                                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{new Date(n.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                                 </div>
@@ -210,36 +217,63 @@ export const Dashboard: React.FC = () => {
                     </div>
                 </div>
 
-                {/* 2. Pending Actions Sidebar */}
+                {/* SIDEBAR: Summary of active system deployments and internal health gauges */}
                 <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-[#0B2240] text-white p-10 rounded-[3rem] shadow-xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12"><Activity size={150}/></div>
-                        <h3 className="text-xl font-black mb-6 relative z-10 uppercase tracking-tight">Active Deployments</h3>
-                        
-                        <div className="space-y-6 relative z-10">
-                            <div className="p-5 bg-white/10 rounded-2xl border border-white/10 backdrop-blur-md">
-                                <p className="text-[10px] font-black text-blue-300 uppercase tracking-widest mb-3">Microsite Status</p>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm font-bold">{allUsers.filter(u => u.micrositeEnabled).length} Advisors Live</span>
-                                    <span className="h-2 w-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
-                                </div>
+                    {isAdmin ? (
+                        /* REFINED ACTIVE DEPLOYMENTS PANEL (As per screenshot) */
+                        <div className="bg-[#B7BDC5] p-10 rounded-[3rem] shadow-xl relative overflow-hidden min-h-[480px]">
+                            {/* Glassmorphic Pulse Background Element */}
+                            <div className="absolute top-10 right-10 opacity-30 text-white pointer-events-none">
+                                <svg width="120" height="60" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M0 30H20L30 10L50 50L60 20L70 40L80 30H120" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
                             </div>
-
-                            <div className="p-5 bg-white/10 rounded-2xl border border-white/10 backdrop-blur-md">
-                                <p className="text-[10px] font-black text-blue-300 uppercase tracking-widest mb-3">Pending Onboarding</p>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm font-bold">{jobApplications.filter(a => a.status === 'Pending').length} Apps Review</span>
-                                    <button onClick={() => navigate('/crm/onboarding')} className="text-[10px] font-black bg-blue-500 text-white px-3 py-1 rounded-lg">View</button>
+                            
+                            <h3 className="text-xl font-black text-[#5C6675] mb-12 relative z-10 uppercase tracking-widest">Active Deployments</h3>
+                            
+                            <div className="space-y-12 relative z-10">
+                                <div className="space-y-4">
+                                    <p className="text-[10px] font-black text-[#4E88F5] uppercase tracking-[0.3em]">Microsite Status</p>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-lg font-black text-[#5C6675]">{allUsers.filter(u => u.micrositeEnabled).length} Advisors Live</span>
+                                        <div className="h-2.5 w-2.5 bg-[#22C55E] rounded-full shadow-[0_0_12px_rgba(34,197,94,0.6)]"></div>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="pt-4 border-t border-white/10">
-                                <button onClick={() => navigate('/crm/admin/website')} className="w-full py-4 bg-white text-[#0B2240] rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-50 transition-all flex items-center justify-center gap-2">
-                                    <MonitorCheck size={16} /> Site Config
-                                </button>
+                                <div className="space-y-4">
+                                    <p className="text-[10px] font-black text-[#4E88F5] uppercase tracking-[0.3em]">Pending Onboarding</p>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-lg font-black text-[#5C6675]">{jobApplications.filter(a => a.status === 'Pending').length} Apps Review</span>
+                                        <button 
+                                            onClick={() => navigate('/crm/onboarding')} 
+                                            className="text-[10px] font-black bg-[#4E88F5] text-white px-5 py-2 rounded-xl hover:bg-blue-600 transition-all shadow-md uppercase tracking-widest"
+                                        >
+                                            View
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="pt-8 mt-12 border-t border-white/20">
+                                    <button 
+                                        onClick={() => navigate('/crm/admin/website')} 
+                                        className="w-full py-5 bg-[#C9CFD7] text-[#5C6675] rounded-[1.5rem] font-black text-xs uppercase tracking-[0.3em] hover:bg-white transition-all flex items-center justify-center gap-3 shadow-inner border border-white/20"
+                                    >
+                                        <MonitorCheck size={18} /> Site Config
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    ) : (
+                        /* Standard Sidebar for non-admins (optional or empty) */
+                        <div className="bg-[#0B2240] text-white p-10 rounded-[3rem] shadow-xl relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12"><Activity size={150}/></div>
+                            <h3 className="text-xl font-black mb-6 relative z-10 uppercase tracking-tight">System Status</h3>
+                            <div className="space-y-4 relative z-10">
+                                <HealthIndicator label="Advisor Node" status="Connected" />
+                                <HealthIndicator label="Data Sync" status="Active" />
+                            </div>
+                        </div>
+                    )}
 
                     <div className="bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100">
                         <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-6">Internal Service Health</h3>
@@ -257,6 +291,7 @@ export const Dashboard: React.FC = () => {
     );
 };
 
+// UI Helper: Technical Log Item for the intelligence feed
 const LogItem = ({ title, desc, time, icon: Icon, type }: any) => {
     const colors = {
         success: 'text-green-500 bg-green-50 border-green-100',
@@ -274,12 +309,13 @@ const LogItem = ({ title, desc, time, icon: Icon, type }: any) => {
                     <p className="text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{title}</p>
                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{time}</span>
                 </div>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">{desc}</p>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed font-medium">{desc}</p>
             </div>
         </div>
     );
 };
 
+// UI Helper: Simple status gauge for internal services
 const HealthIndicator = ({ label, status }: { label: string, status: string }) => (
     <div className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
         <span className="text-xs font-bold text-slate-500">{label}</span>

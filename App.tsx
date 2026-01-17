@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { DataProvider, useData } from './context/DataContext';
@@ -58,33 +59,30 @@ import {
   RefinanceCalc 
 } from './pages/crm/mortgage/MortgagePages';
 import { AIChatWidget } from './components/AIChatWidget';
+import { IntegrationsHub } from './pages/crm/IntegrationsHub';
+import { AutomationStudio } from './pages/crm/AutomationStudio';
 
-// Protected Route Component for CRM
+/**
+ * DEVELOPER NOTE: App Routing Architecture
+ * This file serves as the main gateway for both the public-facing 
+ * New Holland website and the private NHFG Advisor Terminal (CRM).
+ */
+
 const ProtectedCRMRoute: React.FC = () => {
   const { user } = useData();
   const location = useLocation();
   
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+  if (!user) return <Navigate to="/login" replace />;
 
   const allowedRoles = [UserRole.ADMIN, UserRole.MANAGER, UserRole.SUB_ADMIN, UserRole.ADVISOR];
-  if (!allowedRoles.includes(user.role)) {
-    return <Navigate to="/client-portal" replace />;
-  }
+  if (!allowedRoles.includes(user.role)) return <Navigate to="/client-portal" replace />;
 
-  // MANDATORY ONBOARDING: Redirect new advisors to the flow
+  // NEW: Force Onboarding completion for all new advisors
   if (user.role === UserRole.ADVISOR && !user.onboardingCompleted && location.pathname !== '/crm/onboarding-flow') {
       return <Navigate to="/crm/onboarding-flow" replace />;
   }
 
-  if (user.onboardingCompleted && location.pathname === '/crm/onboarding-flow') {
-      return <Navigate to="/crm/dashboard" replace />;
-  }
-
-  if (location.pathname === '/crm/onboarding-flow') {
-      return <Outlet />;
-  }
+  if (location.pathname === '/crm/onboarding-flow') return <Outlet />;
 
   return (
     <CRMLayout>
@@ -93,35 +91,27 @@ const ProtectedCRMRoute: React.FC = () => {
   );
 };
 
-// Protected Route for Admin
 const AdminRoute: React.FC = () => {
     const { user } = useData();
-    if (user?.role !== UserRole.ADMIN && user?.role !== UserRole.SUB_ADMIN) {
-        return <Navigate to="/crm/dashboard" replace />;
-    }
+    if (user?.role !== UserRole.ADMIN && user?.role !== UserRole.SUB_ADMIN) return <Navigate to="/crm/dashboard" replace />;
     return <Outlet />;
 };
 
-// Layout wrapper for public pages
-const PublicLayout: React.FC<{children: React.ReactNode}> = ({ children }) => {
-  return (
+const PublicLayout: React.FC<{children: React.ReactNode}> = ({ children }) => (
     <div className="flex flex-col min-h-screen">
       <Navbar />
-      <main className="flex-grow">
-        {children}
-      </main>
+      <main className="flex-grow">{children}</main>
       <Footer />
       <AIChatWidget />
     </div>
-  );
-};
+);
 
 const App: React.FC = () => {
   return (
     <DataProvider>
         <Router>
           <Routes>
-            {/* Public Website Routes */}
+            {/* PUBLIC WEBSITE */}
             <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
             <Route path="/about" element={<PublicLayout><About /></PublicLayout>} />
             <Route path="/products" element={<PublicLayout><Services /></PublicLayout>} />
@@ -133,11 +123,11 @@ const App: React.FC = () => {
             <Route path="/privacy" element={<PublicLayout><PrivacyPolicy /></PublicLayout>} />
             <Route path="/terms" element={<PublicLayout><TermsOfUse /></PublicLayout>} />
             
-            {/* Auth Routes */}
+            {/* AUTHENTICATION */}
             <Route path="/login" element={<Login />} />
             <Route path="/client-portal" element={<PublicLayout><ClientPortal /></PublicLayout>} />
 
-            {/* Protected CRM Routes */}
+            {/* ADVISOR TERMINAL (CRM) */}
             <Route path="/crm" element={<ProtectedCRMRoute />}>
               <Route index element={<Navigate to="/crm/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
@@ -151,30 +141,21 @@ const App: React.FC = () => {
               <Route path="calendar" element={<Calendar />} />
               <Route path="profile" element={<ProfileSettings />} />
               <Route path="legal" element={<LegalCompliance />} />
+              <Route path="integrations" element={<IntegrationsHub />} />
+              <Route path="automation" element={<AutomationStudio />} />
               
-              {/* Insurance Workflow Routes */}
+              {/* VERTICAL HUBS */}
               <Route path="applications" element={<PoliciesApps />} />
-              <Route path="commercial-quotes" element={<CommercialQuotes />} />
-              <Route path="renewals" element={<PoliciesRenewals />} />
-              <Route path="auto-quotes" element={<AutoQuotes />} />
-              <Route path="fleet" element={<FleetManager />} />
-              <Route path="claims" element={<Claims />} />
-              
-              {/* Real Estate Workflow Routes */}
               <Route path="properties" element={<PropertyPipeline />} />
               <Route path="escrow" element={<TransactionsEscrow />} />
-              
-              {/* Mortgage Workflow Routes */}
               <Route path="loans" element={<LoanApplications />} />
               <Route path="rates" element={<RateTools />} />
               <Route path="refi-calc" element={<RefinanceCalc />} />
-
-              {/* Securities Workflow Routes */}
               <Route path="portfolio" element={<PortfolioMgmt />} />
               <Route path="compliance" element={<ComplianceDocs />} />
               <Route path="fees" element={<AdvisoryFees />} />
               
-              {/* Admin Routes */}
+              {/* ADMIN CONTROL PANEL */}
               <Route element={<AdminRoute />}>
                   <Route path="admin" element={<AdminUsers />} />
                   <Route path="admin/website" element={<WebsiteSettings />} />

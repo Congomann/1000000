@@ -162,6 +162,13 @@ CREATE TABLE integration_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- COMPANY SETTINGS
+CREATE TABLE company_settings (
+    id TEXT PRIMARY KEY,
+    settings JSONB NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- INDEXES
 CREATE INDEX idx_leads_email ON leads(email);
 CREATE INDEX idx_leads_assigned ON leads(assigned_to);

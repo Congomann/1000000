@@ -19,8 +19,63 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
-pool.on('error', (err) => {
-  console.error('Unexpected Postgres error', err);
+const mapLeadRow = (row) => ({
+  id: row.id,
+  name: row.name,
+  email: row.email,
+  phone: row.phone,
+  interest: row.interest,
+  status: row.status,
+  assignedTo: row.assigned_to,
+  source: row.source,
+  priority: row.priority,
+  score: row.score,
+  qualification: row.qualification,
+  message: row.message,
+  date: row.created_at,
+  lifeDetails: row.life_details,
+  realEstateDetails: row.real_estate_details,
+  securitiesDetails: row.securities_details,
+  customDetails: row.custom_details,
+  isArchived: row.is_archived,
+  campaign: row.campaign_id,
+  adGroup: row.ad_group_id,
+  adId: row.ad_id,
+  platformData: row.platform_data
+});
+
+const mapUserRow = (row) => ({
+  id: row.id,
+  name: row.name,
+  email: row.email,
+  role: row.role,
+  category: row.category,
+  title: row.title,
+  phone: row.phone,
+  avatar: row.avatar,
+  bio: row.bio,
+  productsSold: row.products_sold,
+  license_states: row.license_states,
+  micrositeEnabled: row.microsite_enabled,
+  onboardingCompleted: row.onboarding_completed,
+  deletedAt: row.deleted_at
+});
+
+const mapClientRow = (row) => ({
+  id: row.id,
+  advisorId: row.advisor_id,
+  userId: row.user_id,
+  name: row.name,
+  email: row.email,
+  phone: row.phone,
+  product: row.product,
+  policyNumber: row.policy_number,
+  carrier: row.carrier,
+  premium: row.premium,
+  renewalDate: row.renewal_date,
+  commissionAmount: row.commission_amount,
+  address: row.address,
+  createdAt: row.created_at
 });
 
 // --- HELPER: WEBHOOK NORMALIZERS ---
@@ -358,6 +413,64 @@ app.put('/api/leads/:id', async (req, res) => {
     res.status(500).json({ error: err.message });
   } finally {
     client.release();
+  const { id } = req.params;
+  const allowedFields = {
+    name: 'name',
+    email: 'email',
+    phone: 'phone',
+    interest: 'interest',
+    status: 'status',
+    source: 'source',
+    assignedTo: 'assigned_to',
+    message: 'message',
+    lifeDetails: 'life_details',
+    realEstateDetails: 'real_estate_details',
+    securitiesDetails: 'securities_details',
+    customDetails: 'custom_details',
+    score: 'score',
+    qualification: 'qualification',
+    priority: 'priority',
+    campaign: 'campaign_id',
+    adGroup: 'ad_group_id',
+    adId: 'ad_id',
+    platformData: 'platform_data',
+    isArchived: 'is_archived'
+  };
+
+  const updates = [];
+  const values = [];
+  let index = 1;
+
+  Object.entries(allowedFields).forEach(([key, column]) => {
+    if (req.body[key] !== undefined) {
+      updates.push(`${column} = $${index}`);
+      values.push(req.body[key]);
+      index += 1;
+    }
+  });
+
+  if (updates.length === 0) {
+    res.status(400).json({ error: 'No valid fields provided' });
+    return;
+  }
+
+  values.push(id);
+  const query = `
+    UPDATE leads
+    SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
+    WHERE id = $${index}
+    RETURNING *
+  `;
+
+  try {
+    const result = await pool.query(query, values);
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Lead not found' });
+      return;
+    }
+    res.json(mapLeadRow(result.rows[0]));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -422,6 +535,7 @@ app.post('/api/auth/login', async (req, res) => {
           avatar: u.avatar,
           productsSold: u.products_sold
       });
+      res.json(mapUserRow(result.rows[0]));
   } else {
       res.status(401).json({ error: 'User not found' });
   }
@@ -485,57 +599,53 @@ app.post('/api/clients', async (req, res) => {
 });
 
 app.put('/api/clients/:id', async (req, res) => {
+  const { id } = req.params;
+  const allowedFields = {
+    advisorId: 'advisor_id',
+    userId: 'user_id',
+    name: 'name',
+    email: 'email',
+    phone: 'phone',
+    product: 'product',
+    policyNumber: 'policy_number',
+    carrier: 'carrier',
+    premium: 'premium',
+    renewalDate: 'renewal_date',
+    commissionAmount: 'commission_amount',
+    address: 'address'
+  };
+
+  const updates = [];
+  const values = [];
+  let index = 1;
+
+  Object.entries(allowedFields).forEach(([key, column]) => {
+    if (req.body[key] !== undefined) {
+      updates.push(`${column} = $${index}`);
+      values.push(req.body[key]);
+      index += 1;
+    }
+  });
+
+  if (updates.length === 0) {
+    res.status(400).json({ error: 'No valid fields provided' });
+    return;
+  }
+
+  values.push(id);
+  const query = `
+    UPDATE clients
+    SET ${updates.join(', ')}
+    WHERE id = $${index}
+    RETURNING *
+  `;
+
   try {
-    const { id } = req.params;
-    const {
-      advisorId,
-      name,
-      email,
-      phone,
-      product,
-      policyNumber,
-      carrier,
-      premium,
-      renewalDate,
-      commissionAmount,
-      street,
-      city,
-      state,
-      zip
-    } = req.body;
-
-    const address = { street, city, state, zip };
-    const result = await pool.query(
-      `UPDATE clients
-       SET advisor_id = $1,
-           name = $2,
-           email = $3,
-           phone = $4,
-           product = $5,
-           policy_number = $6,
-           carrier = $7,
-           premium = $8,
-           renewal_date = $9,
-           commission_amount = $10,
-           address = $11
-       WHERE id = $12
-       RETURNING *`,
-      [
-        advisorId,
-        name,
-        email,
-        phone,
-        product,
-        policyNumber,
-        carrier,
-        premium,
-        renewalDate,
-        commissionAmount,
-        address,
-        id
-      ]
-    );
-
+    const result = await pool.query(query, values);
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Client not found' });
+      return;
+    }
     res.json(mapClientRow(result.rows[0]));
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -553,33 +663,28 @@ app.get('/api/users', async (req, res) => {
 });
 
 app.post('/api/users', async (req, res) => {
-  try {
-    const {
-      email,
-      name,
-      role,
-      category,
-      title,
-      yearsOfExperience,
-      phone,
-      avatar,
-      bio,
-      micrositeEnabled,
-      productsSold,
-      languages,
-      socialLinks,
-      licenseStates,
-      contractLevel,
-      calendarUrl,
-      onboardingCompleted
-    } = req.body;
+  const {
+    email,
+    name,
+    role,
+    category,
+    title,
+    phone,
+    avatar,
+    bio,
+    productsSold,
+    license_states,
+    micrositeEnabled,
+    onboardingCompleted
+  } = req.body;
 
+  try {
     const result = await pool.query(
       `INSERT INTO users (
-        email, name, role, category, title, years_of_experience, phone, avatar, bio,
-        microsite_enabled, products_sold, languages, social_links, license_states,
-        contract_level, calendar_url, onboarding_completed
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+        email, name, role, category, title, phone, avatar, bio, products_sold, license_states,
+        microsite_enabled, onboarding_completed
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *`,
       [
         email,
@@ -587,17 +692,12 @@ app.post('/api/users', async (req, res) => {
         role,
         category,
         title,
-        yearsOfExperience,
         phone,
         avatar,
         bio,
-        micrositeEnabled,
         productsSold,
-        languages,
-        socialLinks,
-        licenseStates,
-        contractLevel,
-        calendarUrl,
+        license_states,
+        micrositeEnabled,
         onboardingCompleted
       ]
     );
@@ -609,74 +709,53 @@ app.post('/api/users', async (req, res) => {
 });
 
 app.put('/api/users/:id', async (req, res) => {
+  const { id } = req.params;
+  const allowedFields = {
+    email: 'email',
+    name: 'name',
+    role: 'role',
+    category: 'category',
+    title: 'title',
+    phone: 'phone',
+    avatar: 'avatar',
+    bio: 'bio',
+    productsSold: 'products_sold',
+    license_states: 'license_states',
+    micrositeEnabled: 'microsite_enabled',
+    onboardingCompleted: 'onboarding_completed'
+  };
+
+  const updates = [];
+  const values = [];
+  let index = 1;
+
+  Object.entries(allowedFields).forEach(([key, column]) => {
+    if (req.body[key] !== undefined) {
+      updates.push(`${column} = $${index}`);
+      values.push(req.body[key]);
+      index += 1;
+    }
+  });
+
+  if (updates.length === 0) {
+    res.status(400).json({ error: 'No valid fields provided' });
+    return;
+  }
+
+  values.push(id);
+  const query = `
+    UPDATE users
+    SET ${updates.join(', ')}
+    WHERE id = $${index}
+    RETURNING *
+  `;
+
   try {
-    const { id } = req.params;
-    const {
-      email,
-      name,
-      role,
-      category,
-      title,
-      yearsOfExperience,
-      phone,
-      avatar,
-      bio,
-      micrositeEnabled,
-      productsSold,
-      languages,
-      socialLinks,
-      licenseStates,
-      contractLevel,
-      calendarUrl,
-      onboardingCompleted,
-      deletedAt
-    } = req.body;
-
-    const result = await pool.query(
-      `UPDATE users
-       SET email = $1,
-           name = $2,
-           role = $3,
-           category = $4,
-           title = $5,
-           years_of_experience = $6,
-           phone = $7,
-           avatar = $8,
-           bio = $9,
-           microsite_enabled = $10,
-           products_sold = $11,
-           languages = $12,
-           social_links = $13,
-           license_states = $14,
-           contract_level = $15,
-           calendar_url = $16,
-           onboarding_completed = $17,
-           deleted_at = $18
-       WHERE id = $19
-       RETURNING *`,
-      [
-        email,
-        name,
-        role,
-        category,
-        title,
-        yearsOfExperience,
-        phone,
-        avatar,
-        bio,
-        micrositeEnabled,
-        productsSold,
-        languages,
-        socialLinks,
-        licenseStates,
-        contractLevel,
-        calendarUrl,
-        onboardingCompleted,
-        deletedAt,
-        id
-      ]
-    );
-
+    const result = await pool.query(query, values);
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
     res.json(mapUserRow(result.rows[0]));
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -691,7 +770,7 @@ app.get('/api/settings', async (req, res) => {
       res.json(null);
       return;
     }
-    res.json(result.rows[0].data);
+    res.json(result.rows[0].settings);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -699,34 +778,25 @@ app.get('/api/settings', async (req, res) => {
 
 app.put('/api/settings', async (req, res) => {
   try {
-    const data = req.body;
+    const settings = req.body;
     const result = await pool.query(
-      `INSERT INTO company_settings (id, data)
-       VALUES ('global_config', $1)
-       ON CONFLICT (id) DO UPDATE SET data = $1
-       RETURNING data`,
-      [data]
+      `INSERT INTO company_settings (id, settings)
+       VALUES ($1, $2)
+       ON CONFLICT (id) DO UPDATE SET settings = $2, updated_at = CURRENT_TIMESTAMP
+       RETURNING settings`,
+      ['global_config', settings]
     );
-    res.json(result.rows[0].data);
+    res.json(result.rows[0].settings);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 // 8. Integration Logs
-app.get('/api/integration-logs', async (req, res) => {
+app.get('/api/logs', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM integration_logs ORDER BY created_at DESC');
-    const logs = result.rows.map((row) => ({
-      id: row.id,
-      timestamp: row.created_at,
-      platform: row.platform,
-      event: row.event_type,
-      status: row.status === 'failure' ? 'failure' : 'success',
-      payload: row.payload,
-      error: row.error_message
-    }));
-    res.json(logs);
+    res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

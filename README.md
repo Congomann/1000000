@@ -29,6 +29,8 @@ The database schema is applied automatically on first boot. The API will be
 available at `http://localhost:3001`, with a health check at
 `http://localhost:3001/api/health`.
 Seed data is also loaded automatically for development.
+Core endpoints: `/api/leads`, `/api/clients`, `/api/users`, `/api/settings`,
+`/api/integration-logs`, `/api/dashboard/metrics`.
 
 ### Option B: Run locally without Docker
 1. Install backend dependencies:

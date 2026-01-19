@@ -159,7 +159,12 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
             <div className="px-8 mb-12 flex items-center gap-4">
                 <div className="relative w-12 h-12 flex-shrink-0">
                     <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                        <path d="M50 0L100 40V100H0V40L50 0Z" fill="#FBBF24"/>
+                        {/* Back Card */}
+                        <rect x="5" y="15" width="90" height="60" rx="12" fill="#F59E0B" />
+                        {/* Front Card */}
+                        <rect x="10" y="35" width="80" height="55" rx="12" fill="#FCD34D" />
+                        {/* Chip */}
+                        <rect x="42" y="52" width="16" height="22" rx="4" fill="#B45309" fillOpacity="0.25" />
                     </svg>
                 </div>
                 <div>

@@ -3,11 +3,11 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { Pool } = require('pg');
+const crypto = require('crypto');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const SERVER_START_TIME = new Date().toISOString();
 
 // Middleware
 app.use(cors());
@@ -17,65 +17,6 @@ app.use(bodyParser.json());
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
-
-const mapLeadRow = (row) => ({
-  id: row.id,
-  name: row.name,
-  email: row.email,
-  phone: row.phone,
-  interest: row.interest,
-  status: row.status,
-  assignedTo: row.assigned_to,
-  source: row.source,
-  priority: row.priority,
-  score: row.score,
-  qualification: row.qualification,
-  message: row.message,
-  date: row.created_at,
-  lifeDetails: row.life_details,
-  realEstateDetails: row.real_estate_details,
-  securitiesDetails: row.securities_details,
-  customDetails: row.custom_details,
-  isArchived: row.is_archived,
-  campaign: row.campaign_id,
-  adGroup: row.ad_group_id,
-  adId: row.ad_id,
-  platformData: row.platform_data
-});
-
-const mapUserRow = (row) => ({
-  id: row.id,
-  name: row.name,
-  email: row.email,
-  role: row.role,
-  category: row.category,
-  title: row.title,
-  phone: row.phone,
-  avatar: row.avatar,
-  bio: row.bio,
-  productsSold: row.products_sold,
-  license_states: row.license_states,
-  micrositeEnabled: row.microsite_enabled,
-  onboardingCompleted: row.onboarding_completed,
-  deletedAt: row.deleted_at
-});
-
-const mapClientRow = (row) => ({
-  id: row.id,
-  advisorId: row.advisor_id,
-  userId: row.user_id,
-  name: row.name,
-  email: row.email,
-  phone: row.phone,
-  product: row.product,
-  policyNumber: row.policy_number,
-  carrier: row.carrier,
-  premium: row.premium,
-  renewalDate: row.renewal_date,
-  commissionAmount: row.commission_amount,
-  address: row.address,
-  createdAt: row.created_at
 });
 
 // --- HELPER: WEBHOOK NORMALIZERS ---
@@ -103,6 +44,7 @@ const WebhookNormalizer = {
         // Meta/Facebook sends data in entry[].changes[].value
         const entry = payload.entry?.[0];
         const change = entry?.changes?.[0]?.value || payload; // Handle raw test payloads too
+        const form = change.form_data || {}; // Hypothetical flattened structure or normalize field_data
         
         // Real Meta payloads often use 'field_data' array mapping name->values
         const fieldMap = {};
@@ -134,85 +76,17 @@ const WebhookNormalizer = {
 
 // --- API ROUTES ---
 
-const mapLeadRow = (row) => ({
-  id: row.id,
-  name: row.name,
-  email: row.email,
-  phone: row.phone,
-  interest: row.interest,
-  status: row.status,
-  assignedTo: row.assigned_to,
-  source: row.source,
-  priority: row.priority,
-  score: row.score,
-  qualification: row.qualification,
-  message: row.message,
-  notes: row.notes,
-  date: row.created_at,
-  campaign: row.campaign_id,
-  adGroup: row.ad_group_id,
-  adId: row.ad_id,
-  platformData: row.platform_data,
-  lifeDetails: row.life_details,
-  realEstateDetails: row.real_estate_details,
-  securitiesDetails: row.securities_details,
-  customDetails: row.custom_details,
-  isArchived: row.is_archived,
-  updatedAt: row.updated_at
-});
-
-const mapClientRow = (row) => ({
-  id: row.id,
-  name: row.name,
-  email: row.email,
-  phone: row.phone,
-  policyNumber: row.policy_number,
-  premium: row.premium ? parseFloat(row.premium) : 0,
-  product: row.product,
-  renewalDate: row.renewal_date,
-  commissionAmount: row.commission_amount ? parseFloat(row.commission_amount) : undefined,
-  carrier: row.carrier,
-  street: row.address?.street,
-  city: row.address?.city,
-  state: row.address?.state,
-  zip: row.address?.zip
-});
-
-const mapUserRow = (row) => ({
-  id: row.id,
-  name: row.name,
-  email: row.email,
-  role: row.role,
-  category: row.category,
-  title: row.title,
-  yearsOfExperience: row.years_of_experience,
-  productsSold: row.products_sold,
-  languages: row.languages,
-  micrositeEnabled: row.microsite_enabled,
-  avatar: row.avatar,
-  phone: row.phone,
-  bio: row.bio,
-  socialLinks: row.social_links,
-  license_states: row.license_states,
-  contractLevel: row.contract_level,
-  calendarUrl: row.calendar_url,
-  onboardingCompleted: row.onboarding_completed,
-  deletedAt: row.deleted_at
-});
-
 // 1. Dashboard Metrics
 app.get('/api/dashboard/metrics', async (req, res) => {
   try {
     const revenueQuery = await pool.query('SELECT SUM(premium) as total FROM clients');
     const clientsQuery = await pool.query('SELECT COUNT(*) as count FROM clients');
     const leadsQuery = await pool.query("SELECT COUNT(*) as count FROM leads WHERE status = 'New'");
-    const commissionQuery = await pool.query('SELECT SUM(commission_amount) as total FROM clients');
     
     res.json({
       totalRevenue: parseFloat(revenueQuery.rows[0].total || 0),
       activeClients: parseInt(clientsQuery.rows[0].count),
       pendingLeads: parseInt(leadsQuery.rows[0].count),
-      totalCommission: parseFloat(commissionQuery.rows[0].total || 0),
       monthlyPerformance: [
         { month: 'Jan', revenue: 45000, leads: 24 },
         { month: 'Feb', revenue: 52000, leads: 30 },
@@ -222,16 +96,6 @@ app.get('/api/dashboard/metrics', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server Error' });
-  }
-});
-
-// 0. Health Check
-app.get('/api/health', async (req, res) => {
-  try {
-    await pool.query('SELECT 1');
-    res.json({ status: 'ok', time: SERVER_START_TIME });
-  } catch (err) {
-    res.status(500).json({ status: 'error', error: err.message });
   }
 });
 
@@ -251,7 +115,25 @@ app.get('/api/leads', async (req, res) => {
     const result = await pool.query(query, params);
     
     // Convert snake_case DB to camelCase for frontend
-    const leads = result.rows.map(mapLeadRow);
+    const leads = result.rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      phone: row.phone,
+      interest: row.interest,
+      status: row.status,
+      assignedTo: row.assigned_to,
+      source: row.source,
+      priority: row.priority,
+      score: row.score,
+      qualification: row.qualification,
+      message: row.message,
+      date: row.created_at,
+      lifeDetails: row.life_details,
+      realEstateDetails: row.real_estate_details,
+      securitiesDetails: row.securities_details,
+      customDetails: row.custom_details
+    }));
     
     res.json(leads);
   } catch (err) {
@@ -262,56 +144,22 @@ app.get('/api/leads', async (req, res) => {
 app.post('/api/leads', async (req, res) => {
   const client = await pool.connect();
   try {
-    const {
-      name,
-      email,
-      phone,
-      interest,
-      status,
-      source,
-      assignedTo,
-      message,
-      notes,
-      campaign,
-      adGroup,
-      adId,
-      platformData,
-      lifeDetails,
-      realEstateDetails,
-      securitiesDetails,
-      customDetails
-    } = req.body;
+    const { name, email, phone, interest, status, source, assignedTo, message, lifeDetails, realEstateDetails, securitiesDetails, customDetails } = req.body;
     
     await client.query('BEGIN');
     
     const insertQuery = `
       INSERT INTO leads (
-          name, email, phone, interest, status, source, assigned_to, message, notes,
-          campaign_id, ad_group_id, ad_id, platform_data,
+          name, email, phone, interest, status, source, assigned_to, message, 
           life_details, real_estate_details, securities_details, custom_details
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING id
     `;
     
     const result = await client.query(insertQuery, [
-      name,
-      email,
-      phone,
-      interest,
-      status || 'New',
-      source,
-      assignedTo,
-      message,
-      notes,
-      campaign,
-      adGroup,
-      adId,
-      platformData,
-      lifeDetails,
-      realEstateDetails,
-      securitiesDetails,
-      customDetails
+      name, email, phone, interest, status || 'New', source, assignedTo, message, 
+      lifeDetails, realEstateDetails, securitiesDetails, customDetails
     ]);
     
     await client.query('COMMIT');
@@ -321,156 +169,6 @@ app.post('/api/leads', async (req, res) => {
     res.status(500).json({ error: err.message });
   } finally {
     client.release();
-  }
-});
-
-app.put('/api/leads/:id', async (req, res) => {
-  const client = await pool.connect();
-  try {
-    const { id } = req.params;
-    const {
-      name,
-      email,
-      phone,
-      interest,
-      status,
-      source,
-      assignedTo,
-      message,
-      notes,
-      priority,
-      score,
-      qualification,
-      campaign,
-      adGroup,
-      adId,
-      platformData,
-      lifeDetails,
-      realEstateDetails,
-      securitiesDetails,
-      customDetails,
-      isArchived
-    } = req.body;
-
-    await client.query('BEGIN');
-
-    const updateQuery = `
-      UPDATE leads
-      SET name = $1,
-          email = $2,
-          phone = $3,
-          interest = $4,
-          status = $5,
-          source = $6,
-          assigned_to = $7,
-          message = $8,
-          notes = $9,
-          priority = $10,
-          score = $11,
-          qualification = $12,
-          campaign_id = $13,
-          ad_group_id = $14,
-          ad_id = $15,
-          platform_data = $16,
-          life_details = $17,
-          real_estate_details = $18,
-          securities_details = $19,
-          custom_details = $20,
-          is_archived = $21
-      WHERE id = $22
-      RETURNING *
-    `;
-
-    const result = await client.query(updateQuery, [
-      name,
-      email,
-      phone,
-      interest,
-      status,
-      source,
-      assignedTo,
-      message,
-      notes,
-      priority,
-      score,
-      qualification,
-      campaign,
-      adGroup,
-      adId,
-      platformData,
-      lifeDetails,
-      realEstateDetails,
-      securitiesDetails,
-      customDetails,
-      isArchived || false,
-      id
-    ]);
-
-    await client.query('COMMIT');
-    res.json(mapLeadRow(result.rows[0]));
-  } catch (err) {
-    await client.query('ROLLBACK');
-    res.status(500).json({ error: err.message });
-  } finally {
-    client.release();
-  const { id } = req.params;
-  const allowedFields = {
-    name: 'name',
-    email: 'email',
-    phone: 'phone',
-    interest: 'interest',
-    status: 'status',
-    source: 'source',
-    assignedTo: 'assigned_to',
-    message: 'message',
-    lifeDetails: 'life_details',
-    realEstateDetails: 'real_estate_details',
-    securitiesDetails: 'securities_details',
-    customDetails: 'custom_details',
-    score: 'score',
-    qualification: 'qualification',
-    priority: 'priority',
-    campaign: 'campaign_id',
-    adGroup: 'ad_group_id',
-    adId: 'ad_id',
-    platformData: 'platform_data',
-    isArchived: 'is_archived'
-  };
-
-  const updates = [];
-  const values = [];
-  let index = 1;
-
-  Object.entries(allowedFields).forEach(([key, column]) => {
-    if (req.body[key] !== undefined) {
-      updates.push(`${column} = $${index}`);
-      values.push(req.body[key]);
-      index += 1;
-    }
-  });
-
-  if (updates.length === 0) {
-    res.status(400).json({ error: 'No valid fields provided' });
-    return;
-  }
-
-  values.push(id);
-  const query = `
-    UPDATE leads
-    SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
-    WHERE id = $${index}
-    RETURNING *
-  `;
-
-  try {
-    const result = await pool.query(query, values);
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Lead not found' });
-      return;
-    }
-    res.json(mapLeadRow(result.rows[0]));
-  } catch (err) {
-    res.status(500).json({ error: err.message });
   }
 });
 
@@ -532,285 +230,14 @@ app.post('/api/auth/login', async (req, res) => {
           email: u.email,
           role: u.role,
           category: u.category,
-          avatar: u.avatar,
+          avatar: u.avatar_url,
           productsSold: u.products_sold
       });
-      res.json(mapUserRow(result.rows[0]));
   } else {
       res.status(401).json({ error: 'User not found' });
-  }
-});
-
-// 5. Clients
-app.get('/api/clients', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM clients ORDER BY created_at DESC');
-    res.json(result.rows.map(mapClientRow));
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/clients', async (req, res) => {
-  try {
-    const {
-      advisorId,
-      name,
-      email,
-      phone,
-      product,
-      policyNumber,
-      carrier,
-      premium,
-      renewalDate,
-      commissionAmount,
-      street,
-      city,
-      state,
-      zip
-    } = req.body;
-
-    const address = { street, city, state, zip };
-    const result = await pool.query(
-      `INSERT INTO clients (
-        advisor_id, name, email, phone, product, policy_number, carrier, premium,
-        renewal_date, commission_amount, address
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-      RETURNING *`,
-      [
-        advisorId,
-        name,
-        email,
-        phone,
-        product,
-        policyNumber,
-        carrier,
-        premium,
-        renewalDate,
-        commissionAmount,
-        address
-      ]
-    );
-
-    res.status(201).json(mapClientRow(result.rows[0]));
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.put('/api/clients/:id', async (req, res) => {
-  const { id } = req.params;
-  const allowedFields = {
-    advisorId: 'advisor_id',
-    userId: 'user_id',
-    name: 'name',
-    email: 'email',
-    phone: 'phone',
-    product: 'product',
-    policyNumber: 'policy_number',
-    carrier: 'carrier',
-    premium: 'premium',
-    renewalDate: 'renewal_date',
-    commissionAmount: 'commission_amount',
-    address: 'address'
-  };
-
-  const updates = [];
-  const values = [];
-  let index = 1;
-
-  Object.entries(allowedFields).forEach(([key, column]) => {
-    if (req.body[key] !== undefined) {
-      updates.push(`${column} = $${index}`);
-      values.push(req.body[key]);
-      index += 1;
-    }
-  });
-
-  if (updates.length === 0) {
-    res.status(400).json({ error: 'No valid fields provided' });
-    return;
-  }
-
-  values.push(id);
-  const query = `
-    UPDATE clients
-    SET ${updates.join(', ')}
-    WHERE id = $${index}
-    RETURNING *
-  `;
-
-  try {
-    const result = await pool.query(query, values);
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: 'Client not found' });
-      return;
-    }
-    res.json(mapClientRow(result.rows[0]));
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// 6. Users
-app.get('/api/users', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC');
-    res.json(result.rows.map(mapUserRow));
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/users', async (req, res) => {
-  const {
-    email,
-    name,
-    role,
-    category,
-    title,
-    phone,
-    avatar,
-    bio,
-    productsSold,
-    license_states,
-    micrositeEnabled,
-    onboardingCompleted
-  } = req.body;
-
-  try {
-    const result = await pool.query(
-      `INSERT INTO users (
-        email, name, role, category, title, phone, avatar, bio, products_sold, license_states,
-        microsite_enabled, onboarding_completed
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-      RETURNING *`,
-      [
-        email,
-        name,
-        role,
-        category,
-        title,
-        phone,
-        avatar,
-        bio,
-        productsSold,
-        license_states,
-        micrositeEnabled,
-        onboardingCompleted
-      ]
-    );
-
-    res.status(201).json(mapUserRow(result.rows[0]));
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.put('/api/users/:id', async (req, res) => {
-  const { id } = req.params;
-  const allowedFields = {
-    email: 'email',
-    name: 'name',
-    role: 'role',
-    category: 'category',
-    title: 'title',
-    phone: 'phone',
-    avatar: 'avatar',
-    bio: 'bio',
-    productsSold: 'products_sold',
-    license_states: 'license_states',
-    micrositeEnabled: 'microsite_enabled',
-    onboardingCompleted: 'onboarding_completed'
-  };
-
-  const updates = [];
-  const values = [];
-  let index = 1;
-
-  Object.entries(allowedFields).forEach(([key, column]) => {
-    if (req.body[key] !== undefined) {
-      updates.push(`${column} = $${index}`);
-      values.push(req.body[key]);
-      index += 1;
-    }
-  });
-
-  if (updates.length === 0) {
-    res.status(400).json({ error: 'No valid fields provided' });
-    return;
-  }
-
-  values.push(id);
-  const query = `
-    UPDATE users
-    SET ${updates.join(', ')}
-    WHERE id = $${index}
-    RETURNING *
-  `;
-
-  try {
-    const result = await pool.query(query, values);
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: 'User not found' });
-      return;
-    }
-    res.json(mapUserRow(result.rows[0]));
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// 7. Company Settings
-app.get('/api/settings', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM company_settings WHERE id = $1', ['global_config']);
-    if (result.rows.length === 0) {
-      res.json(null);
-      return;
-    }
-    res.json(result.rows[0].settings);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.put('/api/settings', async (req, res) => {
-  try {
-    const settings = req.body;
-    const result = await pool.query(
-      `INSERT INTO company_settings (id, settings)
-       VALUES ($1, $2)
-       ON CONFLICT (id) DO UPDATE SET settings = $2, updated_at = CURRENT_TIMESTAMP
-       RETURNING settings`,
-      ['global_config', settings]
-    );
-    res.json(result.rows[0].settings);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// 8. Integration Logs
-app.get('/api/logs', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM integration_logs ORDER BY created_at DESC');
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
   }
 });
 
 app.listen(PORT, () => {
   console.log(`NHFG CRM API Server running on port ${PORT}`);
 });
-
-const shutdown = async (signal) => {
-  console.log(`Received ${signal}. Closing server.`);
-  await pool.end();
-  process.exit(0);
-};
-
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);

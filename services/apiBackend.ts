@@ -4,9 +4,10 @@ import { InternalLead, Transformers, IngestionEngine } from './marketingBackend'
 import { DB } from './database';
 
 // --- CONFIGURATION ---
-// Use Vite env flags to decide when to use the Node.js/PostgreSQL backend.
-const USE_REAL_BACKEND = import.meta.env.VITE_USE_REAL_BACKEND === 'true';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3001/api';
+// Set this to TRUE to use the new Node.js/PostgreSQL backend you just built.
+// Set to FALSE to keep using the browser-based IndexedDB simulation.
+const USE_REAL_BACKEND = false; 
+const API_BASE_URL = 'http://localhost:3001/api';
 
 /**
  * NHFG BACKEND CORE
@@ -106,93 +107,38 @@ class NHFGBackend {
   // --- OTHER ENTITIES (Clients, Users, Settings) ---
 
   async getClients(): Promise<Client[]> {
-    if (USE_REAL_BACKEND) {
-        try {
-            const res = await fetch(`${API_BASE_URL}/clients`);
-            if (!res.ok) throw new Error('API Error');
-            return await res.json();
-        } catch (e) { console.error("Fetch Clients Failed", e); return []; }
-    }
+    if (USE_REAL_BACKEND) return []; // Implement /api/clients in server.js similarly
     return DB.getAll<Client>('clients');
   }
 
   async getUsers(): Promise<User[]> {
-    if (USE_REAL_BACKEND) {
-        try {
-            const res = await fetch(`${API_BASE_URL}/users`);
-            if (!res.ok) throw new Error('API Error');
-            return await res.json();
-        } catch (e) { console.error("Fetch Users Failed", e); return []; }
-    }
+    if (USE_REAL_BACKEND) return []; // Implement /api/users
     return DB.getAll<User>('users');
   }
 
   async getSettings(): Promise<CompanySettings | null> {
-    if (USE_REAL_BACKEND) {
-        try {
-            const res = await fetch(`${API_BASE_URL}/settings`);
-            if (!res.ok) throw new Error('API Error');
-            return await res.json();
-        } catch (e) { console.error("Fetch Settings Failed", e); return null; }
-    }
+    if (USE_REAL_BACKEND) return null;
     const all = await DB.getAll<CompanySettings>('settings');
     return all.length > 0 ? all[0] : null;
   }
 
   async getLogs(): Promise<IntegrationLog[]> {
-    if (USE_REAL_BACKEND) {
-        try {
-            const res = await fetch(`${API_BASE_URL}/logs`);
-            if (!res.ok) throw new Error('API Error');
-            return await res.json();
-        } catch (e) { console.error("Fetch Logs Failed", e); return []; }
-    }
+    if (USE_REAL_BACKEND) return [];
     return DB.getAll<IntegrationLog>('logs');
   }
 
   async saveClient(client: Client): Promise<void> {
-    if (USE_REAL_BACKEND) {
-        try {
-            const method = client.id ? 'PUT' : 'POST';
-            const url = client.id ? `${API_BASE_URL}/clients/${client.id}` : `${API_BASE_URL}/clients`;
-            await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(client)
-            });
-        } catch (e) { console.error("Save Client Failed", e); }
-        return;
-    }
+    if (USE_REAL_BACKEND) return;
     await DB.save('clients', client);
   }
 
   async saveUser(user: User): Promise<void> {
-    if (USE_REAL_BACKEND) {
-        try {
-            const method = user.id ? 'PUT' : 'POST';
-            const url = user.id ? `${API_BASE_URL}/users/${user.id}` : `${API_BASE_URL}/users`;
-            await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(user)
-            });
-        } catch (e) { console.error("Save User Failed", e); }
-        return;
-    }
+    if (USE_REAL_BACKEND) return;
     await DB.save('users', user);
   }
 
   async saveSettings(settings: CompanySettings): Promise<void> {
-    if (USE_REAL_BACKEND) {
-        try {
-            await fetch(`${API_BASE_URL}/settings`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(settings)
-            });
-        } catch (e) { console.error("Save Settings Failed", e); }
-        return;
-    }
+    if (USE_REAL_BACKEND) return;
     await DB.save('settings', { ...settings, id: 'global_config' } as any);
   }
 }

@@ -325,6 +325,7 @@ export interface CompanySettings {
   hiddenProducts?: string[];
   termsOfUse?: string;
   solicitorAgreement?: string;
+  footerDescription?: string;
 }
 
 export interface Testimonial {

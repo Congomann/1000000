@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { Client, ProductType, UserRole } from '../../types';
@@ -71,12 +72,21 @@ export const Clients: React.FC = () => {
   const generatePDF = () => {
     const doc = new jsPDF({ orientation: 'landscape' });
     
-    // Add Company Logo (Yellow House) - DRAWING IT
+    // Add Company Logo (Golden Cards)
     const logoX = 14;
     const logoY = 10;
-    doc.setFillColor(251, 191, 36); // #FBBF24
-    doc.triangle(logoX + 4, logoY, logoX, logoY + 3.2, logoX + 8, logoY + 3.2, 'F');
-    doc.rect(logoX, logoY + 3.2, 8, 4.8, 'F');
+    
+    // Back Card (Darker Amber)
+    doc.setFillColor(245, 158, 11); // #F59E0B
+    doc.roundedRect(logoX, logoY, 9, 6, 1, 1, 'F'); 
+    
+    // Front Card (Lighter Amber)
+    doc.setFillColor(252, 211, 77); // #FCD34D
+    doc.roundedRect(logoX + 0.5, logoY + 2, 8, 5.5, 1, 1, 'F');
+    
+    // Chip (Dark Amber)
+    doc.setFillColor(180, 83, 9); // #B45309
+    doc.roundedRect(logoX + 3.7, logoY + 3.7, 1.6, 2.2, 0.4, 0.4, 'F');
 
     doc.setFontSize(22);
     doc.setTextColor(11, 34, 64); // NHFG Dark Blue
@@ -253,7 +263,7 @@ export const Clients: React.FC = () => {
             </div>
         </div>
 
-        {/* Edit Modal (Legacy from Previous turn, kept for functionality) */}
+        {/* Edit Modal */}
         {editingClient && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0B2240]/70 backdrop-blur-xl p-6 animate-fade-in">
                 <div className="bg-white rounded-[3.5rem] shadow-2xl w-full max-w-2xl p-12 relative max-h-[90vh] overflow-y-auto border border-white/20">

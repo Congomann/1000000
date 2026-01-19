@@ -3,11 +3,11 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { Pool } = require('pg');
-const crypto = require('crypto');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const SERVER_START_TIME = new Date().toISOString();
 
 // Middleware
 app.use(cors());
@@ -103,7 +103,6 @@ const WebhookNormalizer = {
         // Meta/Facebook sends data in entry[].changes[].value
         const entry = payload.entry?.[0];
         const change = entry?.changes?.[0]?.value || payload; // Handle raw test payloads too
-        const form = change.form_data || {}; // Hypothetical flattened structure or normalize field_data
         
         // Real Meta payloads often use 'field_data' array mapping name->values
         const fieldMap = {};
@@ -135,17 +134,85 @@ const WebhookNormalizer = {
 
 // --- API ROUTES ---
 
+const mapLeadRow = (row) => ({
+  id: row.id,
+  name: row.name,
+  email: row.email,
+  phone: row.phone,
+  interest: row.interest,
+  status: row.status,
+  assignedTo: row.assigned_to,
+  source: row.source,
+  priority: row.priority,
+  score: row.score,
+  qualification: row.qualification,
+  message: row.message,
+  notes: row.notes,
+  date: row.created_at,
+  campaign: row.campaign_id,
+  adGroup: row.ad_group_id,
+  adId: row.ad_id,
+  platformData: row.platform_data,
+  lifeDetails: row.life_details,
+  realEstateDetails: row.real_estate_details,
+  securitiesDetails: row.securities_details,
+  customDetails: row.custom_details,
+  isArchived: row.is_archived,
+  updatedAt: row.updated_at
+});
+
+const mapClientRow = (row) => ({
+  id: row.id,
+  name: row.name,
+  email: row.email,
+  phone: row.phone,
+  policyNumber: row.policy_number,
+  premium: row.premium ? parseFloat(row.premium) : 0,
+  product: row.product,
+  renewalDate: row.renewal_date,
+  commissionAmount: row.commission_amount ? parseFloat(row.commission_amount) : undefined,
+  carrier: row.carrier,
+  street: row.address?.street,
+  city: row.address?.city,
+  state: row.address?.state,
+  zip: row.address?.zip
+});
+
+const mapUserRow = (row) => ({
+  id: row.id,
+  name: row.name,
+  email: row.email,
+  role: row.role,
+  category: row.category,
+  title: row.title,
+  yearsOfExperience: row.years_of_experience,
+  productsSold: row.products_sold,
+  languages: row.languages,
+  micrositeEnabled: row.microsite_enabled,
+  avatar: row.avatar,
+  phone: row.phone,
+  bio: row.bio,
+  socialLinks: row.social_links,
+  license_states: row.license_states,
+  contractLevel: row.contract_level,
+  calendarUrl: row.calendar_url,
+  onboardingCompleted: row.onboarding_completed,
+  deletedAt: row.deleted_at
+});
+
 // 1. Dashboard Metrics
 app.get('/api/dashboard/metrics', async (req, res) => {
   try {
     const revenueQuery = await pool.query('SELECT SUM(premium) as total FROM clients');
     const clientsQuery = await pool.query('SELECT COUNT(*) as count FROM clients');
     const leadsQuery = await pool.query("SELECT COUNT(*) as count FROM leads WHERE status = 'New'");
+    const commissionQuery = await pool.query('SELECT SUM(commission_amount) as total FROM clients');
     
     res.json({
       totalRevenue: parseFloat(revenueQuery.rows[0].total || 0),
       activeClients: parseInt(clientsQuery.rows[0].count),
       pendingLeads: parseInt(leadsQuery.rows[0].count),
+      totalCommission: parseFloat(commissionQuery.rows[0].total || 0),
       monthlyPerformance: [
         { month: 'Jan', revenue: 45000, leads: 24 },
         { month: 'Feb', revenue: 52000, leads: 30 },
@@ -155,6 +222,16 @@ app.get('/api/dashboard/metrics', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server Error' });
+  }
+});
+
+// 0. Health Check
+app.get('/api/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ status: 'ok', time: SERVER_START_TIME });
+  } catch (err) {
+    res.status(500).json({ status: 'error', error: err.message });
   }
 });
 
@@ -185,22 +262,56 @@ app.get('/api/leads', async (req, res) => {
 app.post('/api/leads', async (req, res) => {
   const client = await pool.connect();
   try {
-    const { name, email, phone, interest, status, source, assignedTo, message, lifeDetails, realEstateDetails, securitiesDetails, customDetails } = req.body;
+    const {
+      name,
+      email,
+      phone,
+      interest,
+      status,
+      source,
+      assignedTo,
+      message,
+      notes,
+      campaign,
+      adGroup,
+      adId,
+      platformData,
+      lifeDetails,
+      realEstateDetails,
+      securitiesDetails,
+      customDetails
+    } = req.body;
     
     await client.query('BEGIN');
     
     const insertQuery = `
       INSERT INTO leads (
-          name, email, phone, interest, status, source, assigned_to, message, 
+          name, email, phone, interest, status, source, assigned_to, message, notes,
+          campaign_id, ad_group_id, ad_id, platform_data,
           life_details, real_estate_details, securities_details, custom_details
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING id
     `;
     
     const result = await client.query(insertQuery, [
-      name, email, phone, interest, status || 'New', source, assignedTo, message, 
-      lifeDetails, realEstateDetails, securitiesDetails, customDetails
+      name,
+      email,
+      phone,
+      interest,
+      status || 'New',
+      source,
+      assignedTo,
+      message,
+      notes,
+      campaign,
+      adGroup,
+      adId,
+      platformData,
+      lifeDetails,
+      realEstateDetails,
+      securitiesDetails,
+      customDetails
     ]);
     
     await client.query('COMMIT');
@@ -214,6 +325,94 @@ app.post('/api/leads', async (req, res) => {
 });
 
 app.put('/api/leads/:id', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      email,
+      phone,
+      interest,
+      status,
+      source,
+      assignedTo,
+      message,
+      notes,
+      priority,
+      score,
+      qualification,
+      campaign,
+      adGroup,
+      adId,
+      platformData,
+      lifeDetails,
+      realEstateDetails,
+      securitiesDetails,
+      customDetails,
+      isArchived
+    } = req.body;
+
+    await client.query('BEGIN');
+
+    const updateQuery = `
+      UPDATE leads
+      SET name = $1,
+          email = $2,
+          phone = $3,
+          interest = $4,
+          status = $5,
+          source = $6,
+          assigned_to = $7,
+          message = $8,
+          notes = $9,
+          priority = $10,
+          score = $11,
+          qualification = $12,
+          campaign_id = $13,
+          ad_group_id = $14,
+          ad_id = $15,
+          platform_data = $16,
+          life_details = $17,
+          real_estate_details = $18,
+          securities_details = $19,
+          custom_details = $20,
+          is_archived = $21
+      WHERE id = $22
+      RETURNING *
+    `;
+
+    const result = await client.query(updateQuery, [
+      name,
+      email,
+      phone,
+      interest,
+      status,
+      source,
+      assignedTo,
+      message,
+      notes,
+      priority,
+      score,
+      qualification,
+      campaign,
+      adGroup,
+      adId,
+      platformData,
+      lifeDetails,
+      realEstateDetails,
+      securitiesDetails,
+      customDetails,
+      isArchived || false,
+      id
+    ]);
+
+    await client.query('COMMIT');
+    res.json(mapLeadRow(result.rows[0]));
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
   const { id } = req.params;
   const allowedFields = {
     name: 'name',
@@ -326,6 +525,16 @@ app.post('/api/auth/login', async (req, res) => {
   // Simplified login for demo - in prod use bcrypt compare
   const result = await pool.query('SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL', [email]);
   if (result.rows.length > 0) {
+      const u = result.rows[0];
+      res.json({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          role: u.role,
+          category: u.category,
+          avatar: u.avatar,
+          productsSold: u.products_sold
+      });
       res.json(mapUserRow(result.rows[0]));
   } else {
       res.status(401).json({ error: 'User not found' });
@@ -343,32 +552,33 @@ app.get('/api/clients', async (req, res) => {
 });
 
 app.post('/api/clients', async (req, res) => {
-  const {
-    advisorId,
-    userId,
-    name,
-    email,
-    phone,
-    product,
-    policyNumber,
-    carrier,
-    premium,
-    renewalDate,
-    commissionAmount,
-    address
-  } = req.body;
-
   try {
+    const {
+      advisorId,
+      name,
+      email,
+      phone,
+      product,
+      policyNumber,
+      carrier,
+      premium,
+      renewalDate,
+      commissionAmount,
+      street,
+      city,
+      state,
+      zip
+    } = req.body;
+
+    const address = { street, city, state, zip };
     const result = await pool.query(
       `INSERT INTO clients (
-        advisor_id, user_id, name, email, phone, product, policy_number, carrier,
-        premium, renewal_date, commission_amount, address
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        advisor_id, name, email, phone, product, policy_number, carrier, premium,
+        renewal_date, commission_amount, address
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
       RETURNING *`,
       [
         advisorId,
-        userId,
         name,
         email,
         phone,
@@ -595,3 +805,12 @@ app.get('/api/logs', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`NHFG CRM API Server running on port ${PORT}`);
 });
+
+const shutdown = async (signal) => {
+  console.log(`Received ${signal}. Closing server.`);
+  await pool.end();
+  process.exit(0);
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

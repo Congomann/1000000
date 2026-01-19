@@ -11,12 +11,17 @@ CREATE TABLE users (
     role VARCHAR(50) NOT NULL CHECK (role IN ('Administrator', 'Manager', 'Sub-Admin', 'Advisor', 'Client')),
     category VARCHAR(50) DEFAULT 'Insurance & General',
     title VARCHAR(100),
+    years_of_experience INT,
     phone VARCHAR(50),
     avatar TEXT,
     bio TEXT,
     microsite_enabled BOOLEAN DEFAULT FALSE,
     products_sold TEXT[], -- Array of strings e.g. ['Life Insurance', 'Real Estate']
+    languages TEXT[],
+    social_links JSONB,
     license_states TEXT[],
+    contract_level INT,
+    calendar_url TEXT,
     onboarding_completed BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE
@@ -58,6 +63,31 @@ CREATE TABLE leads (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER leads_set_updated_at
+BEFORE UPDATE ON leads
+FOR EACH ROW
+EXECUTE PROCEDURE update_updated_at_column();
+
+-- COMPANY SETTINGS
+CREATE TABLE company_settings (
+    id TEXT PRIMARY KEY DEFAULT 'global_config',
+    data JSONB NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER company_settings_set_updated_at
+BEFORE UPDATE ON company_settings
+FOR EACH ROW
+EXECUTE PROCEDURE update_updated_at_column();
 
 -- CLIENTS (Active Policies & Accounts)
 CREATE TABLE clients (

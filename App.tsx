@@ -6,6 +6,7 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { Home } from './pages/website/Home';
 import { Services } from './pages/website/Services';
+import { RealEstate } from './pages/website/RealEstate';
 import { Advisors } from './pages/website/Advisors';
 import { About } from './pages/website/About'; 
 import { Resources } from './pages/website/Resources'; 
@@ -115,6 +116,7 @@ const App: React.FC = () => {
             <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
             <Route path="/about" element={<PublicLayout><About /></PublicLayout>} />
             <Route path="/products" element={<PublicLayout><Services /></PublicLayout>} />
+            <Route path="/real-estate" element={<PublicLayout><RealEstate /></PublicLayout>} />
             <Route path="/advisors" element={<PublicLayout><Advisors /></PublicLayout>} />
             <Route path="/advisor/:slug" element={<PublicLayout><AdvisorMicrosite /></PublicLayout>} />
             <Route path="/resources" element={<PublicLayout><Resources /></PublicLayout>} />

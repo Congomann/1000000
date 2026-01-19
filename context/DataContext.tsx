@@ -74,6 +74,12 @@ interface DataContextType {
   submitJobApplication: (data: any) => void;
   updateJobApplicationStatus: (id: string, status: string, config?: any) => void;
   updateApplicationStatus: (id: string, status: ApplicationStatus) => void;
+  
+  // Real Estate Property Management
+  addProperty: (property: Partial<PropertyListing>) => void;
+  updateProperty: (id: string, property: Partial<PropertyListing>) => void;
+  deleteProperty: (id: string) => void;
+
   updateTransactionStatus: (id: string, status: 'Open' | 'Closed' | 'Cancelled', stage?: EscrowTransaction['stage']) => void;
   addPortfolio: (data: Partial<ClientPortfolio>) => void;
   updatePortfolio: (id: string, data: Partial<ClientPortfolio>) => void;
@@ -300,6 +306,48 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       pushNotification('API Config Updated', 'Integration settings have been modified.', 'info');
   }, [pushNotification]);
 
+  // Property Listing Handlers - Expanded for new fields
+  const addProperty = useCallback((propertyData: Partial<PropertyListing>) => {
+      const newProperty: PropertyListing = {
+          id: crypto.randomUUID(),
+          address: propertyData.address || '',
+          city: propertyData.city || '',
+          state: propertyData.state || '',
+          zip: propertyData.zip || '',
+          price: propertyData.price || 0,
+          type: propertyData.type || 'Residential',
+          status: 'Active',
+          bedrooms: propertyData.bedrooms,
+          bathrooms: propertyData.bathrooms,
+          sqft: propertyData.sqft,
+          image: propertyData.image || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=800',
+          listedDate: new Date().toISOString(),
+          sellerName: propertyData.sellerName || 'Unknown',
+          advisorId: user?.id || 'admin',
+          // New Fields for Enhanced Listings
+          county: propertyData.county,
+          zoning: propertyData.zoning,
+          restrictions: propertyData.restrictions,
+          hoa: propertyData.hoa || false,
+          hoaFee: propertyData.hoaFee,
+          taxAmount: propertyData.taxAmount,
+          videoUrl: propertyData.videoUrl,
+          description: propertyData.description,
+      };
+      setProperties(prev => [newProperty, ...prev]);
+      pushNotification('New Listing', `Property at ${newProperty.address} listed successfully.`, 'success');
+  }, [user, pushNotification]);
+
+  const updateProperty = useCallback((id: string, propertyData: Partial<PropertyListing>) => {
+      setProperties(prev => prev.map(p => p.id === id ? { ...p, ...propertyData } : p));
+      pushNotification('Listing Updated', `Property details modified.`, 'info');
+  }, [pushNotification]);
+
+  const deleteProperty = useCallback((id: string) => {
+      setProperties(prev => prev.filter(p => p.id !== id));
+      pushNotification('Listing Removed', `Property removed from pipeline.`, 'warning');
+  }, [pushNotification]);
+
   // Placeholder implementations for missing methods
   const updateLeadStatus = (id: string, status: LeadStatus, analysis?: string) => updateLead(id, { status, aiAnalysis: analysis });
   const assignLeads = (ids: string[], advisorId: string) => ids.forEach(id => updateLead(id, { assignedTo: advisorId, status: LeadStatus.ASSIGNED }));
@@ -382,7 +430,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       addCallback, handleAdvisorLeadAction, addEvent, updateEvent, deleteEvent, addAdvisor, deleteAdvisor, restoreUser, permanentlyDeleteUser,
       assignCarriers, markChatRead, editChatMessage, deleteChatMessage, sendChatMessage, submitJobApplication, updateJobApplicationStatus,
       updateApplicationStatus, updateTransactionStatus, addPortfolio, updatePortfolio, deletePortfolio, addComplianceDoc,
-      updateFeeStatus, addAdvisoryFee, updateAdvisoryFee, deleteAdvisoryFee, addLoanApplication, updateLoanApplication, deleteLoanApplication
+      updateFeeStatus, addAdvisoryFee, updateAdvisoryFee, deleteAdvisoryFee, addLoanApplication, updateLoanApplication, deleteLoanApplication,
+      addProperty, updateProperty, deleteProperty
     }}>
       {children}
     </DataContext.Provider>

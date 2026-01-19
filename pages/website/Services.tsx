@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { ProductType } from '../../types';
-import { CheckCircle, ArrowLeft, Key, Home as HomeIcon, TrendingUp, X, Shield, Users, Heart, Coins, Umbrella, BarChart3, Truck, Briefcase, Building2, Gem, Map, Brain, Landmark, Percent, DollarSign } from 'lucide-react';
+import { CheckCircle, ArrowLeft, Key, Home as HomeIcon, TrendingUp, X, Shield, Users, Heart, Coins, Umbrella, BarChart3, Truck, Briefcase, Building2, Gem, Map, Brain, Landmark, Percent, DollarSign, MapPin, User, ChevronRight, Video } from 'lucide-react';
 import { useLocation, useSearchParams, Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 
@@ -9,7 +9,7 @@ export const Services: React.FC = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const categoryFilter = searchParams.get('category');
-  const { addCallback, addLead, companySettings } = useData();
+  const { addCallback, addLead, companySettings, properties } = useData();
 
   // Modal Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -19,6 +19,9 @@ export const Services: React.FC = () => {
     phone: '',
     timeRequested: ''
   });
+
+  // Real Estate Listing View State
+  const [viewListing, setViewListing] = useState<string | null>(null);
 
   // Animation Observer Logic
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -42,27 +45,25 @@ export const Services: React.FC = () => {
     });
 
     return () => observerRef.current?.disconnect();
-  }, [categoryFilter]); // Re-run when filter changes
+  }, [categoryFilter]); 
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.name && formData.phone) {
-      // 1. Add Callback Request
       addCallback({
         name: formData.name,
         phone: formData.phone,
         timeRequested: formData.timeRequested || 'ASAP'
       });
 
-      // 2. Create Lead (Source: Company) - No specific advisor assigned
       addLead({
         name: formData.name,
         phone: formData.phone,
         email: 'Not Provided',
-        interest: ProductType.LIFE, // Default for generic inquiry
+        interest: ProductType.LIFE, 
         message: `Callback requested for ${formData.timeRequested || 'ASAP'} via Company Services Page.`,
         source: 'company'
-      }, undefined); // undefined assigns to unassigned pool
+      }, undefined); 
 
       setFormSubmitted(true);
       setTimeout(() => {
@@ -73,6 +74,10 @@ export const Services: React.FC = () => {
     }
   };
 
+  // Filter Active Properties for Real Estate Page
+  const activeProperties = properties.filter(p => p.status === 'Active');
+  const selectedProperty = properties.find(p => p.id === viewListing);
+
   const products = [
     {
       title: ProductType.LIFE,
@@ -81,9 +86,9 @@ export const Services: React.FC = () => {
       image: companySettings.productImages?.[ProductType.LIFE] || "https://picsum.photos/600/400?random=1"
     },
     {
-      title: ProductType.BUSINESS,
-      desc: "Protect your business assets and liabilities with tailored commercial packages.",
-      features: ['General Liability', 'Worker\'s Comp', 'Business Owner\'s Policy (BOP)', 'Cyber Liability'],
+      title: "Business & Professional Liability",
+      desc: "Protect your business assets, operations, and professional reputation with tailored commercial and E&O packages.",
+      features: ['General Liability', 'Worker\'s Comp', 'Professional Liability (E&O)', 'Cyber Liability'],
       image: companySettings.productImages?.[ProductType.BUSINESS] || "https://picsum.photos/600/400?random=2"
     },
     {
@@ -105,32 +110,20 @@ export const Services: React.FC = () => {
       image: companySettings.productImages?.[ProductType.AUTO] || "https://picsum.photos/600/400?random=6"
     },
     {
-      title: ProductType.EO,
-      desc: "Professional liability insurance to protect against claims of negligence.",
-      features: ['Legal Defense Costs', 'Settlements', 'Copyright Infringement', 'Personal Injury'],
-      image: companySettings.productImages?.[ProductType.EO] || "https://picsum.photos/600/400?random=4"
-    },
-    {
-      title: ProductType.SECURITIES,
-      desc: "Navigating the complexities of financial securities and series licensing.",
-      features: ['Series 6, 7, 63 Support', 'Investment Advisory', 'Wealth Management Compliance'],
-      image: companySettings.productImages?.[ProductType.SECURITIES] || "https://picsum.photos/600/400?random=5"
-    },
-    {
-      title: ProductType.INVESTMENT,
-      desc: "Specialized guidance for clients seeking fiduciary retirement planning, investment management, and hybrid wealth strategies.",
-      features: ['Fiduciary Planning', 'Portfolio Management', 'Retirement Strategies', 'Hybrid Wealth Models'],
-      image: "https://images.unsplash.com/photo-1611974765270-ca12586343bb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1600&q=80"
+      title: "Securities & Investment Advisory",
+      desc: "Navigating financial securities, series licensing, and providing fiduciary retirement planning strategies.",
+      features: ['Series 6, 7, 63 Support', 'Fiduciary Planning', 'Portfolio Management', 'Wealth Management Compliance'],
+      image: companySettings.productImages?.[ProductType.SECURITIES] || "https://images.unsplash.com/photo-1611974765270-ca12586343bb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1600&q=80"
     }
   ];
 
-  // Filter out hidden products based on company settings
   const hiddenProducts = companySettings.hiddenProducts || [];
   
   const displayedProducts = (categoryFilter
     ? products.filter(p => {
         const sectionId = p.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        return sectionId === categoryFilter;
+        // Simple fuzzy match for category filters since we changed titles
+        return sectionId.includes(categoryFilter) || categoryFilter.includes(sectionId.split('-')[0]);
       })
     : products).filter(p => !hiddenProducts.includes(p.title));
 
@@ -148,12 +141,6 @@ export const Services: React.FC = () => {
           opacity: 1;
           transform: translateY(0);
         }
-        
-        /* Stagger delays */
-        .delay-100 { transition-delay: 100ms; }
-        .delay-200 { transition-delay: 200ms; }
-        .delay-300 { transition-delay: 300ms; }
-
         .service-card {
            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -161,461 +148,299 @@ export const Services: React.FC = () => {
            transform: translateY(-8px);
            box-shadow: 0 20px 40px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
         }
-        .zoom-image {
-          transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-        .service-card:hover .zoom-image {
-          transform: scale(1.05);
-        }
       `}</style>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
-          {categoryFilter ? (
+          {categoryFilter && displayedProducts.length > 0 ? (
             <div className="mb-8 animate-on-scroll">
                 <Link to="/products" className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium mb-4 transition-colors">
                     <ArrowLeft className="w-4 h-4 mr-2" /> View All Products
                 </Link>
                 <h2 className="text-3xl font-extrabold text-slate-900 sm:text-4xl">
-                    {displayedProducts[0]?.title || 'Product Not Found'}
+                    {displayedProducts[0]?.title}
                 </h2>
             </div>
           ) : (
             <div className="mb-16 animate-on-scroll">
-                <h2 className="text-3xl font-extrabold text-slate-900 sm:text-4xl">Our Financial Products</h2>
-                <p className="mt-4 max-w-2xl text-xl text-slate-500 mx-auto">
-                    From personal protection to corporate risk management, we cover it all.
+                <h2 className="text-base text-blue-600 font-semibold tracking-wide uppercase">Our Products</h2>
+                <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+                    Comprehensive Financial Solutions
+                </p>
+                <p className="mt-4 max-w-2xl text-xl text-gray-500 mx-auto">
+                    From protecting your family to growing your wealth, we offer a full spectrum of insurance and financial services.
                 </p>
             </div>
           )}
         </div>
 
-        <div className={categoryFilter ? "space-y-16" : "grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10"}>
-          {displayedProducts.length > 0 ? (
-            displayedProducts.map((product, index) => {
-              const sectionId = product.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-              const isRealEstate = product.title === ProductType.REAL_ESTATE;
-              const isLife = product.title === ProductType.LIFE;
-              const isAuto = product.title === ProductType.AUTO;
-              const isBusiness = product.title === ProductType.BUSINESS;
-              const isInvestment = product.title === ProductType.INVESTMENT;
-              const isSecurities = product.title === ProductType.SECURITIES;
-              const isMortgage = product.title === ProductType.MORTGAGE;
-
-              // Specialized Render for Life Insurance (Only when filtered)
-              if (isLife && categoryFilter) {
-                const lifeProducts = [
-                    {
-                        title: "Term Life Insurance",
-                        desc: "Affordable coverage for a set period (10-30 years). Ideal for income replacement during critical earning years.",
-                        icon: Shield,
-                        color: "text-blue-500",
-                        bg: "bg-blue-50",
-                        features: ["Low monthly premiums", "High coverage amounts", "Convertible to permanent"]
-                    },
-                    {
-                        title: "Whole Life Insurance",
-                        desc: "Permanent protection with fixed premiums and guaranteed cash value accumulation that acts as a safe asset class.",
-                        icon: Heart,
-                        color: "text-red-500",
-                        bg: "bg-red-50",
-                        features: ["Guaranteed death benefit", "Consistent cash value growth", "Fixed premiums for life"]
-                    },
-                    {
-                        title: "Indexed Universal Life (IUL)",
-                        desc: "A powerful retirement tool combining life insurance with cash value tied to market indices like the S&P 500.",
-                        icon: BarChart3,
-                        color: "text-purple-500",
-                        bg: "bg-purple-50",
-                        features: ["Market-linked growth potential", "0% Floor (Downside Protection)", "Tax-free retirement income streams"]
-                    },
-                    {
-                        title: "Annuities",
-                        desc: "Secure your retirement with guaranteed income. Choose 'Immediate' for right-now income or 'Deferred' for later.",
-                        icon: Coins,
-                        color: "text-amber-500",
-                        bg: "bg-amber-50",
-                        features: ["Immediate & Deferred options", "Guaranteed lifetime income", "Principal protection"]
-                    },
-                    {
-                        title: "Group Benefits",
-                        desc: "Comprehensive insurance packages for businesses to attract and retain top talent.",
-                        icon: Users,
-                        color: "text-indigo-500",
-                        bg: "bg-indigo-50",
-                        features: ["Health, Life & Disability", "Employee retention strategy", "Cost-effective group rates"]
-                    },
-                    {
-                        title: "Final Expense",
-                        desc: "Simple policies designed to cover burial and end-of-life costs.",
-                        icon: Umbrella,
-                        color: "text-teal-500",
-                        bg: "bg-teal-50",
-                        features: ["No medical exam", "Quick approval", "Peace of mind"]
-                    }
-                ];
-
-                return (
-                    <div key={product.title} className="animate-on-scroll">
-                        <p className="text-xl text-slate-500 max-w-3xl mx-auto text-center mb-16">{product.desc}</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {lifeProducts.map((lp, idx) => (
-                                <div key={idx} className={`animate-on-scroll delay-${(idx % 3) * 100} bg-white rounded-2xl p-8 shadow-sm border border-slate-100 hover:shadow-xl transition-all duration-300 flex flex-col group`}>
-                                    <div className={`w-14 h-14 ${lp.bg} ${lp.color} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                                        <lp.icon className="h-7 w-7" />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-blue-600 transition-colors">{lp.title}</h3>
-                                    <p className="text-slate-600 mb-6 text-sm leading-relaxed flex-1">{lp.desc}</p>
-                                    <ul className="space-y-3 mt-auto">
-                                        {lp.features.map((f, i) => (
-                                            <li key={i} className="flex items-start text-sm text-slate-500">
-                                                <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                                                <span>{f}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    <button 
-                                      onClick={() => setIsFormOpen(true)}
-                                      className="mt-8 w-full py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-blue-600 hover:border-transparent hover:text-white transition-all shadow-sm hover:shadow-md"
-                                    >
-                                        Request Quote
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
+        {/* Dynamic Real Estate Listings Section */}
+        {categoryFilter === 'real-estate' && activeProperties.length > 0 && (
+            <div className="mb-20 animate-on-scroll">
+                <div className="flex items-center gap-3 mb-8">
+                    <div className="p-3 bg-amber-100 text-amber-600 rounded-full">
+                        <HomeIcon className="h-6 w-6" />
                     </div>
-                );
-              }
-
-              // Specialized Render for Real Estate (Only when filtered)
-              if (isRealEstate && categoryFilter) {
-                  const realEstateProducts = [
-                      {
-                          title: "Residential Real Estate",
-                          desc: "Professional buying and selling services for homes, townhouses, and condominiums.",
-                          icon: HomeIcon,
-                          color: "text-blue-600",
-                          bg: "bg-blue-50",
-                          features: ["Market analysis & pricing strategy", "Professional listing & staging", "Negotiation & contract management"]
-                      },
-                      {
-                          title: "Commercial Real Estate",
-                          desc: "Expert services for office buildings, retail spaces, and mixed-use properties.",
-                          icon: Building2,
-                          color: "text-slate-700",
-                          bg: "bg-slate-100",
-                          features: ["Lease negotiation support", "Investment property analysis", "Zoning and due diligence"]
-                      },
-                      {
-                          title: "Real Estate Investing",
-                          desc: "Strategic investment guidance for rental properties, flips, and wealth growth.",
-                          icon: TrendingUp,
-                          color: "text-emerald-600",
-                          bg: "bg-emerald-50",
-                          features: ["ROI and cash flow projections", "Portfolio expansion planning", "Risk management strategies"]
-                      },
-                      {
-                          title: "Property Management",
-                          desc: "Full-service rental property management for residential and commercial assets.",
-                          icon: Key,
-                          color: "text-orange-600",
-                          bg: "bg-orange-50",
-                          features: ["Tenant screening & placement", "Rent collection & lease enforcement", "Maintenance coordination"]
-                      },
-                      {
-                          title: "Luxury Properties",
-                          desc: "Exclusive representation for high-value homes and premium property clients.",
-                          icon: Gem,
-                          color: "text-purple-600",
-                          bg: "bg-purple-50",
-                          features: ["Private client handling", "Global marketing reach", "Confidential showings"]
-                      },
-                      {
-                          title: "Land & Development",
-                          desc: "Professional guidance for land acquisition and development projects.",
-                          icon: Map,
-                          color: "text-amber-600",
-                          bg: "bg-amber-50",
-                          features: ["Zoning and land use research", "Feasibility and planning studies", "Builder and contractor coordination"]
-                      }
-                  ];
-
-                  return (
-                      <div key={product.title} className="animate-on-scroll">
-                        <p className="text-xl text-slate-500 max-w-3xl mx-auto text-center mb-16">{product.desc}</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {realEstateProducts.map((rep, idx) => (
-                                <div key={idx} className={`animate-on-scroll delay-${(idx % 3) * 100} bg-white rounded-2xl p-8 shadow-sm border border-slate-100 hover:shadow-xl transition-all duration-300 flex flex-col group`}>
-                                    <div className={`w-14 h-14 ${rep.bg} ${rep.color} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                                        <rep.icon className="h-7 w-7" />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-blue-600 transition-colors">{rep.title}</h3>
-                                    <p className="text-slate-600 mb-6 text-sm leading-relaxed flex-1">{rep.desc}</p>
-                                    <ul className="space-y-3 mt-auto">
-                                        {rep.features.map((f, i) => (
-                                            <li key={i} className="flex items-start text-sm text-slate-500">
-                                                <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                                                <span>{f}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    <button 
-                                      onClick={() => setIsFormOpen(true)}
-                                      className="mt-8 w-full py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-blue-600 hover:border-transparent hover:text-white transition-all shadow-sm hover:shadow-md"
-                                    >
-                                        Learn More
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                      </div>
-                  );
-              }
-
-              // Specialized Render for Mortgage (Only when filtered)
-              if (isMortgage && categoryFilter) {
-                  const mortgageFeatures = [
-                      {
-                          title: "Lower Monthly Payments",
-                          desc: "Lower monthly payments through improved rates and optimized loan terms.",
-                          icon: Percent
-                      },
-                      {
-                          title: "Unlock Home Equity",
-                          desc: "Unlock home equity for renovations, real estate investment, or debt consolidation.",
-                          icon: HomeIcon
-                      },
-                      {
-                          title: "Build Strategic Wealth",
-                          desc: "Build a strategic, future-focused mortgage plan that strengthens your wealth over time.",
-                          icon: TrendingUp
-                      }
-                  ];
-
-                  return (
-                      <div key={product.title} className="animate-on-scroll">
-                          <p className="text-xl text-slate-500 max-w-4xl mx-auto text-center mb-8 leading-relaxed">
-                              {product.desc}
-                          </p>
-                          <p className="text-lg text-slate-600 max-w-4xl mx-auto text-center mb-16 leading-relaxed">
-                              Our comprehensive mortgage analysis evaluates your current loan, property equity, financial goals, and available lending programs to identify the most cost-effective path toward financial stability and growth.
-                          </p>
-                          
-                          <div className="max-w-5xl mx-auto space-y-6">
-                              {mortgageFeatures.map((feat, idx) => (
-                                  <div key={idx} className={`animate-on-scroll delay-${(idx) * 100} bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col md:flex-row items-center gap-8`}>
-                                      <div className="w-20 h-20 bg-cyan-50 text-cyan-600 rounded-2xl flex items-center justify-center flex-shrink-0">
-                                          <feat.icon className="h-10 w-10" />
-                                      </div>
-                                      <div className="flex-1 text-center md:text-left">
-                                          <h3 className="text-xl font-bold text-slate-900 mb-2">{feat.title}</h3>
-                                          <p className="text-slate-600 text-lg">{feat.desc}</p>
-                                      </div>
-                                      <div className="hidden md:block">
-                                          <CheckCircle className="h-6 w-6 text-green-500" />
-                                      </div>
-                                  </div>
-                              ))}
-                          </div>
-
-                          <div className="mt-16 text-center">
-                              <button 
-                                  onClick={() => setIsFormOpen(true)}
-                                  className="px-12 py-5 bg-cyan-600 text-white text-lg font-bold rounded-full shadow-xl shadow-cyan-600/30 hover:bg-cyan-700 hover:scale-105 transition-all"
-                              >
-                                  Analyze My Mortgage Options
-                              </button>
-                          </div>
-                      </div>
-                  );
-              }
-
-              // Specialized Render for Investment Advisory (Only when filtered)
-              if (isInvestment && categoryFilter) {
-                  const investmentProducts = [
-                      {
-                          title: "Fiduciary Advisory (Series 65)",
-                          desc: "Professional financial planning that prioritizes your best interests with transparent, fee-based portfolio management.",
-                          icon: Brain,
-                          color: "text-emerald-600",
-                          bg: "bg-emerald-50",
-                          features: ["Personalized retirement income planning", "Portfolio building & long-term investment strategy", "Independent, client-first advisory support"]
-                      },
-                      {
-                          title: "Hybrid Advisory & Brokerage (Series 66)",
-                          desc: "Comprehensive wealth management combining brokerage access with fiduciary advisory services for flexible planning.",
-                          icon: TrendingUp,
-                          color: "text-blue-600",
-                          bg: "bg-blue-50",
-                          features: ["Access to investment products & securities", "Fee-based advisory + commission options", "Full-service retirement & wealth strategies"]
-                      }
-                  ];
-
-                  return (
-                      <div key={product.title} className="animate-on-scroll">
-                        <p className="text-xl text-slate-500 max-w-3xl mx-auto text-center mb-16">{product.desc}</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                            {investmentProducts.map((inv, idx) => (
-                                <div key={idx} className={`animate-on-scroll delay-${(idx % 2) * 100} bg-white rounded-2xl p-8 shadow-sm border border-slate-100 hover:shadow-xl transition-all duration-300 flex flex-col group`}>
-                                    <div className={`w-14 h-14 ${inv.bg} ${inv.color} rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                                        <inv.icon className="h-7 w-7" />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-emerald-600 transition-colors">{inv.title}</h3>
-                                    <p className="text-slate-600 mb-6 text-sm leading-relaxed flex-1">{inv.desc}</p>
-                                    <ul className="space-y-3 mt-auto">
-                                        {inv.features.map((f, i) => (
-                                            <li key={i} className="flex items-start text-sm text-slate-500">
-                                                <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                                                <span>{f}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    <button 
-                                      onClick={() => setIsFormOpen(true)}
-                                      className="mt-8 w-full py-3 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-emerald-600 hover:border-transparent hover:text-white transition-all shadow-sm hover:shadow-md"
-                                    >
-                                        Learn More
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                      </div>
-                  );
-              }
-
-              // DEFAULT GRID RENDER (Used when no filter is active)
-              return (
-                <div key={product.title} id={sectionId} className={`animate-on-scroll group service-card bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col sm:flex-row h-full`}>
-                  <div className="relative h-48 sm:h-auto sm:w-1/3 rounded-xl overflow-hidden mb-6 sm:mb-0 sm:mr-6 flex-shrink-0 bg-slate-50">
-                    <img
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      src={product.image}
-                      alt={product.title}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60"></div>
-                  </div>
-                  
-                  <div className="flex flex-col flex-1 py-2">
-                    <div className="flex items-center gap-3 mb-4">
-                        <span className="p-2 bg-blue-50 text-blue-600 rounded-lg shrink-0">
-                            {isRealEstate ? <HomeIcon className="h-5 w-5" /> : 
-                             isLife ? <Shield className="h-5 w-5" /> :
-                             isAuto ? <Truck className="h-5 w-5" /> :
-                             isBusiness ? <Briefcase className="h-5 w-5" /> :
-                             isInvestment ? <TrendingUp className="h-5 w-5" /> :
-                             isMortgage ? <Landmark className="h-5 w-5" /> :
-                             <Key className="h-5 w-5" />}
-                        </span>
-                        <h3 className="text-xl font-bold text-slate-900 leading-tight">{product.title}</h3>
-                    </div>
-                    
-                    <p className="text-slate-600 text-sm leading-relaxed mb-6 flex-1">
-                        {product.desc}
-                    </p>
-
-                    <ul className="space-y-2 mb-8 hidden md:block">
-                        {product.features.slice(0, 2).map((feature, i) => (
-                        <li key={i} className="flex items-center text-slate-700 text-xs font-medium">
-                            <CheckCircle className="h-3 w-3 text-green-500 mr-2 flex-shrink-0" />
-                            {feature}
-                        </li>
-                        ))}
-                    </ul>
-
-                    <div className="flex gap-3 mt-auto">
-                        {!isInvestment && !isSecurities && (
-                            <button 
-                                onClick={() => setIsFormOpen(true)}
-                                className="flex-1 py-2.5 bg-blue-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-600/20 hover:bg-blue-700 hover:-translate-y-0.5 transition-all"
-                            >
-                                {isMortgage ? 'Analyze' : 'Get Quote'}
-                            </button>
-                        )}
-                        <a 
-                            href={`tel:${cleanPhone}`}
-                            className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
-                        >
-                            Speak to Agent
-                        </a>
-                    </div>
-                  </div>
+                    <h3 className="text-2xl font-bold text-slate-900">Featured Listings</h3>
                 </div>
-              );
-            })
-          ) : (
-            <div className="col-span-full text-center py-20">
-               <h3 className="text-xl font-bold text-slate-900">No products found.</h3>
-               <Link to="/products" className="text-blue-600 mt-4 inline-block hover:underline">View all products</Link>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {activeProperties.map(prop => (
+                        <div key={prop.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-lg overflow-hidden group hover:-translate-y-2 transition-all duration-300">
+                            <div className="h-64 relative overflow-hidden">
+                                <img src={prop.image} alt={prop.address} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                <div className="absolute top-4 left-4 bg-slate-900/80 text-white px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-md">
+                                    {prop.type}
+                                </div>
+                                <div className="absolute bottom-4 right-4 bg-white text-slate-900 px-4 py-2 rounded-xl text-lg font-black shadow-lg">
+                                    ${prop.price.toLocaleString()}
+                                </div>
+                            </div>
+                            <div className="p-6">
+                                <h4 className="text-lg font-bold text-slate-900 mb-1">{prop.address}</h4>
+                                <p className="text-slate-500 text-sm mb-4">{prop.city}, {prop.state} {prop.zip}</p>
+                                
+                                <div className="flex justify-between items-center py-4 border-t border-slate-100">
+                                    <div className="text-center">
+                                        <span className="block text-xs font-bold text-slate-400 uppercase">Beds</span>
+                                        <span className="font-black text-slate-800">{prop.bedrooms}</span>
+                                    </div>
+                                    <div className="w-px h-8 bg-slate-100"></div>
+                                    <div className="text-center">
+                                        <span className="block text-xs font-bold text-slate-400 uppercase">Baths</span>
+                                        <span className="font-black text-slate-800">{prop.bathrooms}</span>
+                                    </div>
+                                    <div className="w-px h-8 bg-slate-100"></div>
+                                    <div className="text-center">
+                                        <span className="block text-xs font-bold text-slate-400 uppercase">Sq Ft</span>
+                                        <span className="font-black text-slate-800">{prop.sqft?.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                                
+                                <button 
+                                    onClick={() => setViewListing(prop.id)}
+                                    className="w-full py-3 bg-[#0B2240] text-white font-bold rounded-xl text-sm hover:bg-slate-800 transition-colors shadow-lg shadow-blue-900/20"
+                                >
+                                    View Details
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
-          )}
+        )}
+
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
+          {displayedProducts.map((product) => (
+            <div key={product.title} className="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden service-card animate-on-scroll h-full">
+              <div className="flex-shrink-0 h-48 w-full overflow-hidden relative">
+                <img className="h-full w-full object-cover transform hover:scale-105 transition-transform duration-700" src={product.image} alt={product.title} />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                <h3 className="absolute bottom-4 left-6 text-xl font-bold text-white tracking-wide">{product.title}</h3>
+              </div>
+              <div className="flex-1 p-8 flex flex-col justify-between">
+                <div>
+                  <p className="text-sm text-slate-500 leading-relaxed font-medium">
+                    {product.desc}
+                  </p>
+                  <ul className="mt-6 space-y-3">
+                    {product.features.map((feature) => (
+                        <li key={feature} className="flex items-start">
+                            <CheckCircle className="flex-shrink-0 h-5 w-5 text-blue-500" aria-hidden="true" />
+                            <span className="ml-3 text-sm text-slate-700 font-medium">{feature}</span>
+                        </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="mt-8 pt-6 border-t border-slate-100">
+                    <button 
+                        onClick={() => setIsFormOpen(true)}
+                        className="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent text-sm font-bold rounded-xl text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+                    >
+                        Request Consultation
+                    </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Modal Form */}
+      {/* Listing Detail Modal */}
+      {viewListing && selectedProperty && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0B2240]/80 backdrop-blur-md p-4 animate-fade-in overflow-y-auto">
+              <div className="bg-white rounded-[3rem] w-full max-w-5xl shadow-2xl relative overflow-hidden flex flex-col max-h-[95vh]">
+                  {/* Close Button */}
+                  <button 
+                    onClick={() => setViewListing(null)}
+                    className="absolute top-6 right-6 z-20 p-2 bg-white/20 hover:bg-white text-white hover:text-slate-900 rounded-full backdrop-blur-md transition-all"
+                  >
+                      <X className="h-6 w-6" />
+                  </button>
+
+                  <div className="flex-1 overflow-y-auto custom-scrollbar">
+                      {/* Media Header */}
+                      <div className="relative h-96 w-full">
+                          {selectedProperty.videoUrl ? (
+                              <video controls className="w-full h-full object-cover" poster={selectedProperty.image}>
+                                  <source src={selectedProperty.videoUrl} type="video/mp4" />
+                                  Your browser does not support video tag.
+                              </video>
+                          ) : (
+                              <img src={selectedProperty.image} alt={selectedProperty.address} className="w-full h-full object-cover" />
+                          )}
+                          <div className="absolute bottom-0 left-0 right-0 p-10 bg-gradient-to-t from-black/80 to-transparent text-white">
+                              <div className="flex justify-between items-end">
+                                  <div>
+                                      <h2 className="text-4xl font-black mb-2">{selectedProperty.address}</h2>
+                                      <p className="text-xl font-medium opacity-90">{selectedProperty.city}, {selectedProperty.state} {selectedProperty.zip}</p>
+                                  </div>
+                                  <div className="text-right">
+                                      <p className="text-5xl font-black tracking-tighter">${selectedProperty.price.toLocaleString()}</p>
+                                      <p className="text-sm font-bold uppercase tracking-widest mt-2 bg-white/20 inline-block px-3 py-1 rounded-lg backdrop-blur-sm">{selectedProperty.type} • {selectedProperty.status}</p>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-3">
+                          {/* Details Sidebar */}
+                          <div className="bg-slate-50 p-10 lg:min-h-[500px]">
+                              <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">Property Specs</h3>
+                              
+                              <div className="space-y-6">
+                                  <div className="flex justify-between items-center py-3 border-b border-slate-200">
+                                      <span className="text-sm font-bold text-slate-600">Bedrooms</span>
+                                      <span className="text-base font-black text-slate-900">{selectedProperty.bedrooms}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center py-3 border-b border-slate-200">
+                                      <span className="text-sm font-bold text-slate-600">Bathrooms</span>
+                                      <span className="text-base font-black text-slate-900">{selectedProperty.bathrooms}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center py-3 border-b border-slate-200">
+                                      <span className="text-sm font-bold text-slate-600">Square Feet</span>
+                                      <span className="text-base font-black text-slate-900">{selectedProperty.sqft?.toLocaleString()}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center py-3 border-b border-slate-200">
+                                      <span className="text-sm font-bold text-slate-600">County</span>
+                                      <span className="text-base font-black text-slate-900">{selectedProperty.county || 'N/A'}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center py-3 border-b border-slate-200">
+                                      <span className="text-sm font-bold text-slate-600">Zoning</span>
+                                      <span className="text-base font-black text-slate-900">{selectedProperty.zoning || 'Residential'}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center py-3 border-b border-slate-200">
+                                      <span className="text-sm font-bold text-slate-600">Annual Tax</span>
+                                      <span className="text-base font-black text-slate-900">${selectedProperty.taxAmount?.toLocaleString() || '0'}</span>
+                                  </div>
+                                  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mt-4">
+                                      <div className="flex justify-between items-center mb-1">
+                                          <span className="text-xs font-bold text-slate-500 uppercase">HOA Status</span>
+                                          <span className={`text-xs font-black uppercase ${selectedProperty.hoa ? 'text-orange-600' : 'text-green-600'}`}>
+                                              {selectedProperty.hoa ? 'Active' : 'None'}
+                                          </span>
+                                      </div>
+                                      {selectedProperty.hoa && (
+                                          <div className="flex justify-between items-center">
+                                              <span className="text-xs font-bold text-slate-500 uppercase">Monthly Fee</span>
+                                              <span className="text-sm font-black text-slate-800">${selectedProperty.hoaFee}</span>
+                                          </div>
+                                      )}
+                                  </div>
+                              </div>
+                          </div>
+
+                          {/* Main Info */}
+                          <div className="lg:col-span-2 p-10">
+                              <h3 className="text-2xl font-bold text-[#0B2240] mb-6">About this Property</h3>
+                              <p className="text-slate-600 leading-relaxed text-lg font-medium mb-10 whitespace-pre-wrap">
+                                  {selectedProperty.description || "No description provided for this listing."}
+                              </p>
+
+                              {selectedProperty.restrictions && (
+                                  <div className="mb-10 bg-amber-50 p-6 rounded-2xl border border-amber-100">
+                                      <h4 className="text-sm font-bold text-amber-800 uppercase tracking-wide mb-2 flex items-center gap-2">
+                                          <Shield className="h-4 w-4" /> Restrictions & Covenants
+                                      </h4>
+                                      <p className="text-sm text-amber-900 font-medium">{selectedProperty.restrictions}</p>
+                                  </div>
+                              )}
+
+                              <div className="flex gap-4">
+                                  <button onClick={() => setIsFormOpen(true)} className="flex-1 py-4 bg-[#0B2240] text-white font-bold rounded-2xl shadow-xl hover:bg-slate-800 transition-all text-sm uppercase tracking-widest">
+                                      Schedule Tour
+                                  </button>
+                                  <button onClick={() => setIsFormOpen(true)} className="flex-1 py-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl hover:bg-slate-50 transition-all text-sm uppercase tracking-widest">
+                                      Contact Agent
+                                  </button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* Contact Modal */}
       {isFormOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md p-8 relative scale-100 animate-in fade-in zoom-in duration-300">
-                <button onClick={() => setIsFormOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors p-2 hover:bg-slate-100 rounded-full">
-                    <X className="h-6 w-6" />
-                </button>
-                
-                {formSubmitted ? (
-                    <div className="text-center py-10">
-                        <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-                            <CheckCircle className="h-10 w-10" />
-                        </div>
-                        <h3 className="text-2xl font-bold text-slate-900 mb-2">Request Sent!</h3>
-                        <p className="text-slate-500">An advisor will contact you shortly.</p>
-                    </div>
-                ) : (
-                    <>
-                        <div className="mb-8">
-                            <h3 className="text-2xl font-bold text-[#0B2240] mb-2">Request Information</h3>
-                            <p className="text-slate-500">Fill out the form below and we'll get back to you.</p>
-                        </div>
-                        <form onSubmit={handleFormSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Name</label>
-                                <input 
-                                    type="text" 
-                                    required
-                                    className="w-full bg-white text-slate-900 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                    placeholder="Your full name"
-                                    value={formData.name}
-                                    onChange={e => setFormData({...formData, name: e.target.value})}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Phone Number</label>
-                                <input 
-                                    type="tel" 
-                                    required
-                                    className="w-full bg-white text-slate-900 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                    placeholder="(555) 123-4567"
-                                    value={formData.phone}
-                                    onChange={e => setFormData({...formData, phone: e.target.value})}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Best Time to Call</label>
-                                <select 
-                                    className="w-full bg-white text-slate-900 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                                    value={formData.timeRequested}
-                                    onChange={e => setFormData({...formData, timeRequested: e.target.value})}
-                                >
-                                    <option value="">Anytime</option>
-                                    <option value="Morning">Morning (8am - 12pm)</option>
-                                    <option value="Afternoon">Afternoon (12pm - 5pm)</option>
-                                    <option value="Evening">Evening (5pm - 8pm)</option>
-                                </select>
-                            </div>
-                            <button type="submit" className="w-full py-3.5 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 hover:bg-blue-700 hover:shadow-xl transition-all mt-2 transform active:scale-95 duration-200">
-                                Submit Request
-                            </button>
-                        </form>
-                    </>
-                )}
-            </div>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full relative">
+            <button onClick={() => setIsFormOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+              <X size={24} />
+            </button>
+            
+            {formSubmitted ? (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600">
+                  <CheckCircle className="h-8 w-8" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900">Request Sent!</h3>
+                <p className="text-slate-500 mt-2">An advisor will contact you shortly.</p>
+              </div>
+            ) : (
+              <>
+                <h3 className="text-2xl font-bold text-slate-900 mb-2">Request Info</h3>
+                <p className="text-slate-500 mb-6 text-sm">Please provide your details below.</p>
+                <form onSubmit={handleFormSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Name</label>
+                    <input 
+                      required 
+                      className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                      value={formData.name}
+                      onChange={e => setFormData({...formData, name: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Phone</label>
+                    <input 
+                      required 
+                      type="tel"
+                      className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                      value={formData.phone}
+                      onChange={e => setFormData({...formData, phone: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Best Time to Call</label>
+                    <select 
+                      className="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                      value={formData.timeRequested}
+                      onChange={e => setFormData({...formData, timeRequested: e.target.value})}
+                    >
+                      <option value="">Anytime</option>
+                      <option value="Morning">Morning</option>
+                      <option value="Afternoon">Afternoon</option>
+                      <option value="Evening">Evening</option>
+                    </select>
+                  </div>
+                  <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                    Submit Request
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>

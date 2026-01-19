@@ -384,16 +384,24 @@ export interface PropertyListing {
   city: string;
   state: string;
   zip: string;
+  county?: string;
   price: number;
-  type: 'Residential' | 'Commercial' | 'Land';
+  type: 'Residential' | 'Commercial' | 'Land' | 'Multi-Family';
   status: 'Active' | 'Pending' | 'Sold' | 'Off Market';
   bedrooms?: number;
   bathrooms?: number;
   sqft?: number;
   image: string;
+  videoUrl?: string;
   listedDate: string;
   sellerName: string;
   advisorId: string;
+  description?: string;
+  zoning?: string;
+  restrictions?: string;
+  hoa?: boolean;
+  hoaFee?: number;
+  taxAmount?: number;
 }
 
 export interface EscrowTransaction {

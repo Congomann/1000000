@@ -58,6 +58,7 @@ export const Navbar: React.FC = () => {
             <div className="flex items-center space-x-1">
               <Link to="/" className="text-slate-300 hover:text-white hover:bg-white/10 px-5 py-2.5 rounded-full text-sm font-medium transition-all">Home</Link>
               <Link to="/products" className="text-slate-300 hover:text-white hover:bg-white/10 px-5 py-2.5 rounded-full text-sm font-medium transition-all">Products</Link>
+              <Link to="/real-estate" className="text-slate-300 hover:text-white hover:bg-white/10 px-5 py-2.5 rounded-full text-sm font-medium transition-all">Real Estate</Link>
               <Link to="/advisors" className="text-slate-300 hover:text-white hover:bg-white/10 px-5 py-2.5 rounded-full text-sm font-medium transition-all">Advisors</Link>
               <Link to="/resources" className="text-slate-300 hover:text-white hover:bg-white/10 px-5 py-2.5 rounded-full text-sm font-medium transition-all">Resources</Link>
               <Link to="/about" className="text-slate-300 hover:text-white hover:bg-white/10 px-5 py-2.5 rounded-full text-sm font-medium transition-all">About Us</Link>
@@ -95,6 +96,7 @@ export const Navbar: React.FC = () => {
             <div className="space-y-1">
               <Link to="/" onClick={() => setIsOpen(false)} className="block hover:bg-white/10 px-4 py-3 rounded-xl text-base font-medium text-slate-200">Home</Link>
               <Link to="/products" onClick={() => setIsOpen(false)} className="block hover:bg-white/10 px-4 py-3 rounded-xl text-base font-medium text-slate-200">Products</Link>
+              <Link to="/real-estate" onClick={() => setIsOpen(false)} className="block hover:bg-white/10 px-4 py-3 rounded-xl text-base font-medium text-slate-200">Real Estate</Link>
               <Link to="/advisors" onClick={() => setIsOpen(false)} className="block hover:bg-white/10 px-4 py-3 rounded-xl text-base font-medium text-slate-200">Advisors</Link>
               <Link to="/resources" onClick={() => setIsOpen(false)} className="block hover:bg-white/10 px-4 py-3 rounded-xl text-base font-medium text-slate-200">Resources</Link>
               <Link to="/about" onClick={() => setIsOpen(false)} className="block hover:bg-white/10 px-4 py-3 rounded-xl text-base font-medium text-slate-200">About Us</Link>

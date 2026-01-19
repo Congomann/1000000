@@ -8,6 +8,7 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const SERVER_START_TIME = new Date().toISOString();
 
 // Middleware
 app.use(cors());
@@ -19,63 +20,8 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
-const mapLeadRow = (row) => ({
-  id: row.id,
-  name: row.name,
-  email: row.email,
-  phone: row.phone,
-  interest: row.interest,
-  status: row.status,
-  assignedTo: row.assigned_to,
-  source: row.source,
-  priority: row.priority,
-  score: row.score,
-  qualification: row.qualification,
-  message: row.message,
-  date: row.created_at,
-  lifeDetails: row.life_details,
-  realEstateDetails: row.real_estate_details,
-  securitiesDetails: row.securities_details,
-  customDetails: row.custom_details,
-  isArchived: row.is_archived,
-  campaign: row.campaign_id,
-  adGroup: row.ad_group_id,
-  adId: row.ad_id,
-  platformData: row.platform_data
-});
-
-const mapUserRow = (row) => ({
-  id: row.id,
-  name: row.name,
-  email: row.email,
-  role: row.role,
-  category: row.category,
-  title: row.title,
-  phone: row.phone,
-  avatar: row.avatar,
-  bio: row.bio,
-  productsSold: row.products_sold,
-  license_states: row.license_states,
-  micrositeEnabled: row.microsite_enabled,
-  onboardingCompleted: row.onboarding_completed,
-  deletedAt: row.deleted_at
-});
-
-const mapClientRow = (row) => ({
-  id: row.id,
-  advisorId: row.advisor_id,
-  userId: row.user_id,
-  name: row.name,
-  email: row.email,
-  phone: row.phone,
-  product: row.product,
-  policyNumber: row.policy_number,
-  carrier: row.carrier,
-  premium: row.premium,
-  renewalDate: row.renewal_date,
-  commissionAmount: row.commission_amount,
-  address: row.address,
-  createdAt: row.created_at
+pool.on('error', (err) => {
+  console.error('Unexpected Postgres error', err);
 });
 
 // --- HELPER: WEBHOOK NORMALIZERS ---
@@ -155,6 +101,16 @@ app.get('/api/dashboard/metrics', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server Error' });
+  }
+});
+
+// 0. Health Check
+app.get('/api/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ status: 'ok', time: SERVER_START_TIME });
+  } catch (err) {
+    res.status(500).json({ status: 'error', error: err.message });
   }
 });
 
@@ -595,3 +551,12 @@ app.get('/api/logs', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`NHFG CRM API Server running on port ${PORT}`);
 });
+
+const shutdown = async (signal) => {
+  console.log(`Received ${signal}. Closing server.`);
+  await pool.end();
+  process.exit(0);
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

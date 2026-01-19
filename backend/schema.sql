@@ -59,6 +59,19 @@ CREATE TABLE leads (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER leads_set_updated_at
+BEFORE UPDATE ON leads
+FOR EACH ROW
+EXECUTE PROCEDURE update_updated_at_column();
+
 -- CLIENTS (Active Policies & Accounts)
 CREATE TABLE clients (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

@@ -8,6 +8,7 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const SERVER_START_TIME = new Date().toISOString();
 
 // Middleware
 app.use(cors());
@@ -17,6 +18,10 @@ app.use(bodyParser.json());
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
+
+pool.on('error', (err) => {
+  console.error('Unexpected Postgres error', err);
 });
 
 // --- HELPER: WEBHOOK NORMALIZERS ---
@@ -96,6 +101,16 @@ app.get('/api/dashboard/metrics', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server Error' });
+  }
+});
+
+// 0. Health Check
+app.get('/api/health', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ status: 'ok', time: SERVER_START_TIME });
+  } catch (err) {
+    res.status(500).json({ status: 'error', error: err.message });
   }
 });
 
@@ -241,3 +256,12 @@ app.post('/api/auth/login', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`NHFG CRM API Server running on port ${PORT}`);
 });
+
+const shutdown = async (signal) => {
+  console.log(`Received ${signal}. Closing server.`);
+  await pool.end();
+  process.exit(0);
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

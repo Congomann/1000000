@@ -5,22 +5,25 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:backend": "cd backend && npm run dev",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
     "@google/genai": "^1.30.0",
-    "lucide-react": "^0.454.0",
-    "recharts": "^2.12.7",
-    "react-router-dom": "^6.22.3",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
-    "crypto": "^4.2.0"
+    "lucide-react": "^0.454.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^6.22.3",
+    "recharts": "^2.12.7",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
+    "@types/node": "^25.0.9",
+    "@types/react": "^19.2.9",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"

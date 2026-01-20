@@ -1,7 +1,8 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { Lead, Client, DashboardMetrics, ProductType, LeadStatus, User, UserRole, Notification, CalendarEvent, ChatMessage, AdvisorCategory, CompanySettings, Resource, Carrier, AdvisorAssignment, Testimonial, Application, ApplicationStatus, IntegrationConfig, IntegrationLog, LoanApplication, Colleague, PropertyListing, EscrowTransaction, ClientPortfolio, ComplianceDocument, AdvisoryFee, JobApplication } from '../types';
-import { Backend } from '../services/apiBackend';
+import { Backend, USE_REAL_BACKEND } from '../services/apiBackend';
+import { useSocket } from '../hooks/useSocket';
 
 interface DataContextType {
   user: User | null;
@@ -29,7 +30,7 @@ interface DataContextType {
   integrationLogs: IntegrationLog[];
   integrationConfig: IntegrationConfig;
 
-  login: (email: string) => void;
+  login: (email: string, password?: string) => Promise<boolean>;
   logout: () => void;
   addLead: (lead: Partial<Lead>, assignTo?: string) => void;
   updateLeadStatus: (id: string, status: LeadStatus, analysis?: string) => void;
@@ -58,7 +59,7 @@ interface DataContextType {
   rejectTestimonialEdit: (id: string) => void;
   addCallback: (request: any) => void;
   handleAdvisorLeadAction: (id: string, action: string, reason?: string) => void;
-  
+
   addEvent: (event: Partial<CalendarEvent>) => void;
   updateEvent: (event: Partial<CalendarEvent>) => void;
   deleteEvent: (id: string) => void;
@@ -74,7 +75,7 @@ interface DataContextType {
   submitJobApplication: (data: any) => void;
   updateJobApplicationStatus: (id: string, status: string, config?: any) => void;
   updateApplicationStatus: (id: string, status: ApplicationStatus) => void;
-  
+
   // Real Estate Property Management
   addProperty: (property: Partial<PropertyListing>) => void;
   updateProperty: (id: string, property: Partial<PropertyListing>) => void;
@@ -138,13 +139,29 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [integrationConfig, setIntegrationConfig] = useState<IntegrationConfig>(INITIAL_INTEGRATION_CONFIG);
   const [integrationLogs, setIntegrationLogs] = useState<IntegrationLog[]>([]);
-  
+  const [metrics, setMetrics] = useState<DashboardMetrics>({ totalRevenue: 0, activeClients: 0, pendingLeads: 0, monthlyPerformance: [], totalCommission: 0 });
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+
+  // -- REAL-TIME SOCKET --
+  const { sendMessage, joinRoom, notifyDataUpdate } = useSocket((data) => {
+    // Handle incoming chat message
+    const newMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      senderId: data.user === user?.name ? (user?.id || 'me') : 'external',
+      receiverId: data.room,
+      text: data.message,
+      timestamp: new Date(),
+      read: false
+    };
+    setChatMessages(prev => [...prev, newMessage]);
+  });
+
   const [companySettings, setCompanySettings] = useState<CompanySettings>({
-      phone: '(800) 555-0199', email: 'contact@newholland.com', address: '123 Finance Way', city: 'New York', state: 'NY', zip: '10001',
-      heroBackgroundType: 'image', heroBackgroundUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=2070',
-      heroTitle: 'Securing Your Future', heroSubtitle: 'Comprehensive financial solutions for every stage of life.',
-      termsOfUse: 'Default Terms...', solicitorAgreement: 'Default Agreement...',
-      heroVideoPlaylist: []
+    phone: '(800) 555-0199', email: 'contact@newholland.com', address: '123 Finance Way', city: 'New York', state: 'NY', zip: '10001',
+    heroBackgroundType: 'image', heroBackgroundUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=2070',
+    heroTitle: 'Securing Your Future', heroSubtitle: 'Comprehensive financial solutions for every stage of life.',
+    termsOfUse: 'Default Terms...', solicitorAgreement: 'Default Agreement...',
+    heroVideoPlaylist: []
   });
 
   // REAL-TIME NOTIFICATION ENGINE
@@ -165,44 +182,51 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // LEAD MAINTENANCE (15 DAYS)
   const performLeadMaintenance = useCallback(async (currentLeads: Lead[]) => {
-      const FIFTEEN_DAYS_MS = 15 * 24 * 60 * 60 * 1000;
-      const now = Date.now();
-      let modified = false;
-      
-      const nextLeads = currentLeads.map(l => {
-          const leadDate = new Date(l.date).getTime();
-          if (!l.isArchived && (now - leadDate) > FIFTEEN_DAYS_MS) {
-              modified = true;
-              return { ...l, isArchived: true, deletedAt: new Date().toISOString(), status: LeadStatus.LOST };
-          }
-          return l;
-      });
+    const FIFTEEN_DAYS_MS = 15 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    let modified = false;
 
-      if (modified) {
-          setLeads(nextLeads);
-          pushNotification('System Maintenance', 'Auto-cleanup moved expired leads to archive.', 'warning');
-          for (const l of nextLeads.filter(x => x.isArchived)) {
-              await Backend.saveLead(l);
-          }
+    const nextLeads = currentLeads.map(l => {
+      const leadDate = new Date(l.date).getTime();
+      if (!l.isArchived && (now - leadDate) > FIFTEEN_DAYS_MS) {
+        modified = true;
+        return { ...l, isArchived: true, deletedAt: new Date().toISOString(), status: LeadStatus.LOST };
       }
+      return l;
+    });
+
+    if (modified) {
+      setLeads(nextLeads);
+      pushNotification('System Maintenance', 'Auto-cleanup moved expired leads to archive.', 'warning');
+      for (const l of nextLeads.filter(x => x.isArchived)) {
+        await Backend.saveLead(l);
+      }
+    }
   }, [pushNotification]);
 
   useEffect(() => {
     const bootstrap = async () => {
-      const storedLeads = await Backend.getLeads();
-      const storedUsers = await Backend.getUsers();
-      const storedClients = await Backend.getClients();
-      const storedSettings = await Backend.getSettings();
+      // Only bootstrap if we have a token or we are using simulated backend
+      if (USE_REAL_BACKEND && !localStorage.getItem('nhfg_auth_token')) return;
+
+      const [storedLeads, storedUsers, storedClients, storedSettings, storedMetrics] = await Promise.all([
+        Backend.getLeads(),
+        Backend.getUsers(),
+        Backend.getClients(),
+        Backend.getSettings(),
+        Backend.getMetrics()
+      ]);
 
       setAllUsers(storedUsers.length > 0 ? storedUsers : INITIAL_USERS);
       setLeads(storedLeads);
       setClients(storedClients);
+      setMetrics(storedMetrics);
       if (storedSettings) setCompanySettings(storedSettings);
       performLeadMaintenance(storedLeads);
     };
     bootstrap();
     const interval = setInterval(() => {
-        setLeads(prev => { performLeadMaintenance(prev); return prev; });
+      setLeads(prev => { performLeadMaintenance(prev); return prev; });
     }, 24 * 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, [performLeadMaintenance]);
@@ -229,26 +253,29 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await Backend.saveLead(newLead);
     setLeads(prev => [newLead, ...prev]);
     pushNotification(
-        'New Lead Received', 
-        `Inquiry from ${newLead.name} regarding ${newLead.interest}.`, 
-        'success', 
-        'lead', 
-        newLead.id
+      'New Lead Received',
+      `Inquiry from ${newLead.name} regarding ${newLead.interest}.`,
+      'success',
+      'lead',
+      newLead.id
     );
   }, [pushNotification]);
 
   const updateLead = useCallback(async (id: string, data: Partial<Lead>) => {
-      const lead = leads.find(l => l.id === id);
-      if (lead) {
-          const updated = { ...lead, ...data };
-          await Backend.saveLead(updated);
-          setLeads(prev => prev.map(l => l.id === id ? updated : l));
-          
-          if (data.status) {
-            pushNotification('Lead Status Update', `${lead.name} shifted to ${data.status}.`, 'info', 'lead', id);
-          }
+    const lead = leads.find(l => l.id === id);
+    if (lead) {
+      const updated = { ...lead, ...data };
+      await Backend.saveLead(updated);
+      setLeads(prev => prev.map(l => l.id === id ? updated : l));
+
+      if (data.status) {
+        pushNotification('Lead Status Update', `${lead.name} shifted to ${data.status}.`, 'info', 'lead', id);
       }
-  }, [leads, pushNotification]);
+
+      // Real-time sync
+      notifyDataUpdate('lead', 'update', id);
+    }
+  }, [leads, pushNotification, notifyDataUpdate]);
 
   const addEvent = useCallback((event: Partial<CalendarEvent>) => {
     const newEv = { ...event, id: crypto.randomUUID() } as CalendarEvent;
@@ -268,84 +295,106 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     pushNotification('Job Application', `New application from ${newApp.fullName}.`, 'success', 'job_application', newApp.id);
   }, [pushNotification]);
 
-  const login = (email: string) => {
+  const login = async (email: string, password?: string) => {
+    const result = await Backend.login(email, password);
+    if (result) {
+      setUser(result.user);
+      // Re-bootstrap data after login
+      const [storedLeads, storedUsers, storedClients, storedSettings, storedMetrics] = await Promise.all([
+        Backend.getLeads(),
+        Backend.getUsers(),
+        Backend.getClients(),
+        Backend.getSettings(),
+        Backend.getMetrics()
+      ]);
+      setLeads(storedLeads);
+      setAllUsers(storedUsers);
+      setClients(storedClients);
+      setMetrics(storedMetrics);
+      if (storedSettings) setCompanySettings(storedSettings);
+
+      pushNotification('Security Alert', `Login successful for: ${result.user.email}.`, 'info');
+      return true;
+    } else {
+      // Fallback for demo if no backend running or error
       const found = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (found) {
         setUser(found);
-        pushNotification('Security Alert', `Login detected for account: ${found.email}.`, 'info');
-      } else {
-        const fallback = { id: crypto.randomUUID(), name: 'Guest Access', email, role: UserRole.ADVISOR, category: AdvisorCategory.INSURANCE };
-        setUser(fallback);
+        pushNotification('Demo Access', `Using simulated login for: ${found.email}.`, 'warning');
+        return true;
       }
+    }
+    return false;
   };
 
   const logout = () => {
     if (user) pushNotification('Security Alert', `Logout successful for ${user.email}.`, 'info');
     setUser(null);
+    Backend.setToken(null);
   };
 
   const updateUser = useCallback(async (id: string, data: Partial<User>) => {
-      const u = allUsers.find(user => user.id === id);
-      if (u) {
-          const updated = { ...u, ...data };
-          await Backend.saveUser(updated);
-          setAllUsers(prev => prev.map(user => user.id === id ? updated : user));
-          if (user?.id === id) setUser(updated); // Update current session user if matches
-          pushNotification('User Profile Updated', `${u.name}'s profile has been modified.`, 'info');
-      }
+    const u = allUsers.find(user => user.id === id);
+    if (u) {
+      const updated = { ...u, ...data };
+      await Backend.saveUser(updated);
+      setAllUsers(prev => prev.map(user => user.id === id ? updated : user));
+      if (user?.id === id) setUser(updated); // Update current session user if matches
+      pushNotification('User Profile Updated', `${u.name}'s profile has been modified.`, 'info');
+    }
   }, [allUsers, user, pushNotification]);
 
   const updateCompanySettings = useCallback(async (settings: CompanySettings) => {
-      setCompanySettings(settings);
-      await Backend.saveSettings(settings);
-      pushNotification('Global Settings', 'Website configuration has been successfully updated.', 'success');
+    setCompanySettings(settings);
+    await Backend.saveSettings(settings);
+    pushNotification('Global Settings', 'Website configuration has been successfully updated.', 'success');
   }, [pushNotification]);
 
   const updateIntegrationConfig = useCallback((config: Partial<IntegrationConfig>) => {
-      setIntegrationConfig(prev => ({ ...prev, ...config }));
-      pushNotification('API Config Updated', 'Integration settings have been modified.', 'info');
+    setIntegrationConfig(prev => ({ ...prev, ...config }));
+    pushNotification('API Config Updated', 'Integration settings have been modified.', 'info');
   }, [pushNotification]);
 
   // Property Listing Handlers - Expanded for new fields
   const addProperty = useCallback((propertyData: Partial<PropertyListing>) => {
-      const newProperty: PropertyListing = {
-          id: crypto.randomUUID(),
-          address: propertyData.address || '',
-          city: propertyData.city || '',
-          state: propertyData.state || '',
-          zip: propertyData.zip || '',
-          price: propertyData.price || 0,
-          type: propertyData.type || 'Residential',
-          status: 'Active',
-          bedrooms: propertyData.bedrooms,
-          bathrooms: propertyData.bathrooms,
-          sqft: propertyData.sqft,
-          image: propertyData.image || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=800',
-          listedDate: new Date().toISOString(),
-          sellerName: propertyData.sellerName || 'Unknown',
-          advisorId: user?.id || 'admin',
-          // New Fields for Enhanced Listings
-          county: propertyData.county,
-          zoning: propertyData.zoning,
-          restrictions: propertyData.restrictions,
-          hoa: propertyData.hoa || false,
-          hoaFee: propertyData.hoaFee,
-          taxAmount: propertyData.taxAmount,
-          videoUrl: propertyData.videoUrl,
-          description: propertyData.description,
-      };
-      setProperties(prev => [newProperty, ...prev]);
-      pushNotification('New Listing', `Property at ${newProperty.address} listed successfully.`, 'success');
+    const newProperty: PropertyListing = {
+      id: crypto.randomUUID(),
+      address: propertyData.address || '',
+      city: propertyData.city || '',
+      state: propertyData.state || '',
+      zip: propertyData.zip || '',
+      price: propertyData.price || 0,
+      type: propertyData.type || 'Residential',
+      status: 'Active',
+      bedrooms: propertyData.bedrooms,
+      bathrooms: propertyData.bathrooms,
+      sqft: propertyData.sqft,
+      image: propertyData.image || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&q=80&w=800',
+      listedDate: new Date().toISOString(),
+      sellerName: propertyData.sellerName || 'Unknown',
+      advisorId: user?.id || 'admin',
+      // New Fields for Enhanced Listings
+      county: propertyData.county,
+      zoning: propertyData.zoning,
+      restrictions: propertyData.restrictions,
+      hoa: propertyData.hoa || false,
+      hoaFee: propertyData.hoaFee,
+      taxAmount: propertyData.taxAmount,
+      videoUrl: propertyData.videoUrl,
+      description: propertyData.description,
+    };
+    setProperties(prev => [newProperty, ...prev]);
+    pushNotification('New Listing', `Property at ${newProperty.address} listed successfully.`, 'success');
   }, [user, pushNotification]);
 
   const updateProperty = useCallback((id: string, propertyData: Partial<PropertyListing>) => {
-      setProperties(prev => prev.map(p => p.id === id ? { ...p, ...propertyData } : p));
-      pushNotification('Listing Updated', `Property details modified.`, 'info');
+    setProperties(prev => prev.map(p => p.id === id ? { ...p, ...propertyData } : p));
+    pushNotification('Listing Updated', `Property details modified.`, 'info');
   }, [pushNotification]);
 
   const deleteProperty = useCallback((id: string) => {
-      setProperties(prev => prev.filter(p => p.id !== id));
-      pushNotification('Listing Removed', `Property removed from pipeline.`, 'warning');
+    setProperties(prev => prev.filter(p => p.id !== id));
+    pushNotification('Listing Removed', `Property removed from pipeline.`, 'warning');
   }, [pushNotification]);
 
   // Placeholder implementations for missing methods
@@ -355,72 +404,86 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const markNotificationRead = (id: string) => { setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n)); };
   const clearNotifications = () => { setNotifications([]); };
   const completeOnboarding = () => { if (user) updateUser(user.id, { onboardingCompleted: true }); };
-  const simulateMarketingLead = async (p: any, payload: any) => { 
-      const result = await Backend.handleWebhook(p, payload);
-      if (result.success) {
-          const updatedLeads = await Backend.getLeads();
-          setLeads(updatedLeads); // Refresh leads from DB
-          pushNotification('API Simulator', `${p} lead ingestion successful.`, 'success');
-      }
+  const simulateMarketingLead = async (p: any, payload: any) => {
+    const result = await Backend.handleWebhook(p, payload);
+    if (result.success) {
+      const updatedLeads = await Backend.getLeads();
+      setLeads(updatedLeads); // Refresh leads from DB
+      pushNotification('API Simulator', `${p} lead ingestion successful.`, 'success');
+    }
   };
   const getAdvisorAssignments = (id: string) => [] as AdvisorAssignment[];
-  
+
   // Resource stubs
-  const likeResource = () => {};
-  const dislikeResource = () => {};
-  const shareResource = () => {};
-  const addResourceComment = () => {};
-  const addResource = (r: Partial<Resource>) => { 
-      // Add resource with ID
-      // This logic would ideally save to Backend
+  const likeResource = () => { };
+  const dislikeResource = () => { };
+  const shareResource = () => { };
+  const addResourceComment = () => { };
+  const addResource = (r: Partial<Resource>) => {
+    // Add resource with ID
+    // This logic would ideally save to Backend
   };
-  const deleteResource = (id: string) => {};
+  const deleteResource = (id: string) => { };
 
   // Testimonial stubs
-  const addTestimonial = (t: any) => {};
-  const approveTestimonial = (id: string) => {};
-  const deleteTestimonial = (id: string) => {};
-  const submitTestimonialEdit = () => {};
-  const approveTestimonialEdit = () => {};
-  const rejectTestimonialEdit = () => {};
-  
+  const addTestimonial = (t: any) => { };
+  const approveTestimonial = (id: string) => { };
+  const deleteTestimonial = (id: string) => { };
+  const submitTestimonialEdit = () => { };
+  const approveTestimonialEdit = () => { };
+  const rejectTestimonialEdit = () => { };
+
   // Misc
-  const addCallback = () => {};
-  const handleAdvisorLeadAction = () => {};
+  const addCallback = () => { };
+  const handleAdvisorLeadAction = () => { };
   const updateEvent = (e: Partial<CalendarEvent>) => setEvents(prev => prev.map(ev => ev.id === e.id ? { ...ev, ...e } : ev));
   const deleteAdvisor = (id: string) => setAllUsers(prev => prev.filter(u => u.id !== id));
-  const addAdvisor = (u: Partial<User>) => { 
-      const newUser = { ...u, id: crypto.randomUUID(), role: UserRole.ADVISOR } as User;
-      setAllUsers(prev => [...prev, newUser]);
-      Backend.saveUser(newUser);
+  const addAdvisor = (u: Partial<User>) => {
+    const newUser = { ...u, id: crypto.randomUUID(), role: UserRole.ADVISOR } as User;
+    setAllUsers(prev => [...prev, newUser]);
+    Backend.saveUser(newUser);
   };
-  const restoreUser = () => {};
-  const permanentlyDeleteUser = () => {};
-  const assignCarriers = () => {};
-  const markChatRead = () => {};
-  const editChatMessage = () => {};
-  const deleteChatMessage = () => {};
-  const sendChatMessage = () => {};
-  
+  const restoreUser = () => { };
+  const permanentlyDeleteUser = () => { };
+  const assignCarriers = () => { };
+  const markChatRead = () => { };
+  const editChatMessage = () => { };
+  const deleteChatMessage = () => { };
+  const sendChatMessage = (receiverId: string, text: string, attachment?: any) => {
+    const newMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      senderId: user?.id || 'system',
+      receiverId,
+      text,
+      timestamp: new Date(),
+      read: false,
+      attachment
+    };
+    setChatMessages(prev => [...prev, newMessage]);
+
+    // Send via socket
+    sendMessage(receiverId, text, user?.name || 'Anonymous');
+  };
+
   const updateJobApplicationStatus = (id: string, status: string) => setJobApplications(prev => prev.map(j => j.id === id ? { ...j, status: status as any } : j));
   const updateApplicationStatus = (id: string, status: ApplicationStatus) => setApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
-  const updateTransactionStatus = () => {};
+  const updateTransactionStatus = () => { };
   const addPortfolio = (p: Partial<ClientPortfolio>) => setPortfolios(prev => [...prev, { ...p, id: crypto.randomUUID() } as ClientPortfolio]);
   const updatePortfolio = (id: string, p: Partial<ClientPortfolio>) => setPortfolios(prev => prev.map(pt => pt.id === id ? { ...pt, ...p } : pt));
   const deletePortfolio = (id: string) => setPortfolios(prev => prev.filter(p => p.id !== id));
   const addComplianceDoc = (d: Partial<ComplianceDocument>) => setComplianceDocs(prev => [...prev, { ...d, id: crypto.randomUUID(), uploadDate: new Date().toISOString(), status: 'Valid' } as ComplianceDocument]);
-  const updateFeeStatus = () => {};
-  const addAdvisoryFee = () => {};
-  const updateAdvisoryFee = () => {};
-  const deleteAdvisoryFee = () => {};
+  const updateFeeStatus = () => { };
+  const addAdvisoryFee = () => { };
+  const updateAdvisoryFee = () => { };
+  const deleteAdvisoryFee = () => { };
   const addLoanApplication = (l: Partial<LoanApplication>) => setLoanApplications(prev => [...prev, { ...l, id: crypto.randomUUID() } as LoanApplication]);
-  const updateLoanApplication = () => {};
+  const updateLoanApplication = () => { };
   const deleteLoanApplication = (id: string) => setLoanApplications(prev => prev.filter(l => l.id !== id));
 
   return (
     <DataContext.Provider value={{
-      user, allUsers, leads, clients, metrics: { totalRevenue: 0, activeClients: clients.length, pendingLeads: leads.length, monthlyPerformance: [], totalCommission: 0 },
-      notifications, chatMessages: [], companySettings, resources: [], commissions: [], events, testimonials,
+      user, allUsers, leads, clients, metrics,
+      notifications, chatMessages, companySettings, resources: [], commissions: [], events, testimonials,
       availableCarriers: [], colleagues: [], jobApplications, applications, properties, transactions,
       portfolios, complianceDocs, advisoryFees, loanApplications, integrationLogs, integrationConfig,
       login, logout, addLead, updateLeadStatus, updateLead, assignLeads, updateClient, updateUser, updateCompanySettings,

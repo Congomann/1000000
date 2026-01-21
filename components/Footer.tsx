@@ -9,13 +9,55 @@ import {
   Linkedin, 
   Twitter, 
   Instagram, 
-  Youtube 
+  Youtube,
+  Globe
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
+
+// Custom TikTok Icon since it might not be in the current lucide-react version
+const TikTokIcon = ({ size, className }: { size?: number, className?: string }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+  </svg>
+);
 
 export const Footer: React.FC = () => {
   const { companySettings } = useData();
   const [showEmail, setShowEmail] = useState(false);
+
+  const getSocialIcon = (platform: string) => {
+    switch (platform) {
+      case 'Facebook': return Facebook;
+      case 'LinkedIn': return Linkedin;
+      case 'Twitter': return Twitter;
+      case 'X': return Twitter;
+      case 'Instagram': return Instagram;
+      case 'YouTube': return Youtube;
+      case 'TikTok': return TikTokIcon;
+      default: return Globe;
+    }
+  };
+
+  const socialLinks = companySettings.socialLinks && companySettings.socialLinks.length > 0 
+    ? companySettings.socialLinks 
+    : [
+        { platform: 'Facebook', url: '#' },
+        { platform: 'LinkedIn', url: '#' },
+        { platform: 'Twitter', url: '#' },
+        { platform: 'Instagram', url: '#' },
+        { platform: 'YouTube', url: '#' }
+      ];
 
   return (
     <footer className="bg-[#0B2240] text-white pt-24 pb-12 border-t border-white/10 font-sans">
@@ -43,11 +85,14 @@ export const Footer: React.FC = () => {
             </p>
             <div className="flex gap-3 pt-2">
                {/* Social Icons */}
-               {[Facebook, Linkedin, Twitter, Instagram, Youtube].map((Icon, i) => (
-                 <a key={i} href="#" className="p-3 bg-white/5 rounded-full hover:bg-blue-600 hover:text-white text-slate-400 transition-all duration-300 border border-white/5 hover:border-blue-500/30">
-                   <Icon size={18} />
-                 </a>
-               ))}
+               {socialLinks.map((link, i) => {
+                 const Icon = getSocialIcon(link.platform);
+                 return (
+                   <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-full hover:bg-blue-600 hover:text-white text-slate-400 transition-all duration-300 border border-white/5 hover:border-blue-500/30">
+                     <Icon size={18} />
+                   </a>
+                 );
+               })}
             </div>
           </div>
 
@@ -155,7 +200,7 @@ export const Footer: React.FC = () => {
         {/* Bottom Bar */}
         <div className="border-t border-white/10 pt-10 text-center">
           <p className="text-slate-400 text-sm mb-4 font-bold">
-            &copy; {new Date().getFullYear()} New Holland Financial Group | www.newhollandfinancial.com
+            &copy; {new Date().getFullYear()} New Holland Financial Group
           </p>
           
           <div className="flex justify-center gap-8 mb-8">

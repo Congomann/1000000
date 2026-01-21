@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { Backend } from '../../services/apiBackend';
-import { Globe, Facebook, Linkedin, Copy, Check, Save, Zap, AlertCircle, History, Info, Play, Trash2, ShieldCheck, Database, Smartphone, Music } from 'lucide-react';
+import { Globe, Facebook, Linkedin, Copy, Check, Save, Zap, AlertCircle, History, Info, Play, Trash2, ShieldCheck, Database, Smartphone, Music, Key } from 'lucide-react';
 
 export const MarketingIntegrations: React.FC = () => {
     const { integrationConfig, updateIntegrationConfig, simulateMarketingLead } = useData();
@@ -29,6 +29,15 @@ export const MarketingIntegrations: React.FC = () => {
         const configKey = platform as keyof typeof integrationConfig;
         updateIntegrationConfig({
             [configKey]: { ...integrationConfig[configKey], enabled: !integrationConfig[configKey].enabled }
+        });
+    };
+
+    const handleGoogleTokenChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        updateIntegrationConfig({
+            googleAds: {
+                ...integrationConfig.googleAds,
+                developerToken: e.target.value
+            }
         });
     };
 
@@ -67,7 +76,7 @@ export const MarketingIntegrations: React.FC = () => {
                                     <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${integrationConfig.googleAds.enabled ? 'translate-x-6' : 'translate-x-1'}`} />
                                 </button>
                             </div>
-                            <div className="space-y-6">
+                            <div className="space-y-8">
                                 <div className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100">
                                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Webhook Production Endpoint</h3>
                                     <div className="flex gap-4">
@@ -78,6 +87,95 @@ export const MarketingIntegrations: React.FC = () => {
                                             {copied === 'google-url' ? <Check className="h-5 w-5 text-green-500" /> : <Copy className="h-5 w-5" />}
                                         </button>
                                     </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-3 ml-2 tracking-wider">Developer Token</label>
+                                    <div className="relative">
+                                        <input 
+                                            type="text" 
+                                            className="w-full bg-white text-slate-900 border border-slate-200 rounded-[2rem] px-6 py-4 text-sm font-medium focus:ring-2 focus:ring-[#0A62A7] focus:border-transparent outline-none transition-all"
+                                            placeholder="Enter Google Ads Developer Token"
+                                            value={integrationConfig.googleAds.developerToken || ''}
+                                            onChange={handleGoogleTokenChange}
+                                        />
+                                        <div className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400">
+                                            <Key className="h-5 w-5" />
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-slate-400 mt-3 ml-2 font-medium">Required for offline conversion imports and audience sync.</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'meta' && (
+                        <div className="bg-white rounded-[3rem] shadow-sm border border-slate-100 p-10 animate-fade-in">
+                            <div className="flex justify-between items-start mb-10">
+                                <div className="flex gap-5">
+                                    <div className="p-4 bg-[#1877F2]/10 text-[#1877F2] rounded-3xl">
+                                        <Facebook className="h-8 w-8" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-black text-slate-800">Meta Ads (Facebook/Instagram)</h2>
+                                        <p className="text-slate-500 text-sm font-medium">Sync leads from Lead Forms directly to CRM.</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => handleToggle('metaAds')} className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none ${integrationConfig.metaAds.enabled ? 'bg-green-500' : 'bg-slate-200'}`}>
+                                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${integrationConfig.metaAds.enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                                </button>
+                            </div>
+                            <div className="space-y-6">
+                                <div className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100">
+                                    <div className="mb-6">
+                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Verify Token</h3>
+                                        <input 
+                                            readOnly
+                                            className="w-full bg-white border border-slate-200 rounded-2xl px-6 py-4 text-sm font-mono text-slate-600"
+                                            value={integrationConfig.metaAds.verifyToken || 'nhfg_verification_token_secure'}
+                                        />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Callback URL</h3>
+                                        <div className="flex gap-4">
+                                            <div className="flex-1 bg-white border border-slate-200 rounded-2xl px-6 py-4 text-sm font-mono text-slate-600 truncate">
+                                                https://api.nhfg.com/webhooks/meta
+                                            </div>
+                                            <button onClick={() => handleCopy('https://api.nhfg.com/webhooks/meta', 'meta-url')} className="p-4 bg-white border border-slate-200 text-slate-400 hover:text-blue-600 rounded-2xl shadow-sm">
+                                                {copied === 'meta-url' ? <Check className="h-5 w-5 text-green-500" /> : <Copy className="h-5 w-5" />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'tiktok' && (
+                        <div className="bg-white rounded-[3rem] shadow-sm border border-slate-100 p-10 animate-fade-in">
+                            <div className="flex justify-between items-start mb-10">
+                                <div className="flex gap-5">
+                                    <div className="p-4 bg-black text-white rounded-3xl">
+                                        <Music className="h-8 w-8" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-black text-slate-800">TikTok For Business</h2>
+                                        <p className="text-slate-500 text-sm font-medium">Instant form capture for high-volume campaigns.</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => handleToggle('tiktokAds')} className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none ${integrationConfig.tiktokAds.enabled ? 'bg-green-500' : 'bg-slate-200'}`}>
+                                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${integrationConfig.tiktokAds.enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                                </button>
+                            </div>
+                            <div className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100">
+                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Webhook Subscription URL</h3>
+                                <div className="flex gap-4">
+                                    <div className="flex-1 bg-white border border-slate-200 rounded-2xl px-6 py-4 text-sm font-mono text-slate-600 truncate">
+                                        https://api.nhfg.com/webhooks/tiktok
+                                    </div>
+                                    <button onClick={() => handleCopy('https://api.nhfg.com/webhooks/tiktok', 'tiktok-url')} className="p-4 bg-white border border-slate-200 text-slate-400 hover:text-blue-600 rounded-2xl shadow-sm">
+                                        {copied === 'tiktok-url' ? <Check className="h-5 w-5 text-green-500" /> : <Copy className="h-5 w-5" />}
+                                    </button>
                                 </div>
                             </div>
                         </div>

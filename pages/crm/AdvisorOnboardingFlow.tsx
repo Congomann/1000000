@@ -1,29 +1,105 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { UserRole } from '../../types';
-import { Check, ChevronRight, FileText, ShieldCheck, Settings, Briefcase, Key, CheckCircle2, User, Landmark, ShieldAlert } from 'lucide-react';
+import { Check, ChevronRight, FileText, ShieldCheck, Settings, Briefcase, Key, CheckCircle2, User, Landmark, ShieldAlert, PenTool, Eraser } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const STEPS = [
   { id: 'welcome', label: 'Welcome', sub: "Let's get started!", icon: User },
   { id: 'terms', label: 'Terms Of Use', sub: 'Knock out the formalities', icon: FileText },
-  { id: 'agreement', label: 'Agreement', sub: 'Finalize your acceptance', icon: ShieldCheck },
-  { id: 'config', label: 'Platform Configuration', sub: 'Embrace the evolution of your business', icon: Settings },
-  { id: 'contracting', label: 'Carrier Contracting', sub: 'Get ready to write your first case', icon: Briefcase },
-  { id: 'portal', label: 'Portal Access', sub: 'Enter the NHFG Workspace', icon: Key },
+  { id: 'agreement', label: 'Agreement', sub: 'Independent Contractor Terms', icon: ShieldCheck },
+  { id: 'signature', label: 'Signature', sub: 'Execute Contracts', icon: PenTool },
+  { id: 'complete', label: 'Access Portal', sub: 'Enter the NHFG Workspace', icon: Key },
 ];
 
 export const AdvisorOnboardingFlow: React.FC = () => {
   const { user, completeOnboarding, companySettings } = useData();
   const navigate = useNavigate();
-  const [currentStepIndex, setCurrentStepIndex] = useState(1); // Start at Terms of Use as per typical workflow
+  const [currentStepIndex, setCurrentStepIndex] = useState(0); 
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [agreementAgreed, setAgreementAgreed] = useState(false);
+  const [signatureData, setSignatureData] = useState<string | null>(null);
+  
+  // Signature Pad State
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+
+  // Initialize Canvas
+  useEffect(() => {
+    if (currentStepIndex === 3 && canvasRef.current) {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            // Set canvas size based on container
+            const rect = canvas.parentElement?.getBoundingClientRect();
+            if (rect) {
+                canvas.width = rect.width;
+                canvas.height = 300;
+            }
+        }
+    }
+  }, [currentStepIndex]);
+
+  // Drawing Functions
+  const getCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return { x: 0, y: 0 };
+      const rect = canvas.getBoundingClientRect();
+      let clientX, clientY;
+      
+      if ('touches' in e) {
+          clientX = e.touches[0].clientX;
+          clientY = e.touches[0].clientY;
+      } else {
+          clientX = (e as React.MouseEvent).clientX;
+          clientY = (e as React.MouseEvent).clientY;
+      }
+      
+      return {
+          x: clientX - rect.left,
+          y: clientY - rect.top
+      };
+  };
+
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+      setIsDrawing(true);
+      const { x, y } = getCoordinates(e);
+      const ctx = canvasRef.current?.getContext('2d');
+      ctx?.beginPath();
+      ctx?.moveTo(x, y);
+  };
+
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+      if (!isDrawing) return;
+      const { x, y } = getCoordinates(e);
+      const ctx = canvasRef.current?.getContext('2d');
+      ctx?.lineTo(x, y);
+      ctx?.stroke();
+  };
+
+  const stopDrawing = () => {
+      if (isDrawing && canvasRef.current) {
+          setIsDrawing(false);
+          setSignatureData(canvasRef.current.toDataURL());
+      }
+  };
+
+  const clearSignature = () => {
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (canvas && ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          setSignatureData(null);
+      }
+  };
 
   const handleNext = () => {
     if (currentStepIndex === STEPS.length - 1) {
-      completeOnboarding();
+      completeOnboarding(signatureData || undefined);
       navigate('/crm/dashboard');
       return;
     }
@@ -40,6 +116,7 @@ export const AdvisorOnboardingFlow: React.FC = () => {
   const isNextDisabled = () => {
     if (currentStepIndex === 1 && !termsAgreed) return true;
     if (currentStepIndex === 2 && !agreementAgreed) return true;
+    if (currentStepIndex === 3 && !signatureData) return true;
     return false;
   };
 
@@ -50,11 +127,8 @@ export const AdvisorOnboardingFlow: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="w-10 h-10">
             <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-sm">
-                {/* Back Card */}
                 <rect x="5" y="15" width="90" height="60" rx="12" fill="#F59E0B" />
-                {/* Front Card */}
                 <rect x="10" y="35" width="80" height="55" rx="12" fill="#FCD34D" />
-                {/* Chip */}
                 <rect x="42" y="52" width="16" height="22" rx="4" fill="#B45309" fillOpacity="0.25" />
             </svg>
           </div>
@@ -85,7 +159,6 @@ export const AdvisorOnboardingFlow: React.FC = () => {
             const isActive = idx === currentStepIndex;
             return (
               <div key={step.id} className="flex gap-5 relative group">
-                {/* Vertical Line Connector */}
                 {idx !== STEPS.length - 1 && (
                     <div className={`absolute left-[15px] top-[30px] bottom-[-40px] w-0.5 transition-colors ${isCompleted ? 'bg-blue-600' : 'bg-slate-100 group-hover:bg-slate-200'}`}></div>
                 )}
@@ -131,12 +204,12 @@ export const AdvisorOnboardingFlow: React.FC = () => {
                 {/* STEP 0: Welcome */}
                 {currentStepIndex === 0 && (
                     <div className="text-center animate-fade-in flex flex-col items-center justify-center h-full py-20">
-                        <div className="w-24 h-24 bg-blue-50 text-blue-600 rounded-[2rem] flex items-center justify-center mb-8 shadow-inner">
+                        <div className="w-24 h-24 bg-blue-50 text-blue-600 rounded-[2rem] flex items-center justify-center mb-8 shadow-inner animate-bounce-subtle">
                             <User className="h-10 w-10" />
                         </div>
                         <h1 className="text-4xl font-black text-[#0B2240] tracking-tight mb-4">Welcome to the Team!</h1>
                         <p className="text-lg text-slate-500 max-w-md mx-auto leading-relaxed font-medium">
-                            We are thrilled to have you onboard New Holland Financial Group. Before you access your advisor terminal, please complete these mandatory onboarding steps.
+                            We are thrilled to have you onboard New Holland Financial Group. Before you access your advisor terminal, we need to finalize a few legal formalities.
                         </p>
                     </div>
                 )}
@@ -151,8 +224,8 @@ export const AdvisorOnboardingFlow: React.FC = () => {
                             <p className="text-xs text-slate-400 font-bold uppercase tracking-tighter">Legal Requirement</p>
                         </div>
                     </div>
-                    <div className="prose prose-slate max-w-none text-sm text-slate-600 leading-relaxed font-medium space-y-6 whitespace-pre-wrap">
-                      {companySettings.termsOfUse}
+                    <div className="prose prose-slate max-w-none text-sm text-slate-600 leading-relaxed font-medium space-y-6 whitespace-pre-wrap h-96 overflow-y-auto p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner">
+                      {companySettings.termsOfUse || "Standard Terms of Use Placeholder..."}
                     </div>
                   </div>
                 )}
@@ -163,58 +236,71 @@ export const AdvisorOnboardingFlow: React.FC = () => {
                         <div className="flex items-center gap-4 mb-10 pb-6 border-b border-slate-100">
                             <div className="p-3 bg-amber-50 rounded-2xl text-amber-600 shadow-sm"><ShieldAlert className="h-6 w-6"/></div>
                             <div>
-                                <h1 className="text-xl font-black text-[#0B2240] uppercase tracking-widest">Solicitor Agreement</h1>
-                                <p className="text-xs text-slate-400 font-bold uppercase tracking-tighter">Independent Contractor Provisions</p>
+                                <h1 className="text-xl font-black text-[#0B2240] uppercase tracking-widest">Independent Contractor Agreement</h1>
+                                <p className="text-xs text-slate-400 font-bold uppercase tracking-tighter">Solicitor Provisions</p>
                             </div>
                         </div>
-                        <div className="prose prose-slate max-w-none text-sm text-slate-600 leading-relaxed font-medium space-y-6 whitespace-pre-wrap">
-                            {companySettings.solicitorAgreement}
+                        <div className="prose prose-slate max-w-none text-sm text-slate-600 leading-relaxed font-medium space-y-6 whitespace-pre-wrap h-96 overflow-y-auto p-4 bg-slate-50 rounded-2xl border border-slate-100 shadow-inner">
+                            {companySettings.solicitorAgreement || "Standard Contractor Agreement Placeholder..."}
                         </div>
                     </div>
                 )}
                 
-                {/* STEP 3: Platform Config */}
+                {/* STEP 3: Signature */}
                 {currentStepIndex === 3 && (
-                    <div className="animate-fade-in space-y-10">
-                        <div className="flex items-start gap-5">
-                            <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl shadow-sm"><Settings className="h-8 w-8" /></div>
+                    <div className="animate-fade-in flex flex-col h-full">
+                        <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
+                            <div className="p-3 bg-purple-50 rounded-2xl text-purple-600 shadow-sm"><PenTool className="h-6 w-6"/></div>
                             <div>
-                                <h3 className="text-2xl font-black text-[#0B2240] tracking-tight">Your NHFG Experience</h3>
-                                <p className="text-slate-500 font-medium mt-1">Configuring your personal workspace and advisor profile.</p>
+                                <h1 className="text-xl font-black text-[#0B2240] uppercase tracking-widest">Digital Signature</h1>
+                                <p className="text-xs text-slate-400 font-bold uppercase tracking-tighter">Execute Agreements</p>
                             </div>
                         </div>
-                        <div className="bg-slate-50 p-10 rounded-[2rem] border border-slate-200 shadow-inner space-y-8">
-                             <div className="flex items-center gap-5">
-                                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 shadow-sm border border-green-200">
-                                    <Check className="h-4 w-4" />
+                        
+                        <div className="flex-1 flex flex-col items-center">
+                            <p className="text-slate-500 mb-4 text-sm font-medium">Please sign in the box below to execute the Terms of Use and Independent Contractor Agreement.</p>
+                            
+                            <div className="relative w-full border-2 border-dashed border-slate-300 rounded-3xl bg-slate-50 overflow-hidden cursor-crosshair shadow-inner" style={{ height: '300px' }}>
+                                <canvas
+                                    ref={canvasRef}
+                                    onMouseDown={startDrawing}
+                                    onMouseMove={draw}
+                                    onMouseUp={stopDrawing}
+                                    onMouseLeave={stopDrawing}
+                                    onTouchStart={startDrawing}
+                                    onTouchMove={draw}
+                                    onTouchEnd={stopDrawing}
+                                    className="w-full h-full"
+                                />
+                                <div className="absolute bottom-4 right-4 flex gap-2 pointer-events-none">
+                                    <span className="bg-white/80 backdrop-blur text-[10px] font-bold text-slate-400 px-3 py-1 rounded-full border border-slate-200">
+                                        Sign Here
+                                    </span>
                                 </div>
-                                <span className="font-bold text-slate-700 text-lg">Internal CRM Access Provisioned</span>
-                             </div>
-                             <div className="flex items-center gap-5">
-                                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 shadow-sm border border-green-200">
-                                    <Check className="h-4 w-4" />
-                                </div>
-                                <span className="font-bold text-slate-700 text-lg">NHFG Email Alias Created</span>
-                             </div>
-                             <div className="flex items-center gap-5">
-                                <div className="h-8 w-8 rounded-full border-2 border-blue-600 flex items-center justify-center shadow-sm">
-                                    <div className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
-                                </div>
-                                <span className="font-bold text-blue-600 text-lg">Setting up Public Microsite...</span>
-                             </div>
+                            </div>
+                            
+                            <div className="w-full flex justify-between items-center mt-4">
+                                <button 
+                                    onClick={clearSignature}
+                                    className="flex items-center gap-2 text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition-colors"
+                                >
+                                    <Eraser className="h-4 w-4" /> Clear Signature
+                                </button>
+                                {signatureData && <div className="text-green-600 text-xs font-bold flex items-center gap-1"><CheckCircle2 className="h-4 w-4"/> Signature Captured</div>}
+                            </div>
                         </div>
                     </div>
                 )}
 
-                {/* Final Steps */}
+                {/* Final Step */}
                 {currentStepIndex > 3 && (
                     <div className="text-center animate-fade-in py-20">
                         <div className="relative inline-block mb-10">
                             <div className="absolute inset-0 bg-green-500 blur-3xl opacity-20 animate-pulse"></div>
                             <CheckCircle2 className="h-24 w-24 text-green-500 relative" />
                         </div>
-                        <h2 className="text-4xl font-black text-[#0B2240] tracking-tight">All Systems Green</h2>
-                        <p className="text-lg text-slate-500 mt-4 max-w-sm mx-auto font-medium">Your advisor profile is prepared and all carrier contracts are queued for your first deployment.</p>
+                        <h2 className="text-4xl font-black text-[#0B2240] tracking-tight">Onboarding Complete</h2>
+                        <p className="text-lg text-slate-500 mt-4 max-w-sm mx-auto font-medium">Your agreements have been signed and filed. You are now ready to access the Advisor Terminal.</p>
                     </div>
                 )}
               </div>
@@ -230,7 +316,7 @@ export const AdvisorOnboardingFlow: React.FC = () => {
                       {termsAgreed && <Check className="h-5 w-5 text-white" />}
                     </div>
                     <span className="text-sm font-black text-slate-700 select-none uppercase tracking-wide">
-                      I have read and agree to the Terms of Use and acknowledge I am bound by the same.
+                      I have read and agree to the Terms of Use.
                     </span>
                   </label>
                 </div>
@@ -271,7 +357,7 @@ export const AdvisorOnboardingFlow: React.FC = () => {
                     : 'bg-[#0B2240] text-white shadow-2xl shadow-blue-900/20 hover:bg-blue-900 hover:scale-105 active:scale-95 transform'
                   }`}
                 >
-                  {currentStepIndex === STEPS.length - 1 ? 'Go to Portal' : 'Next Step'} <ChevronRight className="h-4 w-4" />
+                  {currentStepIndex === STEPS.length - 1 ? 'Enter Portal' : 'Next Step'} <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
 
@@ -281,20 +367,6 @@ export const AdvisorOnboardingFlow: React.FC = () => {
 
         </main>
       </div>
-
-      <style>{`
-        .bg-stripes-slate {
-          background-image: linear-gradient(45deg, #f8fafc 25%, transparent 25%, transparent 50%, #f8fafc 50%, #f8fafc 75%, transparent 75%, transparent);
-          background-size: 20px 20px;
-        }
-        @keyframes fade-in {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-            animation: fade-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-      `}</style>
     </div>
   );
 };

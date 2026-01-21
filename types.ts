@@ -326,6 +326,7 @@ export interface CompanySettings {
   termsOfUse?: string;
   solicitorAgreement?: string;
   footerDescription?: string;
+  socialLinks?: SocialLink[];
 }
 
 export interface Testimonial {

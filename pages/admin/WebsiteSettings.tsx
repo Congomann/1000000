@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
-import { CompanySettings, Resource, ProductType } from '../../types';
-import { Save, Plus, Trash2, Globe, MapPin, Phone, Mail, Link as LinkIcon, AlertCircle, Image as ImageIcon, Video as VideoIcon, Youtube, Upload, PlayCircle, BookOpen, Camera, Handshake, CheckCircle2, Loader2, Eye, EyeOff, Layout, ShieldCheck } from 'lucide-react';
+import { CompanySettings, Resource, ProductType, SocialLink } from '../../types';
+import { Save, Plus, Trash2, Globe, MapPin, Phone, Mail, Link as LinkIcon, AlertCircle, Image as ImageIcon, Video as VideoIcon, Youtube, Upload, PlayCircle, BookOpen, Camera, Handshake, CheckCircle2, Loader2, Eye, EyeOff, Layout, ShieldCheck, Share2 } from 'lucide-react';
 
 export const WebsiteSettings: React.FC = () => {
   const { companySettings, updateCompanySettings, resources, addResource, deleteResource } = useData();
@@ -297,6 +297,26 @@ export const WebsiteSettings: React.FC = () => {
       updateCompanySettings(updatedSettings); // Auto-save
   };
 
+  const handleAddSocial = () => {
+    const newLink: SocialLink = { platform: 'LinkedIn', url: '' };
+    setSettingsForm(prev => ({
+      ...prev,
+      socialLinks: [...(prev.socialLinks || []), newLink]
+    }));
+  };
+
+  const handleRemoveSocial = (index: number) => {
+    const updated = [...(settingsForm.socialLinks || [])];
+    updated.splice(index, 1);
+    setSettingsForm(prev => ({ ...prev, socialLinks: updated }));
+  };
+
+  const handleSocialChange = (index: number, field: keyof SocialLink, value: string) => {
+    const updated = [...(settingsForm.socialLinks || [])];
+    updated[index] = { ...updated[index], [field]: value };
+    setSettingsForm(prev => ({ ...prev, socialLinks: updated }));
+  };
+
   const mainCategories = [
       ProductType.LIFE,
       ProductType.REAL_ESTATE,
@@ -381,6 +401,66 @@ export const WebsiteSettings: React.FC = () => {
                                 </button>
                             );
                         })}
+                    </div>
+                </div>
+
+                {/* Footer Description & Social Links */}
+                <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6">
+                    <h3 className="text-sm font-bold text-[#0B2240] mb-4 uppercase tracking-wide flex items-center gap-2">
+                        <Share2 className="h-4 w-4" /> Footer & Social Media
+                    </h3>
+                    
+                    <div className="mb-6">
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Footer Description</label>
+                        <textarea 
+                            className="w-full bg-white text-slate-900 border border-slate-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#0A62A7] focus:border-transparent resize-none"
+                            rows={3}
+                            value={settingsForm.footerDescription || ''}
+                            onChange={e => setSettingsForm({...settingsForm, footerDescription: e.target.value})}
+                            placeholder="Brief company description for the footer..."
+                        />
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="block text-xs font-bold text-slate-500 uppercase">Social Media Links</label>
+                            <button type="button" onClick={handleAddSocial} className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800"><Plus className="h-3 w-3"/> Add Link</button>
+                        </div>
+                        {settingsForm.socialLinks?.map((link, index) => (
+                            <div key={index} className="flex gap-3">
+                                <div className="w-1/3 md:w-1/4">
+                                <select
+                                    className="w-full bg-white text-slate-900 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-[#0A62A7] focus:border-transparent"
+                                    value={link.platform}
+                                    onChange={e => handleSocialChange(index, 'platform', e.target.value as any)}
+                                >
+                                    <option value="LinkedIn">LinkedIn</option>
+                                    <option value="Facebook">Facebook</option>
+                                    <option value="Twitter">Twitter</option>
+                                    <option value="Instagram">Instagram</option>
+                                    <option value="X">X (Twitter)</option>
+                                    <option value="TikTok">TikTok</option>
+                                    <option value="YouTube">YouTube</option>
+                                </select>
+                                </div>
+                                <div className="flex-1">
+                                <input
+                                    type="text"
+                                    className="w-full bg-white text-slate-900 border border-slate-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[#0A62A7] focus:border-transparent"
+                                    placeholder="Profile URL"
+                                    value={link.url}
+                                    onChange={e => handleSocialChange(index, 'url', e.target.value)}
+                                />
+                                </div>
+                                <button 
+                                type="button" 
+                                onClick={() => handleRemoveSocial(index)}
+                                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                                >
+                                <Trash2 className="h-4 w-4" />
+                                </button>
+                            </div>
+                        ))}
                     </div>
                 </div>
 

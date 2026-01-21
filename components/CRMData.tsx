@@ -30,7 +30,8 @@ import {
   Calculator,
   Percent,
   Puzzle,
-  Zap
+  Zap,
+  HelpCircle
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { UserRole, Notification, AdvisorCategory } from '../types';
@@ -53,6 +54,9 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   
+  // Tour State
+  const [tourStep, setTourStep] = useState<number>(-1);
+
   const unreadNotifs = notifications.filter(n => !n.read).length;
 
   useEffect(() => {
@@ -124,38 +128,80 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
     if (!user || (user.role !== UserRole.ADMIN && user.role !== UserRole.SUB_ADMIN)) return [];
     
     return [
-        { path: '/crm/admin', label: 'User Terminal', icon: Users },
-        { path: '/crm/onboarding', label: 'Onboarding Feed', icon: ClipboardCheck },
-        { path: '/crm/admin/website', label: 'Site Config', icon: Settings },
-        { path: '/crm/admin/carriers', label: 'Carrier Setup', icon: ShieldCheck },
-        { path: '/crm/admin/testimonials', label: 'Client Reviews', icon: Award },
-        { path: '/crm/admin/signature', label: 'Signature Lab', icon: PenTool },
-        { path: '/crm/admin/marketing', label: 'API Integrations', icon: Webhook },
+        { path: '/crm/admin', label: 'User Terminal', icon: Users, id: 'tour-user-terminal' },
+        { path: '/crm/onboarding', label: 'Onboarding Feed', icon: ClipboardCheck, id: 'tour-onboarding' },
+        { path: '/crm/admin/website', label: 'Site Config', icon: Settings, id: 'tour-site-config' },
+        { path: '/crm/admin/carriers', label: 'Carrier Setup', icon: ShieldCheck, id: 'tour-carrier-setup' },
+        { path: '/crm/admin/testimonials', label: 'Client Reviews', icon: Award, id: 'tour-client-reviews' },
+        { path: '/crm/admin/signature', label: 'Email Signature', icon: PenTool, id: 'tour-email-signature' },
+        { path: '/crm/admin/marketing', label: 'API Integrations', icon: Webhook, id: 'tour-api-integrations' },
     ];
   }, [user]);
 
+  // TOUR CONFIGURATION
+  const TOUR_STEPS = [
+      { id: 'tour-user-terminal', title: 'User Terminal', text: 'Central hub for managing all system users, advisors, and permissions.' },
+      { id: 'tour-onboarding', title: 'Onboarding Feed', text: 'Review and approve incoming advisor applications.' },
+      { id: 'tour-site-config', title: 'Site Configuration', text: 'Customize global website settings, heroes, and legal disclaimers.' },
+      { id: 'tour-carrier-setup', title: 'Carrier Setup', text: 'Manage insurance carriers and assign them to advisors.' },
+      { id: 'tour-client-reviews', title: 'Client Reviews', text: 'Moderate and approve client testimonials before they go live.' },
+      { id: 'tour-email-signature', title: 'Email Signature', text: 'Generate professional, compliant email signatures for your team.' },
+      { id: 'tour-api-integrations', title: 'API Integrations', text: 'Connect external marketing platforms like Google Ads and Meta.' },
+  ];
+
+  const startTour = () => setTourStep(0);
+  const nextStep = () => setTourStep(prev => (prev + 1 < TOUR_STEPS.length ? prev + 1 : -1));
+  const endTour = () => setTourStep(-1);
+
   const renderNavLink = (item: any) => {
     const isActive = location.pathname === item.path || (item.path !== '/crm/dashboard' && location.pathname.startsWith(item.path));
+    
+    // Check if this item is currently highlighted in tour
+    const isTourActive = tourStep >= 0 && TOUR_STEPS[tourStep]?.id === item.id;
+
     return (
         <Link 
             key={item.path} 
             to={item.path} 
-            className={`flex items-center gap-4 px-5 py-3.5 text-sm font-bold rounded-2xl transition-all duration-200 group ${
+            className={`flex items-center gap-4 px-5 py-3.5 text-sm font-bold rounded-2xl transition-all duration-200 group relative ${
                 isActive 
                 ? 'bg-[#3B82F6] text-white shadow-md' 
                 : 'text-slate-400 hover:bg-white/5 hover:text-white'
-            }`}
+            } ${isTourActive ? 'z-50 ring-2 ring-blue-400 ring-offset-2 ring-offset-[#1B2240] bg-white/10 shadow-[0_0_30px_rgba(59,130,246,0.6)]' : ''}`}
         >
             <item.icon className={`h-5 w-5 transition-colors ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'}`} strokeWidth={2.5} /> 
             <span className="tracking-tight">{item.label}</span>
+
+            {/* TOUR TOOLTIP */}
+            {isTourActive && (
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-6 w-72 bg-blue-600 text-white p-5 rounded-2xl shadow-2xl animate-fade-in cursor-default pointer-events-auto">
+                    <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-4 h-4 bg-blue-600 transform rotate-45"></div>
+                    <div className="relative z-10">
+                        <h4 className="font-black text-lg mb-2">{TOUR_STEPS[tourStep].title}</h4>
+                        <p className="text-xs font-medium opacity-90 leading-relaxed mb-4">{TOUR_STEPS[tourStep].text}</p>
+                        <div className="flex justify-between items-center border-t border-white/20 pt-3">
+                            <span className="text-[10px] font-bold opacity-60">STEP {tourStep + 1}/{TOUR_STEPS.length}</span>
+                            <div className="flex gap-3">
+                                 <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); endTour(); }} className="text-[10px] font-bold hover:text-blue-200 transition-colors">SKIP</button>
+                                 <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); nextStep(); }} className="bg-white text-blue-600 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-50 shadow-sm transition-all">
+                                    {tourStep === TOUR_STEPS.length - 1 ? 'FINISH' : 'NEXT'}
+                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </Link>
     );
   };
 
   return (
     <div className="fixed inset-0 flex items-center justify-center p-0 sm:p-4 font-sans text-slate-900 overflow-hidden bg-slate-100">
+      {/* Tour Overlay Backdrop */}
+      {tourStep >= 0 && <div className="absolute inset-0 bg-black/60 z-40 animate-fade-in backdrop-blur-sm" onClick={endTour}></div>}
+
       <div className="w-full h-full max-w-[1920px] bg-white sm:rounded-[2.5rem] shadow-2xl flex relative overflow-hidden ring-1 ring-black/5">
-        <aside className="hidden lg:flex flex-col w-72 bg-[#1B222E] text-white h-full overflow-y-auto py-10 z-10 flex-shrink-0 no-scrollbar border-r border-white/5">
+        <aside className="hidden lg:flex flex-col w-72 bg-[#1B222E] text-white h-full overflow-y-auto py-10 z-10 flex-shrink-0 no-scrollbar border-r border-white/5 relative z-50">
             <div className="px-8 mb-12 flex items-center gap-4">
                 <div className="relative w-12 h-12 flex-shrink-0">
                     <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
@@ -202,6 +248,16 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
                     <h2 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2">Active Terminal</h2>
                 </div>
                 <div className="flex items-center gap-8">
+                    {/* Tour Start Button for Admins */}
+                    {(user?.role === UserRole.ADMIN || user?.role === UserRole.SUB_ADMIN) && (
+                        <button 
+                            onClick={startTour} 
+                            className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-full text-xs font-bold text-slate-600 transition-all uppercase tracking-widest"
+                        >
+                            <HelpCircle size={16} /> Admin Tour
+                        </button>
+                    )}
+
                     <div className="relative" ref={notifRef}>
                         <button onClick={() => setIsNotifOpen(!isNotifOpen)} className={`p-3 rounded-2xl transition-all relative ${isNotifOpen ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>
                             <Bell className="h-5 w-5" />

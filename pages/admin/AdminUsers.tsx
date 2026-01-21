@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { User, UserRole, AdvisorCategory, ProductType } from '../../types';
-import { Trash2, Plus, Search, Edit2, Shield, Globe, Power, PowerOff, X, Check, Save, Archive, RotateCcw, AlertTriangle, Briefcase, ChevronDown, Eye, EyeOff } from 'lucide-react';
+import { Trash2, Plus, Search, Edit2, Shield, Globe, Power, PowerOff, X, Check, Save, Archive, RotateCcw, AlertTriangle, Briefcase, ChevronDown, Eye, EyeOff, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const AdminUsers: React.FC = () => {
@@ -102,6 +102,9 @@ export const AdminUsers: React.FC = () => {
         <div className="space-y-px bg-white/40 backdrop-blur-md rounded-[2.5rem] border border-white/50 shadow-xl overflow-hidden">
             {filteredUsers.map((user, idx) => {
                 const isEven = idx % 2 === 0;
+                // Generate slug for advisor preview link
+                const advisorSlug = user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
                 return (
                     <div 
                         key={user.id} 
@@ -156,6 +159,16 @@ export const AdminUsers: React.FC = () => {
                                 </button>
                             ) : (
                                 <>
+                                    {user.role === UserRole.ADVISOR && (
+                                        <Link 
+                                            to={`/advisor/${advisorSlug}`} 
+                                            target="_blank"
+                                            className="p-2.5 text-slate-400 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all"
+                                            title="Preview Microsite"
+                                        >
+                                            <ExternalLink className="h-4 w-4" />
+                                        </Link>
+                                    )}
                                     <button onClick={() => handleEditClick(user)} className="p-2.5 text-slate-400 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-all">
                                         <Edit2 className="h-4 w-4" />
                                     </button>

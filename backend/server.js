@@ -13,11 +13,29 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Database Connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+// Database Connection - Google Cloud SQL Support
+let poolConfig;
+
+if (process.env.INSTANCE_CONNECTION_NAME) {
+  // Cloud SQL Connection via Unix Socket (Standard for Cloud Run / App Engine)
+  console.log(`Connecting to Cloud SQL instance: ${process.env.INSTANCE_CONNECTION_NAME}`);
+  poolConfig = {
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
+    host: `/cloudsql/${process.env.INSTANCE_CONNECTION_NAME}`,
+    max: 10, // Adjust based on Cloud SQL tier
+    connectionTimeoutMillis: 5000,
+  };
+} else {
+  // Standard TCP Connection (Localhost or External IP)
+  poolConfig = {
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  };
+}
+
+const pool = new Pool(poolConfig);
 
 // --- HELPER: WEBHOOK NORMALIZERS ---
 // These functions automatically correct incoming messy JSON from ad platforms into our clean Schema

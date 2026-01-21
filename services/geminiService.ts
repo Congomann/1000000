@@ -2,17 +2,10 @@
 import { GoogleGenAI, FunctionDeclaration, Type } from "@google/genai";
 import { Lead, ProductType } from '../types';
 
-// Safe initialization that avoids crashing the bundle if API_KEY is missing.
-const getAIInstance = () => {
-  const key = process.env.API_KEY;
-  if (!key || key === 'undefined') return null;
-  return new GoogleGenAI({ apiKey: key });
-};
-
-const ai = getAIInstance();
+// Initialization with named parameter apiKey obtained exclusively from process.env.API_KEY.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const analyzeLead = async (lead: Lead): Promise<string> => {
-  if (!ai) return "AI Analysis currently unavailable. Please check API Key in configuration.";
   try {
     // Upgraded to gemini-3-pro-preview with max thinking budget for deep strategic insights and complex reasoning.
     const modelId = 'gemini-3-pro-preview';
@@ -68,8 +61,8 @@ const createLeadTool: FunctionDeclaration = {
       phone: { type: Type.STRING, description: "The user's phone number." },
       city: { type: Type.STRING, description: "The city the user lives in." },
       state: { type: Type.STRING, description: "The state the user lives in (e.g. IA, CA)." },
-      interest: {
-        type: Type.STRING,
+      interest: { 
+        type: Type.STRING, 
         description: "The product they are interested in. Map to one of: Life Insurance, Real Estate, Business Insurance, E&O Insurance, Property Insurance, Securities / Series, Auto Insurance, Commercial Insurance, Annuity, Final Expense",
         enum: Object.values(ProductType)
       },
@@ -84,7 +77,6 @@ export const getChatResponse = async (
   currentMessage: string,
   context: string
 ): Promise<{ text: string, leadData?: any }> => {
-  if (!ai) return { text: "I'm currently in offline mode. Please contact New Holland directly for assistance." };
   try {
     // Upgraded to gemini-3-pro-preview with max thinking budget for complex multi-language reasoning, 
     // emotional intelligence, and accurate tool orchestration.

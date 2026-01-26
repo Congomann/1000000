@@ -104,11 +104,10 @@ export const useData = () => {
   return context;
 };
 
-// ... (Constants omitted for brevity, keeping existing INITIAL_USERS etc.)
 const INITIAL_USERS: User[] = [
   { id: '1', name: 'Admin User', email: 'admin@nhfg.com', role: UserRole.ADMIN, category: AdvisorCategory.ADMIN, avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200', onboardingCompleted: true },
-  // ... other users
 ];
+
 const INITIAL_INTEGRATION_CONFIG: IntegrationConfig = {
   googleAds: { enabled: true, webhookUrl: 'https://api.nhfg.com/hooks/google', developerToken: '****************' },
   metaAds: { enabled: false, verifyToken: '', accessToken: '' },
@@ -124,7 +123,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
-  // ... (keeping other states same as before)
   const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [properties, setProperties] = useState<PropertyListing[]>([]);
@@ -138,14 +136,30 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [integrationLogs, setIntegrationLogs] = useState<IntegrationLog[]>([]);
   
   const [companySettings, setCompanySettings] = useState<CompanySettings>({
-      phone: '(800) 555-0199', email: 'contact@newholland.com', address: '123 Finance Way', city: 'New York', state: 'NY', zip: '10001',
-      heroBackgroundType: 'image', heroBackgroundUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=2070',
-      heroTitle: 'Securing Your Future', heroSubtitle: 'Comprehensive financial solutions for every stage of life.',
-      termsOfUse: 'Default Terms...', solicitorAgreement: 'Default Agreement...',
+      phone: '(800) 555-0199', 
+      email: 'contact@newholland.com', 
+      address: '123 Finance Way', 
+      city: 'New York', 
+      state: 'NY', 
+      zip: '10001',
+      heroBackgroundType: 'image', 
+      heroBackgroundUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=2070',
+      heroTitle: 'Securing Your Future', 
+      heroSubtitle: 'Comprehensive financial solutions for every stage of life.',
+      footerDescription: 'Providing tailored insurance solutions that secure financial peace of mind for individuals, families, and businesses.',
+      socialLinks: [
+          { platform: 'Facebook', url: '#' },
+          { platform: 'LinkedIn', url: '#' },
+          { platform: 'X', url: '#' },
+          { platform: 'Instagram', url: '#' },
+          { platform: 'YouTube', url: '#' },
+          { platform: 'TikTok', url: '#' }
+      ],
+      termsOfUse: 'Default Terms...', 
+      solicitorAgreement: 'Default Agreement...',
       heroVideoPlaylist: []
   });
 
-  // REAL-TIME NOTIFICATION ENGINE
   const pushNotification = useCallback((title: string, message: string, type: 'info' | 'success' | 'warning' | 'alert' = 'info', resourceType?: any, relatedId?: string) => {
     const newNotif: Notification = {
       id: crypto.randomUUID(),
@@ -160,14 +174,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setNotifications(prev => [newNotif, ...prev]);
   }, []);
 
-  // --- WebSocket Integration ---
   useEffect(() => {
     if (user) {
         socketService.connect();
         const unsubscribe = socketService.subscribe((data) => {
             if (data.type === 'NEW_LEAD') {
                 pushNotification('New Lead Ingested', `New lead received from ${data.payload.source}`, 'success', 'lead', data.payload.id);
-                // Refresh leads if using real backend
                 Backend.getLeads().then(setLeads);
             } else if (data.type === 'CHAT_MESSAGE') {
                 setChatMessages(prev => [...prev, data.payload]);
@@ -183,7 +195,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [user, pushNotification]);
 
-  // LEAD MAINTENANCE (15 DAYS)
   const performLeadMaintenance = useCallback(async (currentLeads: Lead[]) => {
       const FIFTEEN_DAYS_MS = 15 * 24 * 60 * 60 * 1000;
       const now = Date.now();
@@ -250,9 +261,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setLeads(prev => [newLead, ...prev]);
     pushNotification('New Lead Received', `Inquiry from ${newLead.name} regarding ${newLead.interest}.`, 'success', 'lead', newLead.id);
     
-    // Async Analysis
     analyzeLead(newLead).then(analysis => {
-        const enriched = { ...newLead, aiAnalysis: analysis };
         updateLead(newLead.id, { aiAnalysis: analysis });
     });
   }, [pushNotification]);
@@ -284,10 +293,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           read: false,
           attachment
       };
-      // Optimistic update
       setChatMessages(prev => [...prev, newMessage]);
-      
-      // Send via WebSocket
       socketService.send({
           type: 'CHAT_MESSAGE',
           payload: { ...newMessage, senderName: user.name }
@@ -301,7 +307,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           pushNotification('Security Alert', `Login successful via API: ${apiUser.email}.`, 'info');
           return true;
       }
-      // Fallback logic
       const found = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (found) {
         setUser(found);
@@ -311,10 +316,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return false;
   };
 
-  // ... (Keeping rest of context logic for events, resources, etc.)
   const logout = () => { Backend.logout(); setUser(null); };
   
-  // Placeholder implementations
   const addEvent = (e: Partial<CalendarEvent>) => setEvents(prev => [...prev, { ...e, id: crypto.randomUUID() } as CalendarEvent]);
   const updateEvent = (e: Partial<CalendarEvent>) => setEvents(prev => prev.map(ev => ev.id === e.id ? { ...ev, ...e } : ev));
   const deleteEvent = (id: string) => setEvents(prev => prev.filter(e => e.id !== id));
@@ -323,11 +326,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const markNotificationRead = (id: string) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   const clearNotifications = () => setNotifications([]);
   
-  // Updated to handle signature saving
   const completeOnboarding = (signatureData?: string) => { 
       if (user) {
-          // In a real app, send signatureData to backend to be stored as a file/blob
-          console.log("Saving signature:", signatureData ? "Received" : "None");
           updateUser(user.id, { onboardingCompleted: true }); 
       }
   };
@@ -393,37 +393,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                       avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(app.fullName)}&background=0D8ABC&color=fff`
                   };
                   
-                  // Add user
                   setAllUsers(users => [...users, newUser]);
                   Backend.saveUser(newUser);
-
-                  // Send Email
-                  const emailContent = `
-Subject: Welcome to New Holland Financial Group - Action Required
-
-Dear ${app.fullName},
-
-Congratulations! We are pleased to inform you that your application to join New Holland Financial Group has been approved.
-
-To get started, please log in to the Advisor Terminal and complete your onboarding process.
-
-**Login Credentials:**
-Username: ${app.email}
-Temporary Password: ${tempPassword}
-
-**Onboarding Link:**
-${window.location.origin}/#/login
-
-Once logged in, you will be automatically redirected to the onboarding flow to sign your Independent Contractor Agreement.
-
-Welcome to the team!
-
-Sincerely,
-New Holland Financial Group Admin Team
-                  `;
-                  
-                  console.log(`%c[EMAIL SENT] To: ${app.email}`, 'color: green; font-weight: bold; font-size: 12px;');
-                  console.log(emailContent);
                   
                   pushNotification('Onboarding Email Sent', `Welcome credentials sent to ${app.email}.`, 'success');
               }
@@ -472,7 +443,6 @@ New Holland Financial Group Admin Team
       const updates: Lead[] = [];
       const advisorLoad: Record<string, number> = {};
       
-      // Initialize load counts for accurate round-robin distribution
       advisors.forEach(a => {
           advisorLoad[a.id] = leads.filter(l => l.assignedTo === a.id && l.status !== LeadStatus.CLOSED && l.status !== LeadStatus.LOST).length;
       });
@@ -480,12 +450,10 @@ New Holland Financial Group Admin Team
       for (const lead of targetLeads) {
           let targetAdvisorId = advisorId;
 
-          // Smart Distribution Logic
           if (advisorId === 'DISTRIBUTE_EVENLY') {
               const sorted = [...advisors].sort((a, b) => (advisorLoad[a.id] || 0) - (advisorLoad[b.id] || 0));
               targetAdvisorId = sorted[0].id;
           } else if (advisorId === 'DISTRIBUTE_SPECIALIZED') {
-              // Prefer specialists, fallback to general pool if none found
               const specialists = advisors.filter(a => a.productsSold?.includes(lead.interest));
               const pool = specialists.length > 0 ? specialists : advisors;
               const sorted = [...pool].sort((a, b) => (advisorLoad[a.id] || 0) - (advisorLoad[b.id] || 0));
@@ -503,8 +471,6 @@ New Holland Financial Group Admin Team
               
               await Backend.saveLead(updatedLead);
               updates.push(updatedLead);
-              
-              // Increment load for next iteration to keep distribution even
               advisorLoad[targetAdvisorId] = (advisorLoad[targetAdvisorId] || 0) + 1;
               
               const advisorName = allUsers.find(u => u.id === targetAdvisorId)?.name;

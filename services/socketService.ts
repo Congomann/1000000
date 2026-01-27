@@ -1,14 +1,24 @@
-
 /**
  * Real-Time Communication Service
  * Handles WebSocket connections, automatic reconnection, and event broadcasting.
  */
 
-const USE_REAL_SOCKETS = false; // Set to true only when backend server is running
+const USE_REAL_SOCKETS = true; // Set to true only when backend server is running
 
 class SocketService {
   private socket: WebSocket | null = null;
-  private url: string = 'ws://localhost:3001/ws';
+  
+  // Dynamically determine the WebSocket URL based on current environment
+  private get url(): string {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    if (isLocal) {
+        return `${protocol}//localhost:3001/ws`;
+    }
+    // If deployed, assume the WS server is on the same host
+    return `${protocol}//${window.location.host}/ws`;
+  }
+
   private listeners: ((data: any) => void)[] = [];
   private reconnectInterval: number = 3000;
 
@@ -22,7 +32,7 @@ class SocketService {
       return;
     }
 
-    console.log('Connecting to WebSocket...');
+    console.log(`SocketService: Attempting connection to ${this.url}...`);
     try {
         this.socket = new WebSocket(this.url);
 

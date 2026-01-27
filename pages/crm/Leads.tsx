@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { Lead, LeadStatus, UserRole, ProductType } from '../../types';
-import { Sparkles, Loader2, Filter, Search, X, Eye, ChevronDown, Edit2, Save, Globe, CheckSquare, Square, Trash, CheckCircle2, AlertTriangle, Clock, Info } from 'lucide-react';
+import { Sparkles, Loader2, Filter, Search, X, Eye, ChevronDown, Edit2, Save, Globe, CheckSquare, Square, Trash, CheckCircle2, AlertTriangle, Clock, Info, UserCheck, Archive } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface DetailRowProps {
@@ -59,10 +59,12 @@ const PriorityBadge = ({ priority }: { priority?: string }) => {
 };
 
 export const Leads: React.FC = () => {
-  const { leads, updateLeadStatus, updateLead, user } = useData();
+  const { leads, updateLeadStatus, updateLead, user, allUsers } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [sourceFilter, setSourceFilter] = useState<string>('All');
+  const [assignedFilter, setAssignedFilter] = useState<string>('All');
+  const [showArchived, setShowArchived] = useState(false);
   const [viewLead, setViewLead] = useState<Lead | null>(null); 
   const [isEditing, setIsEditing] = useState(false);
   const [editedLeadData, setEditedLeadData] = useState<Partial<Lead>>({});
@@ -72,6 +74,9 @@ export const Leads: React.FC = () => {
   const [showBulkSuccess, setShowBulkSuccess] = useState(false);
 
   const isAdvisor = user?.role === UserRole.ADVISOR;
+  const isAdminOrManager = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER || user?.role === UserRole.SUB_ADMIN;
+
+  const advisorsList = useMemo(() => allUsers.filter(u => u.role === UserRole.ADVISOR), [allUsers]);
 
   // Derive unique sources
   const uniqueSources = useMemo(() => {
@@ -82,11 +87,24 @@ export const Leads: React.FC = () => {
 
   const filteredLeads = useMemo(() => {
     let list = [...leads];
+    
+    // Archive Filter
+    list = list.filter(l => showArchived ? l.isArchived : !l.isArchived);
+
+    // Visibility Filter
     if (isAdvisor && user) {
         list = list.filter(l => l.assignedTo === user.id || !l.assignedTo);
     }
+
+    // Dropdown Filters
     if (statusFilter !== 'All') list = list.filter(l => l.status === statusFilter);
     if (sourceFilter !== 'All') list = list.filter(l => l.source === sourceFilter);
+    if (assignedFilter !== 'All') {
+        if (assignedFilter === 'Unassigned') list = list.filter(l => !l.assignedTo);
+        else list = list.filter(l => l.assignedTo === assignedFilter);
+    }
+
+    // Text Search
     if (searchTerm) {
         const q = searchTerm.toLowerCase();
         list = list.filter(l => 
@@ -95,15 +113,16 @@ export const Leads: React.FC = () => {
             l.interest.toLowerCase().includes(q)
         );
     }
+
+    // PRIMARY SORT: Priority (High > Medium > Low), then SECONDARY SORT: Date (Newest)
     return list.sort((a, b) => {
-        // Sort by priority first (High > Medium > Low) then date
         const priorityScore: any = { 'High': 3, 'Medium': 2, 'Low': 1 };
         const scoreA = priorityScore[a.priority || 'Low'];
         const scoreB = priorityScore[b.priority || 'Low'];
         if (scoreA !== scoreB) return scoreB - scoreA;
         return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
-  }, [leads, user, isAdvisor, statusFilter, sourceFilter, searchTerm]);
+  }, [leads, user, isAdvisor, statusFilter, sourceFilter, assignedFilter, searchTerm, showArchived]);
 
   const toggleSelectAll = () => {
     if (selectedLeadIds.size === filteredLeads.length && filteredLeads.length > 0) {
@@ -159,10 +178,18 @@ export const Leads: React.FC = () => {
     <div className="space-y-8 relative">
        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Leads Database</h1>
-            <p className="text-slate-500 mt-1 font-medium">Capture insights, manage follow-ups, and log legal requests.</p>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{showArchived ? 'Archived Leads' : 'Leads Database'}</h1>
+            <p className="text-slate-500 mt-1 font-medium">
+                {showArchived ? 'Viewing inactive or lost leads older than 15 days.' : 'Capture insights, manage follow-ups, and log legal requests.'}
+            </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
+             <button 
+                onClick={() => setShowArchived(!showArchived)}
+                className={`flex items-center gap-2 px-6 py-4 rounded-full text-sm font-bold transition-all border ${showArchived ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 shadow-sm'}`}
+             >
+                <Archive size={16} /> {showArchived ? 'Show Active' : 'Show Archived'}
+             </button>
              <Link to="/crm/intake" className="bg-[#0A62A7] text-white px-8 py-4 rounded-full text-sm font-bold shadow-xl hover:bg-blue-700 transition-all">+ New Lead</Link>
           </div>
         </div>
@@ -176,7 +203,7 @@ export const Leads: React.FC = () => {
         )}
 
         {/* Search & Multiple Filters Bar */}
-        <div className="bg-white p-5 rounded-[2.5rem] shadow-sm border border-slate-200 flex flex-col xl:flex-row gap-5 items-center">
+        <div className="bg-white p-5 rounded-[2.5rem] shadow-sm border border-slate-200 flex flex-col xl:flex-row gap-4 items-center">
             <div className="relative flex-1 w-full">
                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                 <input 
@@ -188,8 +215,9 @@ export const Leads: React.FC = () => {
                 />
             </div>
             
-            <div className="flex flex-col md:flex-row gap-3 w-full xl:w-auto">
-                <div className="relative min-w-[180px]">
+            <div className="flex flex-wrap gap-3 w-full xl:w-auto">
+                {/* Source Filter */}
+                <div className="relative min-w-[150px] flex-1">
                     <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                     <select 
                         className="w-full bg-white text-slate-900 border border-slate-200 rounded-[2rem] pl-10 pr-10 py-4 text-sm font-bold focus:ring-2 focus:ring-[#0A62A7] cursor-pointer appearance-none shadow-sm"
@@ -202,7 +230,25 @@ export const Leads: React.FC = () => {
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                 </div>
 
-                <div className="relative min-w-[180px]">
+                {/* Assigned To Filter (Admins/Managers only) */}
+                {isAdminOrManager && (
+                    <div className="relative min-w-[180px] flex-1">
+                        <UserCheck className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                        <select 
+                            className="w-full bg-white text-slate-900 border border-slate-200 rounded-[2rem] pl-10 pr-10 py-4 text-sm font-bold focus:ring-2 focus:ring-[#0A62A7] cursor-pointer appearance-none shadow-sm"
+                            value={assignedFilter}
+                            onChange={e => setAssignedFilter(e.target.value)}
+                        >
+                            <option value="All">All Advisors</option>
+                            <option value="Unassigned">Unassigned</option>
+                            {advisorsList.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                        </select>
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                    </div>
+                )}
+
+                {/* Status Filter */}
+                <div className="relative min-w-[150px] flex-1">
                     <Filter className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                     <select 
                         className="w-full bg-white text-slate-900 border border-slate-200 rounded-[2rem] pl-10 pr-10 py-4 text-sm font-bold focus:ring-2 focus:ring-[#0A62A7] cursor-pointer appearance-none shadow-sm"
@@ -301,6 +347,16 @@ export const Leads: React.FC = () => {
                                 </td>
                             </tr>
                         ))}
+                        {filteredLeads.length === 0 && (
+                            <tr>
+                                <td colSpan={7} className="px-10 py-48 text-center">
+                                    <div className="flex flex-col items-center justify-center opacity-10">
+                                        <Archive className="h-32 w-32 mb-6" strokeWidth={1} />
+                                        <h2 className="text-4xl font-black uppercase tracking-[0.4em]">No Results</h2>
+                                    </div>
+                                </td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </div>
@@ -362,6 +418,22 @@ export const Leads: React.FC = () => {
                                          {Object.values(LeadStatus).map(s => <option key={s} value={s}>{s}</option>)}
                                      </select>
                                  </div>
+
+                                 {isAdminOrManager && (
+                                     <div className="mt-4 pt-4 border-t border-slate-200">
+                                         <span className="block text-xs font-bold text-slate-400 uppercase mb-2">Assigned Advisor</span>
+                                         <select 
+                                            className="w-full p-2 rounded-xl border border-slate-200 font-bold text-xs bg-white text-slate-700 outline-none"
+                                            value={editedLeadData.assignedTo || ''}
+                                            onChange={(e) => setEditedLeadData({...editedLeadData, assignedTo: e.target.value})}
+                                            disabled={!isEditing}
+                                         >
+                                             <option value="">Unassigned</option>
+                                             {advisorsList.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                         </select>
+                                     </div>
+                                 )}
+
                                  <div className="mt-4 pt-4 border-t border-slate-200">
                                      <span className="block text-[10px] font-black text-slate-400 uppercase mb-1">Origin Source</span>
                                      <span className="text-xs font-bold text-blue-600 uppercase">{viewLead.source || 'Manual Entry'}</span>

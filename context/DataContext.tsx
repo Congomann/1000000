@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { Lead, Client, DashboardMetrics, ProductType, LeadStatus, User, UserRole, Notification, CalendarEvent, ChatMessage, AdvisorCategory, CompanySettings, Resource, Carrier, AdvisorAssignment, Testimonial, Application, ApplicationStatus, IntegrationConfig, IntegrationLog, LoanApplication, Colleague, PropertyListing, EscrowTransaction, ClientPortfolio, ComplianceDocument, AdvisoryFee, JobApplication } from '../types';
 import { Backend } from '../services/apiBackend';
@@ -77,11 +76,9 @@ interface DataContextType {
   updateJobApplicationStatus: (id: string, status: string, config?: any) => void;
   updateApplicationStatus: (id: string, status: ApplicationStatus) => void;
   
-  // Real Estate Property Management
   addProperty: (property: Partial<PropertyListing>) => void;
   updateProperty: (id: string, property: Partial<PropertyListing>) => void;
   deleteProperty: (id: string) => void;
-
   updateTransactionStatus: (id: string, status: 'Open' | 'Closed' | 'Cancelled', stage?: EscrowTransaction['stage']) => void;
   addPortfolio: (data: Partial<ClientPortfolio>) => void;
   updatePortfolio: (id: string, data: Partial<ClientPortfolio>) => void;
@@ -105,7 +102,13 @@ export const useData = () => {
 };
 
 const INITIAL_USERS: User[] = [
-  { id: '1', name: 'Admin User', email: 'admin@nhfg.com', role: UserRole.ADMIN, category: AdvisorCategory.ADMIN, avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200', onboardingCompleted: true },
+  { id: '1', name: 'NHFG Admin', email: 'admin@nhfg.com', role: UserRole.ADMIN, category: AdvisorCategory.ADMIN, avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200', onboardingCompleted: true },
+  { id: '2', name: 'James Manager', email: 'manager@nhfg.com', role: UserRole.MANAGER, category: AdvisorCategory.ADMIN, avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200', onboardingCompleted: true },
+  { id: '3', name: 'Sarah SubAdmin', email: 'subadmin@nhfg.com', role: UserRole.SUB_ADMIN, category: AdvisorCategory.ADMIN, avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200', onboardingCompleted: true },
+  { id: '4', name: 'David Insurance', email: 'insurance@nhfg.com', role: UserRole.ADVISOR, category: AdvisorCategory.INSURANCE, productsSold: [ProductType.LIFE, ProductType.IUL, ProductType.ANNUITY], onboardingCompleted: true },
+  { id: '5', name: 'Linda Real Estate', email: 'realestate@nhfg.com', role: UserRole.ADVISOR, category: AdvisorCategory.REAL_ESTATE, productsSold: [ProductType.REAL_ESTATE], onboardingCompleted: true },
+  { id: '6', name: 'Mark Mortgage', email: 'mortgage@nhfg.com', role: UserRole.ADVISOR, category: AdvisorCategory.MORTGAGE, productsSold: [ProductType.MORTGAGE], onboardingCompleted: true },
+  { id: '7', name: 'Kevin Securities', email: 'securities@nhfg.com', role: UserRole.ADVISOR, category: AdvisorCategory.SECURITIES, productsSold: [ProductType.SECURITIES, ProductType.INVESTMENT], onboardingCompleted: true },
 ];
 
 const INITIAL_INTEGRATION_CONFIG: IntegrationConfig = {
@@ -195,29 +198,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [user, pushNotification]);
 
-  const performLeadMaintenance = useCallback(async (currentLeads: Lead[]) => {
-      const FIFTEEN_DAYS_MS = 15 * 24 * 60 * 60 * 1000;
-      const now = Date.now();
-      let modified = false;
-      
-      const nextLeads = currentLeads.map(l => {
-          const leadDate = new Date(l.date).getTime();
-          if (!l.isArchived && (now - leadDate) > FIFTEEN_DAYS_MS) {
-              modified = true;
-              return { ...l, isArchived: true, deletedAt: new Date().toISOString(), status: LeadStatus.LOST };
-          }
-          return l;
-      });
-
-      if (modified) {
-          setLeads(nextLeads);
-          pushNotification('System Maintenance', 'Auto-cleanup moved expired leads to archive.', 'warning');
-          for (const l of nextLeads.filter(x => x.isArchived)) {
-              await Backend.saveLead(l);
-          }
-      }
-  }, [pushNotification]);
-
   useEffect(() => {
     const bootstrap = async () => {
       const storedLeads = await Backend.getLeads();
@@ -229,14 +209,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setLeads(storedLeads);
       setClients(storedClients);
       if (storedSettings) setCompanySettings(storedSettings);
-      performLeadMaintenance(storedLeads);
     };
     bootstrap();
-    const interval = setInterval(() => {
-        setLeads(prev => { performLeadMaintenance(prev); return prev; });
-    }, 24 * 60 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [performLeadMaintenance]);
+  }, []);
 
   const addLead = useCallback(async (leadData: Partial<Lead>, assignTo?: string) => {
     const newLead: Lead = {
@@ -254,6 +229,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       assignedTo: assignTo,
       notes: leadData.notes || '',
       isArchived: false,
+      priority: 'Low',
       ...leadData
     };
 
@@ -272,66 +248,43 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const updated = { ...lead, ...data };
           await Backend.saveLead(updated);
           setLeads(prev => prev.map(l => l.id === id ? updated : l));
-          if (data.status) {
-            pushNotification('Lead Status Update', `${lead.name} shifted to ${data.status}.`, 'info', 'lead', id);
-          }
       }
-  }, [leads, pushNotification]);
+  }, [leads]);
 
   const updateLeadStatus = useCallback((id: string, status: LeadStatus, analysis?: string) => {
       updateLead(id, { status, aiAnalysis: analysis });
   }, [updateLead]);
 
-  const sendChatMessage = (receiverId: string, text: string, attachment?: any) => {
-      if (!user) return;
-      const newMessage: ChatMessage = {
-          id: crypto.randomUUID(),
-          senderId: user.id,
-          receiverId,
-          text,
-          timestamp: new Date(),
-          read: false,
-          attachment
-      };
-      setChatMessages(prev => [...prev, newMessage]);
-      socketService.send({
-          type: 'CHAT_MESSAGE',
-          payload: { ...newMessage, senderName: user.name }
-      });
-  };
-
   const login = async (email: string, password?: string) => {
       const apiUser = await Backend.login(email, password);
       if (apiUser) {
           setUser(apiUser);
-          pushNotification('Security Alert', `Login successful via API: ${apiUser.email}.`, 'info');
           return true;
       }
       const found = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (found) {
         setUser(found);
-        pushNotification('Security Alert', `Login detected for account: ${found.email}.`, 'info');
         return true;
       }
       return false;
   };
 
   const logout = () => { Backend.logout(); setUser(null); };
-  
   const addEvent = (e: Partial<CalendarEvent>) => setEvents(prev => [...prev, { ...e, id: crypto.randomUUID() } as CalendarEvent]);
   const updateEvent = (e: Partial<CalendarEvent>) => setEvents(prev => prev.map(ev => ev.id === e.id ? { ...ev, ...e } : ev));
   const deleteEvent = (id: string) => setEvents(prev => prev.filter(e => e.id !== id));
-  const updateUser = (id: string, data: Partial<User>) => setAllUsers(prev => prev.map(u => u.id === id ? {...u, ...data} : u));
+  const updateUser = (id: string, data: Partial<User>) => {
+      setAllUsers(prev => {
+          const updated = prev.map(u => u.id === id ? {...u, ...data} : u);
+          const found = updated.find(u => u.id === id);
+          if (found) Backend.saveUser(found);
+          return updated;
+      });
+  };
   const updateCompanySettings = (s: CompanySettings) => { setCompanySettings(s); Backend.saveSettings(s); };
   const markNotificationRead = (id: string) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   const clearNotifications = () => setNotifications([]);
-  
-  const completeOnboarding = (signatureData?: string) => { 
-      if (user) {
-          updateUser(user.id, { onboardingCompleted: true }); 
-      }
-  };
-  
+  const completeOnboarding = (signatureData?: string) => { if (user) updateUser(user.id, { onboardingCompleted: true }); };
   const updateIntegrationConfig = (c: Partial<IntegrationConfig>) => setIntegrationConfig(prev => ({ ...prev, ...c }));
   const simulateMarketingLead = async (p: any, load: any) => { await Backend.handleWebhook(p, load); };
   const getAdvisorAssignments = () => [];
@@ -339,156 +292,84 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const dislikeResource = () => {};
   const shareResource = () => {};
   const addResourceComment = () => {};
-  const addResource = () => {};
-  const deleteResource = () => {};
-  const addTestimonial = () => {};
-  const approveTestimonial = () => {};
-  const deleteTestimonial = () => {};
-  const submitTestimonialEdit = () => {};
-  const approveTestimonialEdit = () => {};
-  const rejectTestimonialEdit = () => {};
-  const addCallback = () => {};
-  const handleAdvisorLeadAction = () => {};
+  const addResource = (r: Partial<Resource>) => {};
+  const deleteResource = (id: string) => {};
+  const addTestimonial = (t: any) => {};
+  const approveTestimonial = (id: string) => {};
+  const deleteTestimonial = (id: string) => {};
+  const submitTestimonialEdit = (id: string, e: any) => {};
+  const approveTestimonialEdit = (id: string) => {};
+  const rejectTestimonialEdit = (id: string) => {};
+  const addCallback = (r: any) => {};
+  const handleAdvisorLeadAction = (id: string, a: string) => {};
   const addAdvisor = (data: Partial<User>) => {
-      const newUser: User = {
-          id: crypto.randomUUID(),
-          name: data.name || 'New Advisor',
-          email: data.email || 'advisor@nhfg.com',
-          role: UserRole.ADVISOR,
-          category: AdvisorCategory.INSURANCE,
-          onboardingCompleted: false,
-          ...data
-      } as User;
+      const newUser: User = { id: crypto.randomUUID(), name: data.name || 'New Advisor', email: data.email || 'advisor@nhfg.com', role: UserRole.ADVISOR, category: AdvisorCategory.INSURANCE, onboardingCompleted: false, ...data } as User;
       setAllUsers(prev => [...prev, newUser]);
       Backend.saveUser(newUser);
   };
-  const deleteAdvisor = (id: string) => setAllUsers(prev => prev.map(u => u.id === id ? { ...u, deletedAt: new Date().toISOString() } : u));
-  const restoreUser = (id: string) => setAllUsers(prev => prev.map(u => u.id === id ? { ...u, deletedAt: undefined } : u));
+  const deleteAdvisor = (id: string) => updateUser(id, { deletedAt: new Date().toISOString() });
+  const restoreUser = (id: string) => updateUser(id, { deletedAt: undefined });
   const permanentlyDeleteUser = (id: string) => setAllUsers(prev => prev.filter(u => u.id !== id));
-  
   const assignCarriers = () => {};
   const markChatRead = () => {};
   const editChatMessage = () => {};
   const deleteChatMessage = () => {};
-  
-  const submitJobApplication = (data: any) => {
-      setJobApplications(prev => [...prev, { ...data, id: crypto.randomUUID(), date: new Date().toISOString(), status: 'Pending' }]);
+  const sendChatMessage = (receiverId: string, text: string, attachment?: any) => {
+      if (!user) return;
+      const newMessage: ChatMessage = { id: crypto.randomUUID(), senderId: user.id, receiverId, text, timestamp: new Date(), read: false, attachment };
+      setChatMessages(prev => [...prev, newMessage]);
+      socketService.send({ type: 'CHAT_MESSAGE', payload: { ...newMessage, senderName: user.name } });
   };
-
-  const updateJobApplicationStatus = useCallback((id: string, status: string, config?: any) => {
+  const submitJobApplication = (data: any) => { setJobApplications(prev => [...prev, { ...data, id: crypto.randomUUID(), date: new Date().toISOString(), status: 'Pending' }]); };
+  const updateJobApplicationStatus = (id: string, status: string, config?: any) => {
       setJobApplications(prev => prev.map(app => {
           if (app.id === id) {
               if (status === 'Approved' && app.status !== 'Approved') {
-                  const tempPassword = "Welcome123!";
-                  const newUser: User = {
-                      id: crypto.randomUUID(),
-                      name: app.fullName,
-                      email: app.email,
-                      phone: app.phone,
-                      role: UserRole.ADVISOR,
-                      category: AdvisorCategory.INSURANCE, 
-                      productsSold: config?.products || [],
-                      contractLevel: config?.contractLevel || 50,
-                      onboardingCompleted: false,
-                      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(app.fullName)}&background=0D8ABC&color=fff`
-                  };
-                  
+                  const newUser: User = { id: crypto.randomUUID(), name: app.fullName, email: app.email, phone: app.phone, role: UserRole.ADVISOR, category: AdvisorCategory.INSURANCE, productsSold: config?.products || [], contractLevel: config?.contractLevel || 50, onboardingCompleted: false, avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(app.fullName)}&background=0D8ABC&color=fff` };
                   setAllUsers(users => [...users, newUser]);
                   Backend.saveUser(newUser);
-                  
-                  pushNotification('Onboarding Email Sent', `Welcome credentials sent to ${app.email}.`, 'success');
               }
               return { ...app, status: status as any };
           }
           return app;
       }));
-  }, [pushNotification]);
-
+  };
   const updateApplicationStatus = () => {};
-  const addProperty = () => {};
+  const addProperty = (p: any) => {};
   const updateProperty = () => {};
   const deleteProperty = () => {};
   const updateTransactionStatus = () => {};
-  const addPortfolio = () => {};
+  const addPortfolio = (p: any) => {};
   const updatePortfolio = () => {};
   const deletePortfolio = () => {};
-  const addComplianceDoc = () => {};
+  const addComplianceDoc = (d: any) => {};
   const updateFeeStatus = () => {};
-  const addAdvisoryFee = () => {};
+  const addAdvisoryFee = (f: any) => {};
   const updateAdvisoryFee = () => {};
   const deleteAdvisoryFee = () => {};
-  const addLoanApplication = () => {};
+  const addLoanApplication = (l: any) => {};
   const updateLoanApplication = () => {};
   const deleteLoanApplication = () => {};
-
   const updateClient = useCallback(async (id: string, data: Partial<Client>) => {
       const client = clients.find(c => c.id === id);
       if (client) {
           const updated = { ...client, ...data };
           await Backend.saveClient(updated);
           setClients(prev => prev.map(c => c.id === id ? updated : c));
-          pushNotification('Client Updated', `${updated.name} record updated.`, 'success');
       }
-  }, [clients, pushNotification]);
-
-  const assignLeads = useCallback(async (leadIds: string[], advisorId: string, priority?: string, notes?: string) => {
+  }, [clients]);
+  const assignLeads = useCallback(async (leadIds: string[], advisorId: string) => {
       const targetLeads = leads.filter(l => leadIds.includes(l.id));
-      const advisors = allUsers.filter(u => u.role === UserRole.ADVISOR);
-      
-      if (advisors.length === 0) {
-          pushNotification('Assignment Failed', 'No advisors found.', 'warning');
-          return;
-      }
-
-      const updates: Lead[] = [];
-      const advisorLoad: Record<string, number> = {};
-      
-      advisors.forEach(a => {
-          advisorLoad[a.id] = leads.filter(l => l.assignedTo === a.id && l.status !== LeadStatus.CLOSED && l.status !== LeadStatus.LOST).length;
-      });
-
       for (const lead of targetLeads) {
-          let targetAdvisorId = advisorId;
-
-          if (advisorId === 'DISTRIBUTE_EVENLY') {
-              const sorted = [...advisors].sort((a, b) => (advisorLoad[a.id] || 0) - (advisorLoad[b.id] || 0));
-              targetAdvisorId = sorted[0].id;
-          } else if (advisorId === 'DISTRIBUTE_SPECIALIZED') {
-              const specialists = advisors.filter(a => a.productsSold?.includes(lead.interest));
-              const pool = specialists.length > 0 ? specialists : advisors;
-              const sorted = [...pool].sort((a, b) => (advisorLoad[a.id] || 0) - (advisorLoad[b.id] || 0));
-              targetAdvisorId = sorted[0].id;
-          }
-
-          if (targetAdvisorId && !['DISTRIBUTE_EVENLY', 'DISTRIBUTE_SPECIALIZED'].includes(targetAdvisorId)) {
-              const updatedLead: Lead = {
-                  ...lead,
-                  assignedTo: targetAdvisorId,
-                  status: LeadStatus.ASSIGNED,
-                  priority: (priority as any) || lead.priority,
-                  notes: notes ? (lead.notes ? `${lead.notes}\n${notes}` : notes) : lead.notes
-              };
-              
-              await Backend.saveLead(updatedLead);
-              updates.push(updatedLead);
-              advisorLoad[targetAdvisorId] = (advisorLoad[targetAdvisorId] || 0) + 1;
-              
-              const advisorName = allUsers.find(u => u.id === targetAdvisorId)?.name;
-              pushNotification('Lead Assigned', `${lead.name} assigned to ${advisorName}`, 'success');
-          }
+          const updatedLead: Lead = { ...lead, assignedTo: advisorId, status: LeadStatus.ASSIGNED };
+          await Backend.saveLead(updatedLead);
       }
-
-      if (updates.length > 0) {
-          setLeads(prev => prev.map(l => {
-              const updated = updates.find(u => u.id === l.id);
-              return updated || l;
-          }));
-      }
-  }, [leads, allUsers, pushNotification]);
+      Backend.getLeads().then(setLeads);
+  }, [leads]);
 
   return (
     <DataContext.Provider value={{
-      user, allUsers, leads, clients, metrics: { totalRevenue: 0, activeClients: 0, pendingLeads: 0, monthlyPerformance: [], totalCommission: 0 },
+      user, allUsers, leads, clients, metrics: { totalRevenue: 1250000, activeClients: 450, pendingLeads: 12, monthlyPerformance: [], totalCommission: 85000 },
       notifications, chatMessages, companySettings, resources: [], commissions: [], events, testimonials,
       availableCarriers: [], colleagues: [], jobApplications, applications, properties, transactions,
       portfolios, complianceDocs, advisoryFees, loanApplications, integrationLogs, integrationConfig,

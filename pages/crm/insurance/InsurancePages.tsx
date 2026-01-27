@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { useData } from '../../../context/DataContext';
 import { ApplicationStatus, LeadStatus, ProductType } from '../../../types';
@@ -9,83 +8,107 @@ const StatusBadge = ({ status }: { status: string }) => {
     if (['Approved', 'Issued', 'Active'].includes(status)) color = 'bg-green-100 text-green-700';
     if (['Pending', 'Underwriting', 'New'].includes(status)) color = 'bg-yellow-100 text-yellow-700';
     if (['Declined', 'Lost', 'Expired'].includes(status)) color = 'bg-red-100 text-red-700';
-    return <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${color}`}>{status}</span>;
+    return <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${color}`}>{status}</span>;
 };
 
-// --- 1. Policies & Apps ---
+// --- 1. Policies & Apps (REFINED BOX DESIGN) ---
 export const PoliciesApps: React.FC = () => {
     const { applications, updateApplicationStatus, user } = useData();
     
-    // Management-initiated apps start in PENDING (New Quote)
-    // Filter apps for current advisor
     const myApps = useMemo(() => {
         if (!user) return [];
-        return applications; // For demo, show all, but logic would filter by advisor
+        return applications; 
     }, [applications, user]);
 
     const handleSubmitToCarrier = (id: string) => {
         updateApplicationStatus(id, ApplicationStatus.UNDERWRITING);
-        alert("Application securely transmitted to Carrier Gateway. Status shifted to Underwriting.");
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-[#0B2240]">Policies & Applications</h1>
-                    <p className="text-slate-500">Track application status from submission to issuance.</p>
-                </div>
+        <div className="space-y-8 animate-fade-in pb-10">
+            <div>
+                <h1 className="text-3xl font-black text-[#0B2240] tracking-tight">Policies & Applications</h1>
+                <p className="text-slate-500 font-medium mt-1">Track application status from submission to issuance.</p>
             </div>
             
-            <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
-                <table className="w-full text-left text-sm text-slate-600">
-                    <thead className="bg-slate-50 text-xs uppercase font-bold text-slate-500">
-                        <tr>
-                            <th className="px-6 py-4">Client</th>
-                            <th className="px-6 py-4">Carrier</th>
-                            <th className="px-6 py-4">Policy / Quote #</th>
-                            <th className="px-6 py-4">Est. Premium</th>
-                            <th className="px-6 py-4">Status</th>
-                            <th className="px-6 py-4 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                        {myApps.map(app => (
-                            <tr key={app.id} className="hover:bg-slate-50/50">
-                                <td className="px-6 py-4">
-                                    <div className="font-bold text-slate-900">{app.clientName}</div>
-                                    {app.status === ApplicationStatus.PENDING && (
-                                        <span className="text-[10px] text-blue-500 font-bold uppercase tracking-tighter">Waiting for Advisor</span>
-                                    )}
-                                </td>
-                                <td className="px-6 py-4">{app.carrier}</td>
-                                <td className="px-6 py-4 font-mono text-xs">{app.policyNumber}</td>
-                                <td className="px-6 py-4 font-medium">${app.premium.toLocaleString()}</td>
-                                <td className="px-6 py-4"><StatusBadge status={app.status} /></td>
-                                <td className="px-6 py-4 text-right">
-                                    <div className="flex items-center justify-end gap-2">
-                                        {app.status === ApplicationStatus.PENDING && (
-                                            <button 
-                                                onClick={() => handleSubmitToCarrier(app.id)}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors shadow-sm"
-                                            >
-                                                <Send className="h-3 w-3" /> Submit App
-                                            </button>
-                                        )}
-                                        <select 
-                                            className="bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold focus:ring-2 focus:ring-blue-500 outline-none"
-                                            value={app.status}
-                                            onChange={(e) => updateApplicationStatus(app.id, e.target.value as ApplicationStatus)}
-                                        >
-                                            {Object.values(ApplicationStatus).map(s => <option key={s} value={s}>{s}</option>)}
-                                        </select>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                {myApps.length === 0 && <div className="p-8 text-center text-slate-400 italic">No applications found.</div>}
+            <div className="space-y-4">
+                {/* Header Row of Boxes */}
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
+                    <div className="bg-slate-100/50 p-4 rounded-t-3xl md:rounded-3xl border border-slate-200 text-center">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Client</span>
+                    </div>
+                    <div className="bg-blue-50/50 p-4 md:rounded-3xl border border-blue-100 text-center">
+                        <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Carrier</span>
+                    </div>
+                    <div className="bg-indigo-50/50 p-4 md:rounded-3xl border border-indigo-100 text-center">
+                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Policy / Quote #</span>
+                    </div>
+                    <div className="bg-amber-50/50 p-4 md:rounded-3xl border border-amber-100 text-center">
+                        <span className="text-[10px] font-black text-amber-400 uppercase tracking-[0.2em]">Est. Premium</span>
+                    </div>
+                    <div className="bg-emerald-50/50 p-4 md:rounded-3xl border border-emerald-100 text-center">
+                        <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Status</span>
+                    </div>
+                    <div className="bg-slate-100/50 p-4 rounded-b-3xl md:rounded-3xl border border-slate-200 text-center">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Actions</span>
+                    </div>
+                </div>
+
+                {/* Data Rows */}
+                {myApps.map(app => (
+                    <div key={app.id} className="grid grid-cols-1 md:grid-cols-6 gap-2 group">
+                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-center text-center md:text-left transition-all group-hover:shadow-md">
+                            <div className="font-black text-slate-900 text-sm">{app.clientName}</div>
+                            {app.status === ApplicationStatus.PENDING && (
+                                <span className="text-[9px] text-blue-500 font-black uppercase tracking-tighter mt-1">Pending Intake</span>
+                            )}
+                        </div>
+                        <div className="bg-blue-50/20 p-6 rounded-3xl border border-blue-50/50 flex items-center justify-center transition-all group-hover:bg-blue-50/40">
+                            <span className="text-xs font-bold text-blue-700">{app.carrier}</span>
+                        </div>
+                        <div className="bg-indigo-50/20 p-6 rounded-3xl border border-indigo-50/50 flex items-center justify-center transition-all group-hover:bg-indigo-50/40">
+                            <span className="text-xs font-mono font-black text-indigo-600">{app.policyNumber}</span>
+                        </div>
+                        <div className="bg-amber-50/20 p-6 rounded-3xl border border-amber-50/50 flex items-center justify-center transition-all group-hover:bg-amber-50/40">
+                            <span className="text-sm font-black text-amber-700">${app.premium.toLocaleString()}</span>
+                        </div>
+                        <div className="bg-emerald-50/20 p-6 rounded-3xl border border-emerald-50/50 flex items-center justify-center transition-all group-hover:bg-emerald-50/40">
+                            <StatusBadge status={app.status} />
+                        </div>
+                        <div className="bg-slate-50/30 p-4 rounded-3xl border border-slate-100 flex flex-col items-center justify-center gap-2 transition-all group-hover:bg-white">
+                             {app.status === ApplicationStatus.PENDING ? (
+                                <button 
+                                    onClick={() => handleSubmitToCarrier(app.id)}
+                                    className="w-full py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md flex items-center justify-center gap-1"
+                                >
+                                    <Send size={12} /> Submit
+                                </button>
+                            ) : (
+                                <button className="w-full py-2 bg-slate-100 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-50 hover:text-blue-600 transition-all">
+                                    Details
+                                </button>
+                            )}
+                            <div className="relative w-full">
+                                <select 
+                                    className="w-full bg-white border border-slate-200 rounded-xl px-2 py-1.5 text-[9px] font-black uppercase tracking-tighter focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer appearance-none text-center"
+                                    value={app.status}
+                                    onChange={(e) => updateApplicationStatus(app.id, e.target.value as ApplicationStatus)}
+                                >
+                                    {Object.values(ApplicationStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+
+                {myApps.length === 0 && (
+                    <div className="py-32 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
+                        <div className="opacity-10 flex flex-col items-center">
+                            <FileText size={80} strokeWidth={1} />
+                            <h2 className="text-3xl font-black uppercase tracking-[0.3em] mt-4">No Applications Found</h2>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -95,10 +118,9 @@ export const PoliciesApps: React.FC = () => {
 export const CommercialQuotes: React.FC = () => {
     const { leads, user } = useData();
     
-    // Filter leads interested in Commercial/Business
     const commercialLeads = leads.filter(l => 
         [ProductType.BUSINESS, ProductType.COMMERCIAL, ProductType.EO].includes(l.interest) &&
-        (l.assignedTo === user?.id || !l.assignedTo) // Show assigned or pool
+        (l.assignedTo === user?.id || !l.assignedTo)
     );
 
     return (
@@ -142,7 +164,6 @@ export const CommercialQuotes: React.FC = () => {
 export const PoliciesRenewals: React.FC = () => {
     const { clients, user } = useData();
     
-    // Filter clients with upcoming renewals (mock logic: all clients for demo)
     const upcomingRenewals = useMemo(() => {
         return clients.sort((a, b) => new Date(a.renewalDate).getTime() - new Date(b.renewalDate).getTime());
     }, [clients]);
@@ -233,7 +254,6 @@ export const AutoQuotes: React.FC = () => {
 
 // --- 5. Fleet Manager ---
 export const FleetManager: React.FC = () => {
-    // Mock Fleet Data
     const fleets = [
         { id: 1, client: 'Green Earth Landscaping', vehicles: 8, premium: 28000, status: 'Active', renewal: '2024-01-15' },
         { id: 2, client: 'Metro Logistics', vehicles: 12, premium: 45000, status: 'Underwriting', renewal: 'Pending' },
@@ -286,7 +306,6 @@ export const FleetManager: React.FC = () => {
 
 // --- 6. Claims ---
 export const Claims: React.FC = () => {
-    // Mock Claims Data
     const claims = [
         { id: 'CLM-001', client: 'Sarah Connor', type: 'Auto Accident', date: '2023-11-01', status: 'Open', adjuster: 'Jane Doe' },
         { id: 'CLM-002', client: 'Estate Ventures', type: 'Property Damage', date: '2023-10-15', status: 'Closed', adjuster: 'Mike Ross' },
@@ -296,7 +315,7 @@ export const Claims: React.FC = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-[#0B2240]">Claims Center center</h1>
+                    <h1 className="text-2xl font-bold text-[#0B2240]">Claims Center</h1>
                     <p className="text-slate-500">Track and manage active insurance claims.</p>
                 </div>
                 <button className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-full font-bold text-sm hover:bg-red-700 transition-colors shadow-lg shadow-red-200">

@@ -105,10 +105,10 @@ const INITIAL_USERS: User[] = [
   { id: '1', name: 'NHFG Admin', email: 'admin@nhfg.com', role: UserRole.ADMIN, category: AdvisorCategory.ADMIN, avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200', onboardingCompleted: true },
   { id: '2', name: 'James Manager', email: 'manager@nhfg.com', role: UserRole.MANAGER, category: AdvisorCategory.ADMIN, avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200', onboardingCompleted: true },
   { id: '3', name: 'Sarah SubAdmin', email: 'subadmin@nhfg.com', role: UserRole.SUB_ADMIN, category: AdvisorCategory.ADMIN, avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200', onboardingCompleted: true },
-  { id: '4', name: 'David Insurance', email: 'insurance@nhfg.com', role: UserRole.ADVISOR, category: AdvisorCategory.INSURANCE, productsSold: [ProductType.LIFE, ProductType.IUL, ProductType.ANNUITY], onboardingCompleted: true },
-  { id: '5', name: 'Linda Real Estate', email: 'realestate@nhfg.com', role: UserRole.ADVISOR, category: AdvisorCategory.REAL_ESTATE, productsSold: [ProductType.REAL_ESTATE], onboardingCompleted: true },
-  { id: '6', name: 'Mark Mortgage', email: 'mortgage@nhfg.com', role: UserRole.ADVISOR, category: AdvisorCategory.MORTGAGE, productsSold: [ProductType.MORTGAGE], onboardingCompleted: true },
-  { id: '7', name: 'Kevin Securities', email: 'securities@nhfg.com', role: UserRole.ADVISOR, category: AdvisorCategory.SECURITIES, productsSold: [ProductType.SECURITIES, ProductType.INVESTMENT], onboardingCompleted: true },
+  { id: '4', name: 'David Insurance', email: 'insurance@nhfg.com', phone: '(555) 123-4567', role: UserRole.ADVISOR, category: AdvisorCategory.INSURANCE, productsSold: [ProductType.LIFE, ProductType.IUL, ProductType.ANNUITY], onboardingCompleted: true, micrositeEnabled: true },
+  { id: '5', name: 'Linda Real Estate', email: 'realestate@nhfg.com', phone: '(555) 234-5678', role: UserRole.ADVISOR, category: AdvisorCategory.REAL_ESTATE, productsSold: [ProductType.REAL_ESTATE], onboardingCompleted: true, micrositeEnabled: true },
+  { id: '6', name: 'Mark Mortgage', email: 'mortgage@nhfg.com', phone: '(555) 345-6789', role: UserRole.ADVISOR, category: AdvisorCategory.MORTGAGE, productsSold: [ProductType.MORTGAGE], onboardingCompleted: true, micrositeEnabled: true },
+  { id: '7', name: 'Kevin Securities', email: 'securities@nhfg.com', phone: '(555) 456-7890', role: UserRole.ADVISOR, category: AdvisorCategory.SECURITIES, productsSold: [ProductType.SECURITIES, ProductType.INVESTMENT], onboardingCompleted: true, micrositeEnabled: true },
 ];
 
 const INITIAL_INTEGRATION_CONFIG: IntegrationConfig = {
@@ -341,15 +341,15 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateTransactionStatus = () => {};
   const addPortfolio = (p: any) => {};
   const updatePortfolio = () => {};
-  const deletePortfolio = () => {};
+  const deletePortfolio = (id: string) => {};
   const addComplianceDoc = (d: any) => {};
   const updateFeeStatus = () => {};
   const addAdvisoryFee = (f: any) => {};
-  const updateAdvisoryFee = () => {};
-  const deleteAdvisoryFee = () => {};
+  const updateAdvisoryFee = (id: string, data: Partial<AdvisoryFee>) => {};
+  const deleteAdvisoryFee = (id: string) => {};
   const addLoanApplication = (l: any) => {};
-  const updateLoanApplication = () => {};
-  const deleteLoanApplication = () => {};
+  const updateLoanApplication = (id: string, data: Partial<LoanApplication>) => {};
+  const deleteLoanApplication = (id: string) => {};
   const updateClient = useCallback(async (id: string, data: Partial<Client>) => {
       const client = clients.find(c => c.id === id);
       if (client) {

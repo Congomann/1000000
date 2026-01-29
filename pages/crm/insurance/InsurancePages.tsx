@@ -5,13 +5,17 @@ import { FileText, CheckCircle, Hourglass, XCircle, Briefcase, Car, Truck, Alert
 
 const StatusBadge = ({ status }: { status: string }) => {
     let color = 'bg-slate-100 text-slate-700';
-    if (['Approved', 'Issued', 'Active'].includes(status)) color = 'bg-green-100 text-green-700';
-    if (['Pending', 'Underwriting', 'New'].includes(status)) color = 'bg-yellow-100 text-yellow-700';
-    if (['Declined', 'Lost', 'Expired'].includes(status)) color = 'bg-red-100 text-red-700';
-    return <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${color}`}>{status}</span>;
+    const isActive = ['Approved', 'Issued', 'Active'].includes(status);
+    const isInactive = ['Declined', 'Lost', 'Expired'].includes(status);
+    
+    if (isActive) color = 'bg-green-600 text-white shadow-sm';
+    else if (isInactive) color = 'bg-red-600 text-white shadow-sm';
+    else if (['Pending', 'Underwriting', 'New'].includes(status)) color = 'bg-yellow-500 text-white shadow-sm';
+    
+    return <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${color}`}>{status}</span>;
 };
 
-// --- 1. Policies & Apps (REFINED BOX DESIGN) ---
+// --- 1. Policies & Apps (REFINED COLOR BOX DESIGN) ---
 export const PoliciesApps: React.FC = () => {
     const { applications, updateApplicationStatus, user } = useData();
     
@@ -27,85 +31,105 @@ export const PoliciesApps: React.FC = () => {
     return (
         <div className="space-y-8 animate-fade-in pb-10">
             <div>
-                <h1 className="text-3xl font-black text-[#0B2240] tracking-tight">Policies & Applications</h1>
-                <p className="text-slate-500 font-medium mt-1">Track application status from submission to issuance.</p>
+                <h1 className="text-3xl font-black text-[#0B2240] tracking-tight uppercase">Policies & Applications</h1>
+                <p className="text-slate-500 font-medium mt-1">Track application lifecycle with enhanced visual categorization.</p>
             </div>
             
             <div className="space-y-4">
-                {/* Header Row of Boxes */}
+                {/* Header Row of Boxes with Specific Request Colors */}
                 <div className="grid grid-cols-1 md:grid-cols-6 gap-2">
-                    <div className="bg-slate-100/50 p-4 rounded-t-3xl md:rounded-3xl border border-slate-200 text-center">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Client</span>
+                    <div className="bg-[#A8DADC] p-4 rounded-t-3xl md:rounded-3xl border border-[#90C4C6] text-center shadow-sm">
+                        <span className="text-[10px] font-black text-[#1D3557] uppercase tracking-[0.2em]">Client</span>
                     </div>
-                    <div className="bg-blue-50/50 p-4 md:rounded-3xl border border-blue-100 text-center">
-                        <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Carrier</span>
+                    <div className="bg-blue-500 p-4 md:rounded-3xl border border-blue-600 text-center shadow-sm">
+                        <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Carrier</span>
                     </div>
-                    <div className="bg-indigo-50/50 p-4 md:rounded-3xl border border-indigo-100 text-center">
-                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Policy / Quote #</span>
+                    <div className="bg-indigo-500 p-4 md:rounded-3xl border border-indigo-600 text-center shadow-sm">
+                        <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Policy / Quote #</span>
                     </div>
-                    <div className="bg-amber-50/50 p-4 md:rounded-3xl border border-amber-100 text-center">
-                        <span className="text-[10px] font-black text-amber-400 uppercase tracking-[0.2em]">Est. Premium</span>
+                    <div className="bg-yellow-400 p-4 md:rounded-3xl border border-yellow-500 text-center shadow-sm">
+                        <span className="text-[10px] font-black text-yellow-900 uppercase tracking-[0.2em]">Est. Premium</span>
                     </div>
-                    <div className="bg-emerald-50/50 p-4 md:rounded-3xl border border-emerald-100 text-center">
-                        <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Status</span>
+                    <div className="bg-slate-700 p-4 md:rounded-3xl border border-slate-800 text-center shadow-sm">
+                        <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Status</span>
                     </div>
-                    <div className="bg-slate-100/50 p-4 rounded-b-3xl md:rounded-3xl border border-slate-200 text-center">
+                    <div className="bg-slate-100 p-4 rounded-b-3xl md:rounded-3xl border border-slate-200 text-center shadow-sm">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Actions</span>
                     </div>
                 </div>
 
                 {/* Data Rows */}
-                {myApps.map(app => (
-                    <div key={app.id} className="grid grid-cols-1 md:grid-cols-6 gap-2 group">
-                        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-center text-center md:text-left transition-all group-hover:shadow-md">
-                            <div className="font-black text-slate-900 text-sm">{app.clientName}</div>
-                            {app.status === ApplicationStatus.PENDING && (
-                                <span className="text-[9px] text-blue-500 font-black uppercase tracking-tighter mt-1">Pending Intake</span>
-                            )}
-                        </div>
-                        <div className="bg-blue-50/20 p-6 rounded-3xl border border-blue-50/50 flex items-center justify-center transition-all group-hover:bg-blue-50/40">
-                            <span className="text-xs font-bold text-blue-700">{app.carrier}</span>
-                        </div>
-                        <div className="bg-indigo-50/20 p-6 rounded-3xl border border-indigo-50/50 flex items-center justify-center transition-all group-hover:bg-indigo-50/40">
-                            <span className="text-xs font-mono font-black text-indigo-600">{app.policyNumber}</span>
-                        </div>
-                        <div className="bg-amber-50/20 p-6 rounded-3xl border border-amber-50/50 flex items-center justify-center transition-all group-hover:bg-amber-50/40">
-                            <span className="text-sm font-black text-amber-700">${app.premium.toLocaleString()}</span>
-                        </div>
-                        <div className="bg-emerald-50/20 p-6 rounded-3xl border border-emerald-50/50 flex items-center justify-center transition-all group-hover:bg-emerald-50/40">
-                            <StatusBadge status={app.status} />
-                        </div>
-                        <div className="bg-slate-50/30 p-4 rounded-3xl border border-slate-100 flex flex-col items-center justify-center gap-2 transition-all group-hover:bg-white">
-                             {app.status === ApplicationStatus.PENDING ? (
-                                <button 
-                                    onClick={() => handleSubmitToCarrier(app.id)}
-                                    className="w-full py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md flex items-center justify-center gap-1"
-                                >
-                                    <Send size={12} /> Submit
-                                </button>
-                            ) : (
-                                <button className="w-full py-2 bg-slate-100 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-50 hover:text-blue-600 transition-all">
-                                    Details
-                                </button>
-                            )}
-                            <div className="relative w-full">
-                                <select 
-                                    className="w-full bg-white border border-slate-200 rounded-xl px-2 py-1.5 text-[9px] font-black uppercase tracking-tighter focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer appearance-none text-center"
-                                    value={app.status}
-                                    onChange={(e) => updateApplicationStatus(app.id, e.target.value as ApplicationStatus)}
-                                >
-                                    {Object.values(ApplicationStatus).map(s => <option key={s} value={s}>{s}</option>)}
-                                </select>
+                {myApps.map(app => {
+                    const isActiveStatus = ['Approved', 'Issued', 'Active'].includes(app.status);
+                    const isInactiveStatus = ['Declined', 'Lost', 'Expired'].includes(app.status);
+                    
+                    return (
+                        <div key={app.id} className="grid grid-cols-1 md:grid-cols-6 gap-2 group">
+                            {/* Client Column: rgb(168, 218, 220) tint */}
+                            <div className="bg-[#A8DADC]/10 p-6 rounded-3xl border border-[#A8DADC]/30 flex flex-col justify-center text-center md:text-left transition-all group-hover:bg-[#A8DADC]/20">
+                                <div className="font-black text-slate-900 text-sm">{app.clientName}</div>
+                                {app.status === ApplicationStatus.PENDING && (
+                                    <span className="text-[9px] text-[#457B9D] font-black uppercase tracking-tighter mt-1">Pending Intake</span>
+                                )}
+                            </div>
+                            
+                            {/* Carrier Column: Blue tint */}
+                            <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100 flex items-center justify-center transition-all group-hover:bg-blue-100/50">
+                                <span className="text-xs font-black text-blue-700 uppercase tracking-tight">{app.carrier}</span>
+                            </div>
+                            
+                            {/* Policy Column: Indigo tint */}
+                            <div className="bg-indigo-50 p-6 rounded-3xl border border-indigo-100 flex items-center justify-center transition-all group-hover:bg-indigo-100/50">
+                                <span className="text-xs font-mono font-black text-indigo-700 tracking-wider">{app.policyNumber}</span>
+                            </div>
+                            
+                            {/* Premium Column: Yellow tint */}
+                            <div className="bg-yellow-50 p-6 rounded-3xl border border-yellow-100 flex items-center justify-center transition-all group-hover:bg-yellow-100">
+                                <span className="text-sm font-black text-yellow-700">${app.premium.toLocaleString()}</span>
+                            </div>
+                            
+                            {/* Status Column: Green for Active, Red for Inactive */}
+                            <div className={`p-6 rounded-3xl border flex items-center justify-center transition-all 
+                                ${isActiveStatus ? 'bg-green-50 border-green-100 group-hover:bg-green-100' : 
+                                  isInactiveStatus ? 'bg-red-50 border-red-100 group-hover:bg-red-100' : 
+                                  'bg-slate-50 border-slate-100 group-hover:bg-slate-100'}`}
+                            >
+                                <StatusBadge status={app.status} />
+                            </div>
+                            
+                            {/* Actions Column */}
+                            <div className="bg-slate-50/30 p-4 rounded-3xl border border-slate-100 flex flex-col items-center justify-center gap-2 transition-all group-hover:bg-white">
+                                {app.status === ApplicationStatus.PENDING ? (
+                                    <button 
+                                        onClick={() => handleSubmitToCarrier(app.id)}
+                                        className="w-full py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md flex items-center justify-center gap-1 transform active:scale-95"
+                                    >
+                                        <Send size={12} /> Submit
+                                    </button>
+                                ) : (
+                                    <button className="w-full py-2 bg-slate-100 text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-50 hover:text-blue-600 transition-all">
+                                        Details
+                                    </button>
+                                )}
+                                <div className="relative w-full">
+                                    <select 
+                                        className="w-full bg-white border border-slate-200 rounded-xl px-2 py-1.5 text-[9px] font-black uppercase tracking-tighter focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer appearance-none text-center"
+                                        value={app.status}
+                                        onChange={(e) => updateApplicationStatus(app.id, e.target.value as ApplicationStatus)}
+                                    >
+                                        {Object.values(ApplicationStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
 
                 {myApps.length === 0 && (
-                    <div className="py-32 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
+                    <div className="py-32 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100 shadow-inner">
                         <div className="opacity-10 flex flex-col items-center">
                             <FileText size={80} strokeWidth={1} />
-                            <h2 className="text-3xl font-black uppercase tracking-[0.3em] mt-4">No Applications Found</h2>
+                            <h2 className="text-3xl font-black uppercase tracking-[0.3em] mt-4 text-slate-900">No Applications Logged</h2>
                         </div>
                     </div>
                 )}
@@ -315,7 +339,7 @@ export const Claims: React.FC = () => {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-[#0B2240]">Claims Center</h1>
+                    <h1 className="text-2xl font-bold text-[#0B2240]">Claims Center center</h1>
                     <p className="text-slate-500">Track and manage active insurance claims.</p>
                 </div>
                 <button className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-full font-bold text-sm hover:bg-red-700 transition-colors shadow-lg shadow-red-200">

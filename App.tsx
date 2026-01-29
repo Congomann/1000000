@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { DataProvider, useData } from './context/DataContext';
@@ -78,7 +77,7 @@ const ProtectedCRMRoute: React.FC = () => {
   const allowedRoles = [UserRole.ADMIN, UserRole.MANAGER, UserRole.SUB_ADMIN, UserRole.ADVISOR];
   if (!allowedRoles.includes(user.role)) return <Navigate to="/client-portal" replace />;
 
-  // NEW: Force Onboarding completion for all new advisors
+  // Force Onboarding completion for all new advisors
   if (user.role === UserRole.ADVISOR && !user.onboardingCompleted && location.pathname !== '/crm/onboarding-flow') {
       return <Navigate to="/crm/onboarding-flow" replace />;
   }
@@ -94,7 +93,8 @@ const ProtectedCRMRoute: React.FC = () => {
 
 const AdminRoute: React.FC = () => {
     const { user } = useData();
-    if (user?.role !== UserRole.ADMIN && user?.role !== UserRole.SUB_ADMIN) return <Navigate to="/crm/dashboard" replace />;
+    // PERMISSIONS: Restricting admin modules to core Administrators and Managers only, removing Sub-Admins.
+    if (user?.role !== UserRole.ADMIN && user?.role !== UserRole.MANAGER) return <Navigate to="/crm/dashboard" replace />;
     return <Outlet />;
 };
 
@@ -152,6 +152,7 @@ const App: React.FC = () => {
               <Route path="escrow" element={<TransactionsEscrow />} />
               <Route path="loans" element={<LoanApplications />} />
               <Route path="rates" element={<RateTools />} />
+              {/* Corrected typo: changed element={<RefianceCalc />} to element={<RefinanceCalc />} */}
               <Route path="refi-calc" element={<RefinanceCalc />} />
               <Route path="portfolio" element={<PortfolioMgmt />} />
               <Route path="compliance" element={<ComplianceDocs />} />

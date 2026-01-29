@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
@@ -88,12 +87,23 @@ export const AdvisorMicrosite: React.FC = () => {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const initiateCall = () => {
+      if (!advisor) return;
+      const rawPhone = advisor.phone || companySettings.phone;
+      // Robust cleaning: Keep only digits, or a leading '+' for international dialing
+      const cleanPhone = rawPhone.startsWith('+') 
+          ? '+' + rawPhone.replace(/\D/g, '') 
+          : rawPhone.replace(/\D/g, '');
+      
+      if (cleanPhone) {
+          window.location.href = `tel:${cleanPhone}`;
+      }
+  };
+
   if (!advisor || !advisor.micrositeEnabled) {
     return <Navigate to="/advisors" replace />;
   }
 
-  const callPhoneNumber = advisor.phone || companySettings.phone;
-  const cleanPhone = callPhoneNumber.replace(/\D/g, '');
   const advisorTestimonials = testimonials.filter(t => t.advisorId === advisor.id && t.status === 'approved');
   
   const [quoteForm, setQuoteForm] = useState({ name: '', phone: '', email: '', interest: advisor.productsSold?.[0] || ProductType.LIFE, message: '' });
@@ -205,12 +215,12 @@ export const AdvisorMicrosite: React.FC = () => {
                               <FileText className="h-4 w-4" /> Get a Free Quote
                           </button>
                           
-                          <a 
-                            href={`tel:${cleanPhone}`}
-                            className="px-10 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full font-black text-xs uppercase tracking-widest shadow-xl hover:bg-white/20 transition-all flex items-center gap-2"
+                          <button 
+                            onClick={initiateCall}
+                            className="px-10 py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full font-black text-xs uppercase tracking-widest shadow-xl hover:bg-white/20 transition-all flex items-center gap-2 transform active:scale-95"
                           >
-                              <Phone className="h-4 w-4" /> Speak to Agent
-                          </a>
+                              <Phone className="h-4 w-4" /> Speak to Advisor
+                          </button>
 
                           <button 
                             onClick={() => scrollToSection('callback-form')} 
@@ -359,7 +369,7 @@ export const AdvisorMicrosite: React.FC = () => {
                                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1.5 block">Full Name</label>
                                   <input 
                                       className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none shadow-inner"
-                                      placeholder="Ethan Hunt"
+                                      placeholder="Ethan Wright"
                                       required
                                       value={quoteForm.name}
                                       onChange={e => setQuoteForm({...quoteForm, name: e.target.value})}

@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useData } from '../../context/DataContext';
 import { SocialLink, User, UserRole, ProductType, Testimonial } from '../../types';
-import { Save, Plus, Trash2, Camera, Shield, CheckCircle2, Languages, Briefcase, Award, X, Edit2, Star, AlertTriangle, Globe, MapPin } from 'lucide-react';
+import { Save, Plus, Trash2, Camera, Shield, CheckCircle2, Languages, Briefcase, Award, X, Edit2, Star, AlertTriangle, Globe, MapPin, Lock } from 'lucide-react';
 
 export const ProfileSettings: React.FC = () => {
   const { user, updateUser, getAdvisorAssignments, testimonials, submitTestimonialEdit } = useData();
@@ -18,7 +17,7 @@ export const ProfileSettings: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isAdmin = user?.role === UserRole.ADMIN;
+  const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUB_ADMIN || user?.role === UserRole.MANAGER;
 
   useEffect(() => {
     if (user) {
@@ -88,6 +87,7 @@ export const ProfileSettings: React.FC = () => {
   };
   
   const handleProductToggle = (product: ProductType) => {
+    if (!isAdmin) return; // Locked for non-admins
     const currentProducts = formData.productsSold || [];
     const newProducts = currentProducts.includes(product)
       ? currentProducts.filter(p => p !== product)
@@ -245,29 +245,52 @@ export const ProfileSettings: React.FC = () => {
             </div>
         </div>
 
-        {/* Products Sold */}
+        {/* My Products - Administrative Controlled Section */}
         <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
-          <div className="flex items-center gap-3 mb-6">
-             <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Briefcase className="h-6 w-6" /></div>
-             <h3 className="text-lg font-bold text-[#0B2240]">My Products</h3>
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Briefcase className="h-6 w-6" /></div>
+                <h3 className="text-lg font-bold text-[#0B2240]">My Products</h3>
+            </div>
+            {!isAdmin && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200">
+                    <Lock className="h-3 w-3 text-slate-400" />
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Admin Managed</span>
+                </div>
+            )}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {Object.values(ProductType).map(product => (
-              <button 
-                key={product}
-                type="button"
-                onClick={() => handleProductToggle(product)}
-                className={`flex items-center gap-2 p-3 text-left text-xs font-bold rounded-xl border-2 transition-all ${
-                  (formData.productsSold || []).includes(product)
-                    ? 'bg-blue-50 border-blue-500 text-blue-800'
-                    : 'bg-slate-50 border-transparent text-slate-600 hover:border-slate-300'
-                }`}
-              >
-                {(formData.productsSold || []).includes(product) ? <CheckCircle2 className="h-4 w-4"/> : <div className="h-4 w-4 border-2 border-slate-300 rounded-sm"></div>}
-                {product}
-              </button>
-            ))}
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            {Object.values(ProductType).map(product => {
+                const isSelected = (formData.productsSold || []).includes(product);
+                return (
+                    <button 
+                        key={product}
+                        type="button"
+                        onClick={() => handleProductToggle(product)}
+                        disabled={!isAdmin}
+                        className={`flex items-center gap-3 p-4 text-left text-xs font-bold rounded-2xl border-2 transition-all group ${
+                        isSelected
+                            ? 'bg-blue-50 border-blue-500 text-blue-800 shadow-sm'
+                            : 'bg-slate-50 border-transparent text-slate-500 hover:bg-white hover:border-slate-200'
+                        } ${!isAdmin ? 'cursor-default' : 'cursor-pointer'}`}
+                    >
+                        {isSelected ? (
+                            <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                        ) : (
+                            <div className="h-4 w-4 border-2 border-slate-200 rounded-[4px] bg-white"></div>
+                        )}
+                        <span className="leading-tight">{product}</span>
+                    </button>
+                );
+            })}
           </div>
+          {!isAdmin && (
+              <p className="mt-6 text-[11px] text-slate-400 font-medium italic flex items-center gap-2 px-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  Licensed products are assigned by organization administrators. Please contact support to update your credentials.
+              </p>
+          )}
         </div>
 
         {/* Licensing */}
@@ -382,10 +405,10 @@ export const ProfileSettings: React.FC = () => {
 
         {/* Bio */}
         <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
-          <h3 className="text-lg font-bold text-[#0B2240] mb-4">About Me / Bio</h3>
+          <h3 className="text-lg font-bold text-[#0B2240]">About Me / Bio</h3>
           <textarea
             rows={5}
-            className="w-full bg-white text-slate-900 border border-slate-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#0A62A7] focus:border-transparent resize-none"
+            className="w-full mt-4 bg-white text-slate-900 border border-slate-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#0A62A7] focus:border-transparent resize-none"
             placeholder="Tell clients about your experience and expertise..."
             value={formData.bio || ''}
             onChange={e => setFormData({ ...formData, bio: e.target.value })}

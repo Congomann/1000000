@@ -81,7 +81,9 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
   const unreadNotifs = notifications.filter(n => !n.read).length;
-  const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUB_ADMIN || user?.role === UserRole.MANAGER;
+  
+  // ADMIN PERMISSIONS: Updated to exclude SUB_ADMIN as per user request to lock the section to main admins only
+  const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER;
 
   // Filter tour steps based on user visibility
   const currentTourSteps = useMemo(() => {

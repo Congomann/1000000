@@ -1,4 +1,5 @@
-import { Lead, ProductType, LeadStatus, User, UserRole, Commission, Client, CompanySettings, IntegrationLog } from '../types';
+
+import { Lead, ProductType, LeadStatus, User, UserRole, Commission, Client, CompanySettings, IntegrationLog, Workflow } from '../types';
 import { InternalLead, Transformers, IngestionEngine } from './marketingBackend';
 import { DB } from './database';
 
@@ -181,6 +182,23 @@ class NHFGBackend {
 
   async getLogs(): Promise<IntegrationLog[]> {
     return this.apiRequest<IntegrationLog[]>(`${this.baseUrl}/logs`, { headers: this.getAuthHeaders() }, 'logs');
+  }
+
+  async getWorkflows(): Promise<Workflow[]> {
+      return this.apiRequest<Workflow[]>(`${this.baseUrl}/workflows`, { headers: this.getAuthHeaders() }, 'workflows');
+  }
+
+  async saveWorkflow(workflow: Workflow): Promise<void> {
+      if (USE_REAL_BACKEND) {
+          try {
+              await fetch(`${this.baseUrl}/workflows`, {
+                  method: 'POST',
+                  headers: this.getAuthHeaders(),
+                  body: JSON.stringify(workflow)
+              });
+          } catch (e) {}
+      }
+      await DB.save('workflows', workflow);
   }
 
   // --- WEBHOOKS ---

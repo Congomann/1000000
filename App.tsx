@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { DataProvider, useData } from './context/DataContext';
@@ -91,10 +92,17 @@ const ProtectedCRMRoute: React.FC = () => {
   );
 };
 
-const AdminRoute: React.FC = () => {
+const ManagerRoute: React.FC = () => {
     const { user } = useData();
-    // PERMISSIONS: Restricting admin modules to core Administrators and Managers only, removing Sub-Admins.
+    // PERMISSIONS: Allows Administrators and Managers to access user management and onboarding.
     if (user?.role !== UserRole.ADMIN && user?.role !== UserRole.MANAGER) return <Navigate to="/crm/dashboard" replace />;
+    return <Outlet />;
+};
+
+const SuperAdminRoute: React.FC = () => {
+    const { user } = useData();
+    // PERMISSIONS: Restricting high-level configuration to Administrators only.
+    if (user?.role !== UserRole.ADMIN) return <Navigate to="/crm/dashboard" replace />;
     return <Outlet />;
 };
 
@@ -152,21 +160,24 @@ const App: React.FC = () => {
               <Route path="escrow" element={<TransactionsEscrow />} />
               <Route path="loans" element={<LoanApplications />} />
               <Route path="rates" element={<RateTools />} />
-              {/* Corrected typo: changed element={<RefianceCalc />} to element={<RefinanceCalc />} */}
               <Route path="refi-calc" element={<RefinanceCalc />} />
               <Route path="portfolio" element={<PortfolioMgmt />} />
               <Route path="compliance" element={<ComplianceDocs />} />
               <Route path="fees" element={<AdvisoryFees />} />
               
               {/* ADMIN CONTROL PANEL */}
-              <Route element={<AdminRoute />}>
+              <Route element={<ManagerRoute />}>
                   <Route path="admin" element={<AdminUsers />} />
+                  <Route path="onboarding" element={<Onboarding />} />
+              </Route>
+              
+              {/* SUPER ADMIN ONLY - Based on screenshot request */}
+              <Route element={<SuperAdminRoute />}>
                   <Route path="admin/website" element={<WebsiteSettings />} />
                   <Route path="admin/carriers" element={<CarrierAssignment />} />
                   <Route path="admin/testimonials" element={<AdminTestimonials />} />
                   <Route path="admin/signature" element={<EmailSignature />} /> 
                   <Route path="admin/marketing" element={<MarketingIntegrations />} />
-                  <Route path="onboarding" element={<Onboarding />} />
               </Route>
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

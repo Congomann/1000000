@@ -1,5 +1,5 @@
 
-import { Lead, Client, User, CompanySettings, IntegrationLog } from '../types';
+import { Lead, Client, User, CompanySettings, IntegrationLog, Workflow } from '../types';
 
 const DB_NAME = 'NHFG_Enterprise_DB';
 const DB_VERSION = 1;
@@ -39,6 +39,9 @@ export class DatabaseEngine {
         }
         if (!db.objectStoreNames.contains('logs')) {
           db.createObjectStore('logs', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('workflows')) {
+          db.createObjectStore('workflows', { keyPath: 'id' });
         }
       };
     });

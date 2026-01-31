@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -72,23 +73,30 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, notifications } = useData();
-  const [isNotifOpen, setIsNotifOpen] = useState(false);
-  const notifRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   // --- TOUR STATE ---
   const [isTourActive, setIsTourActive] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
-  const unreadNotifs = notifications.filter(n => !n.read).length;
-  
-  // ADMIN PERMISSIONS: Updated to exclude SUB_ADMIN as per user request to lock the section to main admins only
-  const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER;
+  // ADMIN PERMISSIONS logic updated based on screenshot requirements
+  const isSuperAdmin = user?.role === UserRole.ADMIN;
+  const isManagerOrAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER;
 
   // Filter tour steps based on user visibility
   const currentTourSteps = useMemo(() => {
-    return isAdmin ? ADMIN_TOUR_STEPS : ADMIN_TOUR_STEPS.filter(step => !step.id.includes('admin') && !['nav-user-terminal', 'nav-onboarding', 'nav-carrier-setup', 'nav-site-config', 'nav-client-reviews', 'nav-email-signature', 'nav-api-integrations'].includes(step.id));
-  }, [isAdmin]);
+    return currentTourStepsHelper(user?.role);
+  }, [user?.role]);
+
+  function currentTourStepsHelper(role?: UserRole) {
+    if (role === UserRole.ADMIN) return ADMIN_TOUR_STEPS;
+    if (role === UserRole.MANAGER) {
+        return ADMIN_TOUR_STEPS.filter(step => 
+            !['nav-site-config', 'nav-carrier-setup', 'nav-client-reviews', 'nav-email-signature', 'nav-api-integrations'].includes(step.id)
+        );
+    }
+    return ADMIN_TOUR_STEPS.filter(step => !step.id.includes('nav-') || !['nav-user-terminal', 'nav-onboarding', 'nav-site-config', 'nav-carrier-setup', 'nav-client-reviews', 'nav-email-signature', 'nav-api-integrations'].includes(step.id));
+  }
 
   const currentStep = currentTourSteps[currentStepIndex];
 
@@ -139,7 +147,7 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
 
   // --- NAVIGATION LOGIC ---
   const navStructure = useMemo(() => {
-    if (!user) return { main: [], vertical: [], admin: [] };
+    if (!user) return { main: [], vertical: [], shared: [], admin: [] };
 
     const main = [
       { path: '/crm/dashboard', label: 'Dashboard', icon: LayoutGrid, tourId: 'nav-dashboard' },
@@ -184,18 +192,23 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
       { path: '/crm/profile', label: 'Profile', icon: CircleUser, tourId: 'nav-profile' },
     ];
 
-    const admin = isAdmin ? [
-        { path: '/crm/admin', label: 'User Terminal', icon: Users, tourId: 'nav-user-terminal' },
-        { path: '/crm/onboarding', label: 'Onboarding Feed', icon: ClipboardCheck, tourId: 'nav-onboarding' },
-        { path: '/crm/admin/website', label: 'Site Config', icon: Settings, tourId: 'nav-site-config' },
-        { path: '/crm/admin/carriers', label: 'Carrier Setup', icon: ShieldCheck, tourId: 'nav-carrier-setup' },
-        { path: '/crm/admin/testimonials', label: 'Client Reviews', icon: Award, tourId: 'nav-client-reviews' },
-        { path: '/crm/admin/signature', label: 'Email Signature', icon: PenTool, tourId: 'nav-email-signature' },
-        { path: '/crm/admin/marketing', label: 'API Integrations', icon: Webhook, tourId: 'nav-api-integrations' },
-    ] : [];
+    const admin = [];
+    if (isManagerOrAdmin) {
+        admin.push({ path: '/crm/admin', label: 'User Terminal', icon: Users, tourId: 'nav-user-terminal' });
+        admin.push({ path: '/crm/onboarding', label: 'Onboarding Feed', icon: ClipboardCheck, tourId: 'nav-onboarding' });
+    }
+    
+    // Technical administration restricted to Super Admins as per screenshot request
+    if (isSuperAdmin) {
+        admin.push({ path: '/crm/admin/website', label: 'Site Config', icon: Settings, tourId: 'nav-site-config' });
+        admin.push({ path: '/crm/admin/carriers', label: 'Carrier Setup', icon: ShieldCheck, tourId: 'nav-carrier-setup' });
+        admin.push({ path: '/crm/admin/testimonials', label: 'Client Reviews', icon: Award, tourId: 'nav-client-reviews' });
+        admin.push({ path: '/crm/admin/signature', label: 'Email Signature', icon: PenTool, tourId: 'nav-email-signature' });
+        admin.push({ path: '/crm/admin/marketing', label: 'API Integrations', icon: Webhook, tourId: 'nav-api-integrations' });
+    }
 
     return { main, vertical, shared, admin };
-  }, [user, isAdmin]);
+  }, [user, isSuperAdmin, isManagerOrAdmin]);
 
   const renderNavLink = (item: any) => {
     const isActive = location.pathname === item.path || (item.path !== '/crm/dashboard' && location.pathname.startsWith(item.path));
@@ -220,7 +233,7 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center p-0 sm:p-4 font-sans text-slate-900 overflow-hidden bg-slate-100">
+    <div className="fixed inset-0 flex items-center justify-center p-0 sm:p-4 font-sans text-slate-900 overflow-hidden bg-[#E2E8F0]">
       
       {isTourActive && currentStep && (
           <>
@@ -253,8 +266,8 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
           </>
       )}
 
-      <div className="w-full h-full max-w-[1920px] bg-white sm:rounded-[2.5rem] shadow-2xl flex relative overflow-hidden ring-1 ring-black/5">
-        <aside ref={sidebarRef} className={`hidden lg:flex flex-col w-72 bg-[#1B222E] text-white h-full overflow-y-auto py-10 flex-shrink-0 no-scrollbar border-r border-white/5 relative ${isTourActive ? 'z-[65]' : 'z-10'}`}>
+      <div className="w-full h-full max-w-[1920px] bg-[#F1F5F9] sm:rounded-[2.5rem] shadow-2xl flex relative overflow-hidden ring-1 ring-black/5">
+        <aside ref={sidebarRef} className={`hidden lg:flex flex-col w-72 bg-[#1E293B] text-white h-full overflow-y-auto py-10 flex-shrink-0 no-scrollbar border-r border-white/5 relative ${isTourActive ? 'z-[65]' : 'z-10'}`}>
             <div className="px-8 mb-12 flex items-center gap-4">
                 <div className="relative w-12 h-12 flex-shrink-0">
                     <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
@@ -296,18 +309,18 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
             </div>
         </aside>
 
-        <div className="flex-1 h-full flex flex-col overflow-hidden bg-slate-50/30">
-            <header className="h-20 bg-white border-b border-slate-200 px-10 flex items-center justify-between z-20">
+        <div className="flex-1 h-full flex flex-col overflow-hidden bg-[#F8FAFC]">
+            <header className="h-20 bg-white border-b border-slate-200 px-10 flex items-center justify-between z-20 shadow-sm">
                 <div className="flex items-center gap-6">
-                    <h2 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2">Terminal Console</h2>
+                    <h2 className="text-sm font-black text-[#1E293B] tracking-tight flex items-center gap-2">Terminal Console</h2>
                 </div>
                 <div className="flex items-center gap-8">
-                    <button onClick={startTour} className="flex items-center gap-3 px-6 py-3 bg-slate-50 hover:bg-blue-600 hover:text-white rounded-full text-[10px] font-black text-slate-600 transition-all uppercase tracking-[0.2em] shadow-sm active:scale-95 group border border-slate-100">
+                    <button onClick={startTour} className="flex items-center gap-3 px-6 py-3 bg-[#F1F5F9] hover:bg-blue-600 hover:text-white rounded-full text-[10px] font-black text-slate-600 transition-all uppercase tracking-[0.2em] shadow-sm active:scale-95 group border border-slate-200">
                         <HelpCircle size={16} className="text-blue-500 group-hover:text-white transition-colors" /> Start Tour
                     </button>
-                    <div className="flex items-center gap-4 pl-8 border-l border-slate-100">
+                    <div className="flex items-center gap-4 pl-8 border-l border-slate-200">
                         <div className="text-right hidden sm:block">
-                            <p className="text-sm font-black text-slate-900">{user?.name}</p>
+                            <p className="text-sm font-black text-[#1E293B]">{user?.name}</p>
                             <p className="text-[9px] font-black text-blue-600 uppercase tracking-[0.2em]">{user?.role}</p>
                         </div>
                         <div className="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 border-2 border-white shadow-md">
@@ -316,7 +329,7 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
                     </div>
                 </div>
             </header>
-            <main className="flex-1 overflow-y-auto p-6 lg:p-10 no-scrollbar relative">{children}</main>
+            <main className="flex-1 overflow-y-auto p-6 lg:p-10 no-scrollbar relative bg-[#F1F5F9]">{children}</main>
         </div>
       </div>
     </div>

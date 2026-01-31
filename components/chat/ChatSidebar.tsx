@@ -1,7 +1,8 @@
 
 import React, { useMemo } from 'react';
 import { useData } from '../../context/DataContext';
-import { Search, Hash, Clock } from 'lucide-react';
+import { Search, Hash, Clock, Sparkles } from 'lucide-react';
+import { AI_ASSISTANT_ID } from '../../types';
 
 interface ChatSidebarProps {
   activeId: string | null;
@@ -84,7 +85,42 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ activeId, onSelect }) 
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-6 scrollbar-hide mt-2">
+      <div className="flex-1 overflow-y-auto px-3 pb-4 space-y-6 scrollbar-hide mt-2 no-scrollbar">
+        {/* Intelligence Node - Highlighted Pin */}
+        <div>
+           <h3 className="text-[11px] font-black text-blue-400 uppercase tracking-widest px-4 mb-3 flex items-center gap-2">
+               <Sparkles size={10} /> Neural Intelligence
+           </h3>
+           {colleagues.filter(c => c.id === AI_ASSISTANT_ID).map(c => {
+               const meta = threadMeta[c.id];
+               return (
+                    <button
+                        key={c.id}
+                        onClick={() => handleSelect(c.id, 'user')}
+                        className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl transition-all border ${activeId === c.id ? 'bg-[#0B2240] text-white border-[#0B2240] shadow-lg' : 'bg-blue-50/50 text-slate-700 border-blue-100 hover:bg-blue-50'}`}
+                    >
+                        <div className="relative flex-shrink-0">
+                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center p-2 shadow-inner border border-white/20 overflow-hidden">
+                                <img src={c.avatar} alt="" className="w-full h-full object-contain" />
+                            </div>
+                            <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-green-500 border-2 border-white rounded-full animate-pulse"></span>
+                        </div>
+                        <div className="flex-1 text-left overflow-hidden">
+                            <div className="flex justify-between items-center mb-0.5">
+                                <span className="font-black truncate text-sm uppercase tracking-tight">{c.name}</span>
+                                <span className={`text-[10px] font-medium ${activeId === c.id ? 'text-blue-300' : 'text-slate-400'}`}>
+                                    {formatTime(meta?.timestamp)}
+                                </span>
+                            </div>
+                            <p className={`text-xs truncate flex-1 font-bold ${activeId === c.id ? 'text-blue-100' : 'text-blue-600'}`}>
+                                {meta?.lastMsg || 'System Node Operational'}
+                            </p>
+                        </div>
+                    </button>
+               );
+           })}
+        </div>
+
         {/* Groups */}
         <div>
           <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-4 mb-3">Group Channels</h3>
@@ -123,7 +159,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({ activeId, onSelect }) 
         <div>
           <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-4 mb-3">Direct Messages</h3>
           <div className="space-y-1">
-            {filteredColleagues.map(c => {
+            {filteredColleagues.filter(c => c.id !== AI_ASSISTANT_ID).map(c => {
                 const meta = threadMeta[c.id];
                 if (c.id === user?.id) return null; // Don't message self in DM list
                 return (

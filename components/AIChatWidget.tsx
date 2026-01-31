@@ -1,12 +1,11 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Loader2, Sparkles, User, Bot, CheckCircle } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { getChatResponse, ChatHistoryItem } from '../services/geminiService';
-import { ProductType } from '../types';
+import { ProductType, UserRole } from '../types';
 
 export const AIChatWidget: React.FC = () => {
-  const { companySettings, addLead } = useData();
+  const { companySettings, addLead, user } = useData();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatHistoryItem[]>([]);
   const [input, setInput] = useState('');
@@ -62,6 +61,8 @@ export const AIChatWidget: React.FC = () => {
       // Handle Lead Data if returned by the Tool
       if (response.leadData) {
         const d = response.leadData;
+        const assignToId = (user?.role === UserRole.ADVISOR || user?.role === UserRole.MANAGER) ? user.id : undefined;
+
         addLead({
           name: d.name,
           email: d.email || 'Not Provided',
@@ -73,7 +74,7 @@ export const AIChatWidget: React.FC = () => {
             state: d.state,
             source: 'AI Chat Widget'
           }
-        });
+        }, assignToId);
         setLeadCaptured(true);
         setTimeout(() => setLeadCaptured(false), 5000);
       }

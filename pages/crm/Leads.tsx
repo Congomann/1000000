@@ -1,8 +1,7 @@
-
 import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { Lead, LeadStatus, UserRole, ProductType } from '../../types';
-import { Sparkles, Loader2, Filter, Search, X, Eye, ChevronDown, Edit2, Save, Globe, CheckSquare, Square, Trash, CheckCircle2, AlertTriangle, Clock, Info, UserCheck, Archive } from 'lucide-react';
+import { Sparkles, Loader2, Filter, Search, X, Eye, ChevronDown, Edit2, Save, Globe, CheckSquare, Square, Trash, CheckCircle2, AlertTriangle, Clock, Info, UserCheck, Archive, BrainCircuit } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface DetailRowProps {
@@ -59,7 +58,7 @@ const PriorityBadge = ({ priority }: { priority?: string }) => {
 };
 
 export const Leads: React.FC = () => {
-  const { leads, updateLeadStatus, updateLead, user, allUsers } = useData();
+  const { leads, updateLeadStatus, updateLead, user, allUsers, reAnalyzeLead } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [sourceFilter, setSourceFilter] = useState<string>('All');
@@ -67,9 +66,9 @@ export const Leads: React.FC = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [viewLead, setViewLead] = useState<Lead | null>(null); 
   const [isEditing, setIsEditing] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [editedLeadData, setEditedLeadData] = useState<Partial<Lead>>({});
   
-  // Bulk Actions State
   const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
   const [showBulkSuccess, setShowBulkSuccess] = useState(false);
 
@@ -78,7 +77,6 @@ export const Leads: React.FC = () => {
 
   const advisorsList = useMemo(() => allUsers.filter(u => u.role === UserRole.ADVISOR), [allUsers]);
 
-  // Derive unique sources
   const uniqueSources = useMemo(() => {
     const sources = new Set<string>();
     leads.forEach(l => { if (l.source) sources.add(l.source); });
@@ -87,34 +85,18 @@ export const Leads: React.FC = () => {
 
   const filteredLeads = useMemo(() => {
     let list = [...leads];
-    
-    // Archive Filter
     list = list.filter(l => showArchived ? l.isArchived : !l.isArchived);
-
-    // Visibility Filter
-    if (isAdvisor && user) {
-        list = list.filter(l => l.assignedTo === user.id || !l.assignedTo);
-    }
-
-    // Dropdown Filters
+    if (isAdvisor && user) list = list.filter(l => l.assignedTo === user.id || !l.assignedTo);
     if (statusFilter !== 'All') list = list.filter(l => l.status === statusFilter);
     if (sourceFilter !== 'All') list = list.filter(l => l.source === sourceFilter);
     if (assignedFilter !== 'All') {
         if (assignedFilter === 'Unassigned') list = list.filter(l => !l.assignedTo);
         else list = list.filter(l => l.assignedTo === assignedFilter);
     }
-
-    // Text Search
     if (searchTerm) {
         const q = searchTerm.toLowerCase();
-        list = list.filter(l => 
-            l.name.toLowerCase().includes(q) || 
-            l.email.toLowerCase().includes(q) ||
-            l.interest.toLowerCase().includes(q)
-        );
+        list = list.filter(l => l.name.toLowerCase().includes(q) || l.email.toLowerCase().includes(q) || l.interest.toLowerCase().includes(q));
     }
-
-    // PRIMARY SORT: Priority (High > Medium > Low), then SECONDARY SORT: Date (Newest)
     return list.sort((a, b) => {
         const priorityScore: any = { 'High': 3, 'Medium': 2, 'Low': 1 };
         const scoreA = priorityScore[a.priority || 'Low'];
@@ -125,25 +107,19 @@ export const Leads: React.FC = () => {
   }, [leads, user, isAdvisor, statusFilter, sourceFilter, assignedFilter, searchTerm, showArchived]);
 
   const toggleSelectAll = () => {
-    if (selectedLeadIds.size === filteredLeads.length && filteredLeads.length > 0) {
-      setSelectedLeadIds(new Set());
-    } else {
-      setSelectedLeadIds(new Set(filteredLeads.map(l => l.id)));
-    }
+    if (selectedLeadIds.size === filteredLeads.length && filteredLeads.length > 0) setSelectedLeadIds(new Set());
+    else setSelectedLeadIds(new Set(filteredLeads.map(l => l.id)));
   };
 
   const toggleSelectLead = (id: string) => {
     const next = new Set(selectedLeadIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
+    if (next.has(id)) next.delete(id); else next.add(id);
     setSelectedLeadIds(next);
   };
 
   const handleBulkStatusUpdate = (newStatus: LeadStatus) => {
     if (selectedLeadIds.size === 0) return;
-    selectedLeadIds.forEach(id => {
-      updateLeadStatus(id, newStatus);
-    });
+    selectedLeadIds.forEach(id => updateLeadStatus(id, newStatus));
     setSelectedLeadIds(new Set());
     setShowBulkSuccess(true);
     setTimeout(() => setShowBulkSuccess(false), 3000);
@@ -163,6 +139,16 @@ export const Leads: React.FC = () => {
       }
   };
 
+  const handleReAnalyze = async () => {
+    if (viewLead) {
+      setIsAnalyzing(true);
+      await reAnalyzeLead(viewLead.id);
+      const updated = leads.find(l => l.id === viewLead.id);
+      if (updated) setViewLead(updated);
+      setIsAnalyzing(false);
+    }
+  };
+
   const statusColors: any = {
     [LeadStatus.NEW]: 'bg-blue-100 text-blue-800',
     [LeadStatus.CONTACTED]: 'bg-yellow-100 text-yellow-800',
@@ -179,22 +165,14 @@ export const Leads: React.FC = () => {
        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{showArchived ? 'Archived Leads' : 'Leads Database'}</h1>
-            <p className="text-slate-500 mt-1 font-medium">
-                {showArchived ? 'Viewing inactive or lost leads older than 15 days.' : 'Capture insights, manage follow-ups, and log legal requests.'}
-            </p>
+            <p className="text-slate-500 mt-1 font-medium">{showArchived ? 'Viewing inactive or lost leads older than 15 days.' : 'Capture insights, manage follow-ups, and log legal requests.'}</p>
           </div>
           <div className="flex gap-3">
-             <button 
-                onClick={() => setShowArchived(!showArchived)}
-                className={`flex items-center gap-2 px-6 py-4 rounded-full text-sm font-bold transition-all border ${showArchived ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 shadow-sm'}`}
-             >
-                <Archive size={16} /> {showArchived ? 'Show Active' : 'Show Archived'}
-             </button>
+             <button onClick={() => setShowArchived(!showArchived)} className={`flex items-center gap-2 px-6 py-4 rounded-full text-sm font-bold transition-all border ${showArchived ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 shadow-sm'}`}><Archive size={16} /> {showArchived ? 'Show Active' : 'Show Archived'}</button>
              <Link to="/crm/intake" className="bg-[#0A62A7] text-white px-8 py-4 rounded-full text-sm font-bold shadow-xl hover:bg-blue-700 transition-all">+ New Lead</Link>
           </div>
         </div>
 
-        {/* Success Alert for Bulk Action */}
         {showBulkSuccess && (
           <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-bounce-subtle">
             <CheckCircle2 className="h-6 w-6" />
@@ -202,43 +180,24 @@ export const Leads: React.FC = () => {
           </div>
         )}
 
-        {/* Search & Multiple Filters Bar */}
         <div className="bg-white p-5 rounded-[2.5rem] shadow-sm border border-slate-200 flex flex-col xl:flex-row gap-4 items-center">
             <div className="relative flex-1 w-full">
                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                <input 
-                    type="text" 
-                    placeholder="Filter by name, email, or interest..." 
-                    className="w-full pl-12 pr-6 py-4 bg-white text-slate-900 border border-slate-200 rounded-[2rem] text-sm font-medium focus:ring-2 focus:ring-[#0A62A7] outline-none"
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                />
+                <input type="text" placeholder="Filter by name, email, or interest..." className="w-full pl-12 pr-6 py-4 bg-white text-slate-900 border border-slate-200 rounded-[2rem] text-sm font-medium focus:ring-2 focus:ring-[#0A62A7] outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)}/>
             </div>
-            
             <div className="flex flex-wrap gap-3 w-full xl:w-auto">
-                {/* Source Filter */}
                 <div className="relative min-w-[150px] flex-1">
                     <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                    <select 
-                        className="w-full bg-white text-slate-900 border border-slate-200 rounded-[2rem] pl-10 pr-10 py-4 text-sm font-bold focus:ring-2 focus:ring-[#0A62A7] cursor-pointer appearance-none shadow-sm"
-                        value={sourceFilter}
-                        onChange={e => setSourceFilter(e.target.value)}
-                    >
+                    <select className="w-full bg-white text-slate-900 border border-slate-200 rounded-[2rem] pl-10 pr-10 py-4 text-sm font-bold focus:ring-2 focus:ring-[#0A62A7] cursor-pointer appearance-none shadow-sm" value={sourceFilter} onChange={e => setSourceFilter(e.target.value)}>
                         <option value="All">All Sources</option>
                         {uniqueSources.map(src => <option key={src} value={src}>{src}</option>)}
                     </select>
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                 </div>
-
-                {/* Assigned To Filter (Admins/Managers only) */}
                 {isAdminOrManager && (
                     <div className="relative min-w-[180px] flex-1">
                         <UserCheck className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                        <select 
-                            className="w-full bg-white text-slate-900 border border-slate-200 rounded-[2rem] pl-10 pr-10 py-4 text-sm font-bold focus:ring-2 focus:ring-[#0A62A7] cursor-pointer appearance-none shadow-sm"
-                            value={assignedFilter}
-                            onChange={e => setAssignedFilter(e.target.value)}
-                        >
+                        <select className="w-full bg-white text-slate-900 border border-slate-200 rounded-[2rem] pl-10 pr-10 py-4 text-sm font-bold focus:ring-2 focus:ring-[#0A62A7] cursor-pointer appearance-none shadow-sm" value={assignedFilter} onChange={e => setAssignedFilter(e.target.value)}>
                             <option value="All">All Advisors</option>
                             <option value="Unassigned">Unassigned</option>
                             {advisorsList.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -246,15 +205,9 @@ export const Leads: React.FC = () => {
                         <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                     </div>
                 )}
-
-                {/* Status Filter */}
                 <div className="relative min-w-[150px] flex-1">
                     <Filter className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                    <select 
-                        className="w-full bg-white text-slate-900 border border-slate-200 rounded-[2rem] pl-10 pr-10 py-4 text-sm font-bold focus:ring-2 focus:ring-[#0A62A7] cursor-pointer appearance-none shadow-sm"
-                        value={statusFilter}
-                        onChange={e => setStatusFilter(e.target.value)}
-                    >
+                    <select className="w-full bg-white text-slate-900 border border-slate-200 rounded-[2rem] pl-10 pr-10 py-4 text-sm font-bold focus:ring-2 focus:ring-[#0A62A7] cursor-pointer appearance-none shadow-sm" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
                         <option value="All">All Status</option>
                         {Object.values(LeadStatus).map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
@@ -263,7 +216,6 @@ export const Leads: React.FC = () => {
             </div>
         </div>
 
-        {/* Floating Bulk Actions Bar */}
         {selectedLeadIds.size > 0 && (
           <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-40 bg-[#0B2240] text-white px-8 py-5 rounded-[2.5rem] shadow-2xl border border-white/10 flex items-center gap-8 animate-slide-up">
             <div className="flex items-center gap-2">
@@ -280,16 +232,13 @@ export const Leads: React.FC = () => {
           </div>
         )}
 
-        {/* Lead Table */}
         <div className="bg-white shadow-sm border border-slate-200 rounded-[3rem] overflow-hidden">
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-200">
                     <thead className="bg-slate-50">
                         <tr>
                             <th className="px-8 py-6 text-left">
-                              <button onClick={toggleSelectAll} className="p-1 rounded hover:bg-slate-200 transition-colors">
-                                {selectedLeadIds.size === filteredLeads.length && filteredLeads.length > 0 ? <CheckSquare className="h-5 w-5 text-blue-600" /> : <Square className="h-5 w-5 text-slate-300" />}
-                              </button>
+                              <button onClick={toggleSelectAll} className="p-1 rounded hover:bg-slate-200 transition-colors">{selectedLeadIds.size === filteredLeads.length && filteredLeads.length > 0 ? <CheckSquare className="h-5 w-5 text-blue-600" /> : <Square className="h-5 w-5 text-slate-300" />}</button>
                             </th>
                             <th className="px-8 py-6 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Lead Profile</th>
                             <th className="px-8 py-6 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Interest</th>
@@ -303,9 +252,7 @@ export const Leads: React.FC = () => {
                         {filteredLeads.map((lead) => (
                             <tr key={lead.id} className={`hover:bg-slate-50/50 transition-colors ${selectedLeadIds.has(lead.id) ? 'bg-blue-50/50' : ''}`}>
                                 <td className="px-8 py-6 whitespace-nowrap">
-                                  <button onClick={() => toggleSelectLead(lead.id)} className="p-1 rounded hover:bg-white transition-colors">
-                                    {selectedLeadIds.has(lead.id) ? <CheckSquare className="h-5 w-5 text-blue-600" /> : <Square className="h-5 w-5 text-slate-200" />}
-                                  </button>
+                                  <button onClick={() => toggleSelectLead(lead.id)} className="p-1 rounded hover:bg-white transition-colors">{selectedLeadIds.has(lead.id) ? <CheckSquare className="h-5 w-5 text-blue-600" /> : <Square className="h-5 w-5 text-slate-200" />}</button>
                                 </td>
                                 <td className="px-8 py-6 whitespace-nowrap">
                                     <div className="flex items-center">
@@ -316,12 +263,8 @@ export const Leads: React.FC = () => {
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-8 py-6 whitespace-nowrap">
-                                    <span className="text-xs font-bold text-slate-700 bg-slate-100 px-4 py-2 rounded-full border border-slate-200">{lead.interest}</span>
-                                </td>
-                                <td className="px-8 py-6 whitespace-nowrap">
-                                    <PriorityBadge priority={lead.priority} />
-                                </td>
+                                <td className="px-8 py-6 whitespace-nowrap"><span className="text-xs font-bold text-slate-700 bg-slate-100 px-4 py-2 rounded-full border border-slate-200">{lead.interest}</span></td>
+                                <td className="px-8 py-6 whitespace-nowrap"><PriorityBadge priority={lead.priority} /></td>
                                 <td className="px-8 py-6 whitespace-nowrap">
                                     <div className="flex flex-col">
                                         <span className="text-xs font-black text-blue-600 uppercase tracking-tighter">{lead.source || 'Direct'}</span>
@@ -330,11 +273,7 @@ export const Leads: React.FC = () => {
                                 </td>
                                 <td className="px-8 py-6 whitespace-nowrap">
                                     <div className="relative">
-                                        <select 
-                                            className={`text-xs font-bold border-none rounded-full px-4 py-2 cursor-pointer appearance-none pr-8 ${statusColors[lead.status] || 'bg-slate-100'}`}
-                                            value={lead.status}
-                                            onChange={(e) => updateLeadStatus(lead.id, e.target.value as LeadStatus)}
-                                        >
+                                        <select className={`text-xs font-bold border-none rounded-full px-4 py-2 cursor-pointer appearance-none pr-8 ${statusColors[lead.status] || 'bg-slate-100'}`} value={lead.status} onChange={(e) => updateLeadStatus(lead.id, e.target.value as LeadStatus)}>
                                             {Object.values(LeadStatus).map(s => <option key={s} value={s}>{s}</option>)}
                                         </select>
                                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3 w-3 pointer-events-none opacity-50" />
@@ -347,36 +286,29 @@ export const Leads: React.FC = () => {
                                 </td>
                             </tr>
                         ))}
-                        {filteredLeads.length === 0 && (
-                            <tr>
-                                <td colSpan={7} className="px-10 py-48 text-center">
-                                    <div className="flex flex-col items-center justify-center opacity-10">
-                                        <Archive className="h-32 w-32 mb-6" strokeWidth={1} />
-                                        <h2 className="text-4xl font-black uppercase tracking-[0.4em]">No Results</h2>
-                                    </div>
-                                </td>
-                            </tr>
-                        )}
                     </tbody>
                 </table>
             </div>
         </div>
 
-        {/* Lead Details Modal */}
         {viewLead && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0B2240]/70 backdrop-blur-md p-6 animate-fade-in">
-                <div className="bg-white rounded-[3.5rem] shadow-2xl w-full max-w-4xl p-10 relative max-h-[90vh] overflow-y-auto border border-white/20">
+                <div className="bg-white rounded-[3.5rem] shadow-2xl w-full max-w-5xl p-10 relative max-h-[90vh] overflow-y-auto border border-white/20">
                      <div className="flex justify-between items-center mb-10">
-                         <div>
-                             <h2 className="text-3xl font-black text-[#0B2240]">Advisor Terminal: Lead Record</h2>
-                             <p className="text-slate-500 text-sm font-medium">{isEditing ? 'Editing Mode Active' : 'View record and log interaction notes'}</p>
+                         <div className="flex items-center gap-5">
+                             <div className="p-4 bg-blue-50 text-blue-600 rounded-3xl">
+                                 <BrainCircuit size={32} className={isAnalyzing ? 'animate-pulse' : ''} />
+                             </div>
+                             <div>
+                                 <h2 className="text-3xl font-black text-[#0B2240]">Lead Intelligence Hub</h2>
+                                 <p className="text-slate-500 text-sm font-medium">{viewLead.name} • {viewLead.interest}</p>
+                             </div>
                          </div>
                          <div className="flex gap-3">
-                             {!isEditing ? (
-                                 <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full font-bold text-sm transition-all"><Edit2 className="h-4 w-4" /> Edit Record</button>
-                             ) : (
-                                 <button onClick={handleSaveChanges} className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-full font-bold text-sm shadow-lg transition-all"><Save className="h-4 w-4" /> Save Record</button>
-                             )}
+                             <button onClick={handleReAnalyze} disabled={isAnalyzing} className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold text-sm shadow-lg transition-all disabled:opacity-50">
+                                 {isAnalyzing ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />} 
+                                 Analyze with Gemini 3
+                             </button>
                              <button onClick={() => { setViewLead(null); setIsEditing(false); }} className="p-3 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-all"><X className="h-5 w-5" /></button>
                          </div>
                      </div>
@@ -384,88 +316,62 @@ export const Leads: React.FC = () => {
                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                          <div className="lg:col-span-1 space-y-6">
                              <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100">
-                                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Lead Identity</h3>
+                                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Core Demographics</h3>
                                  <DetailRow label="Full Name" value={editedLeadData.name} isEditing={isEditing} onChange={(v) => setEditedLeadData({...editedLeadData, name: v})} />
                                  <DetailRow label="Email" value={editedLeadData.email} isEditing={isEditing} onChange={(v) => setEditedLeadData({...editedLeadData, email: v})} />
                                  <DetailRow label="Phone" value={editedLeadData.phone} isEditing={isEditing} onChange={(v) => setEditedLeadData({...editedLeadData, phone: v})} />
-                                 
-                                 <div className="mt-4 pt-4 border-t border-slate-200">
+                                 <div className="pt-4 border-t border-slate-200">
                                      <span className="block text-xs font-bold text-slate-400 uppercase mb-2">Priority Level</span>
-                                     <select 
-                                        className={`w-full p-2 rounded-xl border border-slate-200 font-bold text-xs ${
-                                            editedLeadData.priority === 'High' ? 'bg-red-100 text-red-700' : 
-                                            editedLeadData.priority === 'Medium' ? 'bg-orange-100 text-orange-700' : 
-                                            'bg-blue-100 text-blue-700'
-                                        }`}
-                                        value={editedLeadData.priority || 'Low'}
-                                        onChange={(e) => setEditedLeadData({...editedLeadData, priority: e.target.value as any})}
-                                        disabled={!isEditing}
-                                     >
+                                     <select className={`w-full p-2 rounded-xl border border-slate-200 font-bold text-xs ${editedLeadData.priority === 'High' ? 'bg-red-100 text-red-700' : editedLeadData.priority === 'Medium' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`} value={editedLeadData.priority || 'Low'} onChange={(e) => setEditedLeadData({...editedLeadData, priority: e.target.value as any})} disabled={!isEditing}>
                                          <option value="High">High Priority</option>
                                          <option value="Medium">Medium Priority</option>
                                          <option value="Low">Low Priority</option>
                                      </select>
                                  </div>
-
-                                 <div className="mt-4 pt-4 border-t border-slate-200">
-                                     <span className="block text-xs font-bold text-slate-400 uppercase mb-2">Current Status</span>
-                                     <select 
-                                        className={`w-full p-2 rounded-xl border border-slate-200 font-bold text-xs ${statusColors[editedLeadData.status || LeadStatus.NEW]}`}
-                                        value={editedLeadData.status}
-                                        onChange={(e) => setEditedLeadData({...editedLeadData, status: e.target.value as LeadStatus})}
-                                        disabled={!isEditing}
-                                     >
-                                         {Object.values(LeadStatus).map(s => <option key={s} value={s}>{s}</option>)}
-                                     </select>
-                                 </div>
-
-                                 {isAdminOrManager && (
-                                     <div className="mt-4 pt-4 border-t border-slate-200">
-                                         <span className="block text-xs font-bold text-slate-400 uppercase mb-2">Assigned Advisor</span>
-                                         <select 
-                                            className="w-full p-2 rounded-xl border border-slate-200 font-bold text-xs bg-white text-slate-700 outline-none"
-                                            value={editedLeadData.assignedTo || ''}
-                                            onChange={(e) => setEditedLeadData({...editedLeadData, assignedTo: e.target.value})}
-                                            disabled={!isEditing}
-                                         >
-                                             <option value="">Unassigned</option>
-                                             {advisorsList.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                                         </select>
-                                     </div>
-                                 )}
-
-                                 <div className="mt-4 pt-4 border-t border-slate-200">
-                                     <span className="block text-[10px] font-black text-slate-400 uppercase mb-1">Origin Source</span>
-                                     <span className="text-xs font-bold text-blue-600 uppercase">{viewLead.source || 'Manual Entry'}</span>
-                                 </div>
+                             </div>
+                             
+                             <div className="bg-[#0B2240] p-8 rounded-[2.5rem] text-white shadow-xl">
+                                <h3 className="text-xs font-black text-blue-400 uppercase tracking-widest mb-4">Lead Score: {viewLead.score}</h3>
+                                <div className="w-full bg-white/10 rounded-full h-2 mb-6">
+                                    <div className="bg-blue-400 h-2 rounded-full transition-all duration-1000" style={{ width: `${viewLead.score}%` }}></div>
+                                </div>
+                                <p className="text-xs text-blue-100 font-medium leading-relaxed italic">"Probability of conversion is optimized. Direct call recommended within next 4 business hours."</p>
                              </div>
                          </div>
 
                          <div className="lg:col-span-2 space-y-6">
-                             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-                                 <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Internal Activity & Compliance Logs</h3>
-                                    <span className="text-[10px] bg-red-50 text-red-600 px-2 py-1 rounded-lg font-bold uppercase">Legal Documentation Required</span>
+                             {/* AI STRATEGIC BRIEF */}
+                             <div className="bg-blue-50/50 p-8 rounded-[2.5rem] border border-blue-100 shadow-sm relative overflow-hidden group">
+                                 <div className="absolute top-0 right-0 p-8 opacity-5 -rotate-12 transition-transform group-hover:scale-110"><BrainCircuit size={160} /></div>
+                                 <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-lg font-black text-blue-900 flex items-center gap-2"><Sparkles className="h-5 w-5 text-blue-600" /> Neural Intelligence Brief</h3>
+                                    <span className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em] bg-white px-3 py-1 rounded-full border border-blue-100">Gemini 3 Pro Engine</span>
                                  </div>
-                                 <p className="text-[10px] text-orange-500 font-black uppercase mb-4 tracking-wider bg-orange-50 p-2 rounded-lg">Important: Immediately log "Do Not Contact" requests here to avoid potential regulatory lawsuits.</p>
-                                 <textarea 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-6 text-sm font-medium focus:ring-2 focus:ring-[#0A62A7] focus:border-transparent outline-none resize-none text-slate-900 placeholder:text-slate-300"
-                                    rows={8}
-                                    placeholder="Add interaction history, legal DNC requests, or underwriting notes..."
-                                    value={editedLeadData.notes || ''}
-                                    onChange={(e) => setEditedLeadData({...editedLeadData, notes: e.target.value})}
-                                    readOnly={!isEditing}
-                                 />
-                                 {!isEditing && <p className="text-xs text-slate-400 mt-4 italic font-medium">Advisor Note: Click 'Edit Record' to update interaction logs or status.</p>}
+                                 <div className="bg-white/80 backdrop-blur-sm p-6 rounded-3xl border border-blue-100 text-slate-700 text-sm leading-relaxed font-medium min-h-[150px] whitespace-pre-wrap">
+                                     {viewLead.aiAnalysis ? viewLead.aiAnalysis : (
+                                         <div className="text-center py-10">
+                                             <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-300 mb-4" />
+                                             <p className="text-slate-400 italic">No analysis generated yet. Click 'Analyze with Gemini' to map this lead's strategy.</p>
+                                         </div>
+                                     )}
+                                 </div>
                              </div>
 
-                             <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100">
-                                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Initial Customer Message</h3>
-                                 <div className="p-6 bg-white rounded-2xl border border-slate-200 text-slate-700 text-sm italic font-medium leading-relaxed">
-                                     {viewLead.message || "No initial inquiry message provided by client."}
+                             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                                 <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Administrative History</h3>
                                  </div>
+                                 <textarea className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-6 text-sm font-medium focus:ring-2 focus:ring-[#0A62A7] outline-none resize-none text-slate-900" rows={6} placeholder="Add interaction history or legal DNC requests..." value={editedLeadData.notes || ''} onChange={(e) => setEditedLeadData({...editedLeadData, notes: e.target.value})} readOnly={!isEditing}/>
                              </div>
                          </div>
+                     </div>
+                     
+                     <div className="mt-10 pt-8 border-t border-slate-100 flex justify-end gap-4">
+                         {!isEditing ? (
+                             <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-8 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full font-bold text-sm transition-all"><Edit2 className="h-4 w-4" /> Unlock Edit Mode</button>
+                         ) : (
+                             <button onClick={handleSaveChanges} className="flex items-center gap-2 px-8 py-4 bg-green-600 hover:bg-green-700 text-white rounded-full font-bold text-sm shadow-lg transition-all"><Save className="h-4 w-4" /> Save Record</button>
+                         )}
                      </div>
                 </div>
             </div>

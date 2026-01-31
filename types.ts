@@ -1,4 +1,6 @@
 
+export const AI_ASSISTANT_ID = 'nhfg-ai-node-01';
+
 export enum LeadStatus {
   NEW = 'New',
   CONTACTED = 'Contacted',
@@ -8,6 +10,22 @@ export enum LeadStatus {
   CLOSED = 'Closed',
   LOST = 'Lost',
   ASSIGNED = 'Assigned'
+}
+
+export enum TaskPriority {
+  HIGH = 'High',
+  MEDIUM = 'Medium',
+  LOW = 'Low'
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  priority: TaskPriority;
+  completed: boolean;
+  order: number;
+  dueDate?: string;
+  advisorId: string;
 }
 
 export enum ProductType {
@@ -388,7 +406,7 @@ export interface PropertyListing {
   zip: string;
   county?: string;
   price: number;
-  type: 'Residential' | 'Commercial' | 'Land' | 'Multi-Family';
+  type: 'Residential' | 'Commercial' | 'Land' | 'Multi-Family' | 'Acreage';
   status: 'Active' | 'Pending' | 'Sold' | 'Off Market';
   bedrooms?: number;
   bathrooms?: number;
@@ -404,6 +422,17 @@ export interface PropertyListing {
   hoa?: boolean;
   hoaFee?: number;
   taxAmount?: number;
+  
+  // New Real Estate Specific Fields
+  yearBuilt?: number;
+  taxes?: string; // e.g. "$7,686 (2024)"
+  lotSize?: string; // e.g. "6.44 acres / 280,526 Sq. Ft."
+  subdivision?: string;
+  interiorFeatures?: string;
+  exteriorFeatures?: string;
+  inclusions?: string;
+  schoolDistrict?: string;
+  directions?: string;
 }
 
 export interface EscrowTransaction {
@@ -575,4 +604,24 @@ export interface LoanApplication {
     strategicGoal?: 'Lower Payment' | 'Equity Access' | 'Debt Consolidation' | 'Wealth Building';
     monthlySavings?: number;
     lifetimeInterestSavings?: number;
+}
+
+export enum WorkflowTrigger {
+    LEAD_INGESTION = 'LEAD INGESTION',
+    POLICY_EXPIRATION = 'POLICY EXPIRATION',
+    CLIENT_BIRTHDAY = 'CLIENT BIRTHDAY',
+    MANUAL_TRIGGER = 'MANUAL TRIGGER'
+}
+
+export interface Workflow {
+  id: string;
+  name: string;
+  description: string;
+  trigger: WorkflowTrigger | string;
+  actions: string[];
+  status: 'active' | 'paused';
+  impact: 'HIGH' | 'MEDIUM';
+  category: 'LEAD NURTURE' | 'COMPLIANCE' | 'OPERATIONS';
+  executionsYTD: number;
+  createdAt: string;
 }

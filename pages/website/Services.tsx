@@ -1,6 +1,5 @@
-
 import React, { useEffect, useState, useRef } from 'react';
-import { ProductType } from '../../types';
+import { ProductType, UserRole } from '../../types';
 import { CheckCircle, ArrowLeft, Key, Home as HomeIcon, TrendingUp, X, Shield, Users, Heart, Coins, Umbrella, BarChart3, Truck, Briefcase, Building2, Gem, Map, Brain, Landmark, Percent, DollarSign, MapPin, User, ChevronRight, Video } from 'lucide-react';
 import { useLocation, useSearchParams, Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
@@ -9,7 +8,7 @@ export const Services: React.FC = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const categoryFilter = searchParams.get('category');
-  const { addCallback, addLead, companySettings, properties } = useData();
+  const { addCallback, addLead, companySettings, properties, user } = useData();
 
   // Modal Form State
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -56,6 +55,8 @@ export const Services: React.FC = () => {
         timeRequested: formData.timeRequested || 'ASAP'
       });
 
+      const assignToId = (user?.role === UserRole.ADVISOR || user?.role === UserRole.MANAGER) ? user.id : undefined;
+
       addLead({
         name: formData.name,
         phone: formData.phone,
@@ -63,7 +64,7 @@ export const Services: React.FC = () => {
         interest: ProductType.LIFE, 
         message: `Callback requested for ${formData.timeRequested || 'ASAP'} via Company Services Page.`,
         source: 'company'
-      }, undefined); 
+      }, assignToId); 
 
       setFormSubmitted(true);
       setTimeout(() => {

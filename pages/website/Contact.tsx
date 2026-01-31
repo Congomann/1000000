@@ -1,12 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
-import { ProductType } from '../../types';
+import { ProductType, UserRole } from '../../types';
 import { Mail, Phone, User, MessageSquare, Briefcase, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Contact: React.FC = () => {
-  const { addLead } = useData();
+  const { addLead, user } = useData();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -22,12 +21,15 @@ export const Contact: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Turning inquiry into a lead in the DB for all advisors to see
+    
+    const assignToId = (user?.role === UserRole.ADVISOR || user?.role === UserRole.MANAGER) ? user.id : undefined;
+
+    // Turning inquiry into a lead in the DB
     addLead({
         ...formData,
         source: 'Website Contact Form',
         qualification: 'Warm'
-    });
+    }, assignToId);
     setSubmitted(true);
   };
 

@@ -148,7 +148,7 @@ export const EmailSignature: React.FC = () => {
 
   const handleDownload = () => {
       if (!signatureRef.current) return;
-      const html = `<!DOCTYPE html><html><body>${signatureRef.current.outerHTML}</body></html>`;
+      const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;">${signatureRef.current.outerHTML}</body></html>`;
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -170,6 +170,11 @@ export const EmailSignature: React.FC = () => {
   };
 
   const logoBase64 = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3QgeD0iNSIgeT0iMTUiIHdpZHRoPSI5MCIgaGVpZ2h0PSI2MCIgcng9IjEyIiBmaWxsPSIjRjU5RTBCIiAvPjxyZWN0IHg9IjEwIiB5PSIzNSIgd2lkdGg9IjgwIiBoZWlnaHQ9IjU1IiByeD0iMTIiIGZpbGw9IiNGQ0QzNEQiIC8+PHJlY3QgeD0iNDIiIHk9IjUyIiB3aWR0aD0iMTYiIGhlaWdodD0iMjIiIHJ4PSI0IiBmaWxsPSIjQjQ1MzA5IiBmaWxsLW9wYWNpdHk9IjAuMjUiIC8+PC9zdmc+";
+
+  // White icons on blue circles based on screenshot
+  const PHONE_ICON = "https://cdn-icons-png.flaticon.com/32/3059/3059502.png"; // White phone
+  const WEB_ICON = "https://cdn-icons-png.flaticon.com/32/2885/2885417.png";   // White globe
+  const PIN_ICON = "https://cdn-icons-png.flaticon.com/32/3082/3082383.png";   // White pin
 
   return (
     <div className="space-y-8 pb-10 animate-fade-in">
@@ -202,7 +207,7 @@ export const EmailSignature: React.FC = () => {
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`px-6 py-3 text-xs font-black uppercase tracking-widest rounded-full whitespace-nowrap transition-colors ${activeTab === tab ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`px-6 py-3 text-xs font-black uppercase tracking-widest rounded-full whitespace-nowrap transition-all ${activeTab === tab ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             {tab}
                         </button>
@@ -259,6 +264,10 @@ export const EmailSignature: React.FC = () => {
                             <div>
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">Street Address</label>
                                 <input className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 text-sm font-medium" value={editForm.addressLine1} onChange={e => handleInputChange('addressLine1', e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">City/State/Zip</label>
+                                <input className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 text-sm font-medium" value={editForm.addressLine2} onChange={e => handleInputChange('addressLine2', e.target.value)} />
                             </div>
                         </>
                     )}
@@ -318,97 +327,111 @@ export const EmailSignature: React.FC = () => {
                                                             transform: 'rotate(-45deg)',
                                                             opacity: 0.2
                                                         }}></div>
-                                                        <div style={{ width: '130px', height: '130px', borderRadius: '50%', border: `4px solid ${STYLES.colors.navy}`, overflow: 'hidden', padding: '0' }}>
+                                                        <div style={{ width: '140px', height: '140px', borderRadius: '50%', border: `4px solid ${STYLES.colors.navy}`, overflow: 'hidden', padding: '0' }}>
                                                             <img 
                                                                 src={editForm.avatar || `https://ui-avatars.com/api/?name=${editForm.firstName}+${editForm.lastName}&background=E5E7EB&color=6B7280&size=200`} 
                                                                 alt="Advisor" 
-                                                                width="130" 
-                                                                height="130" 
-                                                                style={{ borderRadius: '50%', display: 'block', objectFit: 'cover', width: '100%', height: '100%' }}
+                                                                width="140" 
+                                                                height="140" 
+                                                                style={{ borderRadius: '50%', display: 'block', objectFit: 'cover', width: '140px', height: '140px' }}
                                                             />
                                                         </div>
                                                     </div>
                                                 </td>
 
                                                 {/* 2. VERTICAL SEPARATOR 1 */}
-                                                <td style={{ width: '1px', backgroundColor: STYLES.colors.navy, opacity: 0.15, verticalAlign: 'middle' }}></td>
+                                                <td style={{ width: '1px', padding: '0' }}>
+                                                    <div style={{ width: '1px', height: '140px', backgroundColor: STYLES.colors.navy, opacity: 0.15 }}></div>
+                                                </td>
 
                                                 {/* 3. CENTER: NAME, TITLE & CONTACT */}
                                                 <td style={{ padding: '0 40px', verticalAlign: 'middle' }}>
-                                                    <div style={{ fontSize: '26px', fontWeight: '900', color: STYLES.colors.navy, lineHeight: '1.2', letterSpacing: '-0.01em' }}>
+                                                    <div style={{ fontSize: '28px', fontStyle: 'normal', fontWeight: '900', color: STYLES.colors.navy, lineHeight: '1.2', letterSpacing: '-0.02em', margin: '0 0 4px 0' }}>
                                                         {editForm.firstName} {editForm.lastName}
                                                     </div>
-                                                    <div style={{ fontSize: '15px', fontWeight: '600', color: STYLES.colors.grey, marginBottom: '10px' }}>
+                                                    <div style={{ fontSize: '15px', fontStyle: 'normal', fontWeight: '600', color: STYLES.colors.grey, margin: '0 0 12px 0' }}>
                                                         {editForm.title}
                                                     </div>
-                                                    {/* Accent line */}
-                                                    <div style={{ height: '2px', width: '35px', backgroundColor: STYLES.colors.navy, marginBottom: '18px' }}></div>
+                                                    {/* Accent line under title as per screenshot */}
+                                                    <div style={{ height: '2px', width: '40px', backgroundColor: STYLES.colors.navy, margin: '0 0 20px 0' }}></div>
                                                     
-                                                    <table cellPadding="0" cellSpacing="0" style={{ fontSize: '13px', color: STYLES.colors.grey, lineHeight: '1.6', fontWeight: '500' }}>
+                                                    {/* ICON ALIGNMENT UPDATE */}
+                                                    <table cellPadding="0" cellSpacing="0" style={{ borderCollapse: 'collapse' }}>
+                                                        {/* Phone Row */}
                                                         <tr>
-                                                            <td style={{ verticalAlign: 'middle', paddingRight: '12px' }}>
-                                                                <div style={{ width: '22px', height: '22px', borderRadius: '50%', border: `1.5px solid ${STYLES.colors.navy}`, display: 'flex', alignItems: 'center', justifyItems: 'center', textAlign: 'center', opacity: 0.7 }}>
-                                                                    <span style={{ fontSize: '11px', width: '100%', color: STYLES.colors.navy }}>📞</span>
+                                                            <td style={{ padding: '0 15px 12px 0', verticalAlign: 'top' }}>
+                                                                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: STYLES.colors.blue, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                    <img src={PHONE_ICON} width="14" height="14" style={{ display: 'block', margin: '7px auto' }} alt="phone" />
                                                                 </div>
                                                             </td>
-                                                            <td style={{ color: STYLES.colors.navy, fontWeight: '700' }}>{editForm.phone}<br/><span style={{ opacity: 0.6, fontWeight: '500' }}>{editForm.phone2}</span></td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td style={{ verticalAlign: 'middle', padding: '10px 12px 10px 0' }}>
-                                                                <div style={{ width: '22px', height: '22px', borderRadius: '50%', border: `1.5px solid ${STYLES.colors.navy}`, display: 'flex', alignItems: 'center', justifyItems: 'center', textAlign: 'center', opacity: 0.7 }}>
-                                                                    <span style={{ fontSize: '11px', width: '100%', color: STYLES.colors.navy }}>📧</span>
-                                                                </div>
-                                                            </td>
-                                                            <td>
-                                                                <a href={`mailto:${editForm.email}`} style={{ textDecoration: 'none', color: STYLES.colors.navy, fontWeight: '700' }}>{editForm.email}</a><br/>
-                                                                <a href={`https://${editForm.website}`} style={{ textDecoration: 'none', color: STYLES.colors.navy, opacity: 0.6, fontWeight: '500' }}>{editForm.website}</a>
+                                                            <td style={{ padding: '0 0 12px 0', verticalAlign: 'middle', fontSize: '14px', fontWeight: '700', color: STYLES.colors.navy, lineHeight: '1.4' }}>
+                                                                {editForm.phone}<br/>
+                                                                <span style={{ opacity: 0.5, fontWeight: '500' }}>{editForm.phone2}</span>
                                                             </td>
                                                         </tr>
+                                                        {/* Email/Web Row */}
                                                         <tr>
-                                                            <td style={{ verticalAlign: 'middle', paddingRight: '12px' }}>
-                                                                <div style={{ width: '22px', height: '22px', borderRadius: '50%', border: `1.5px solid ${STYLES.colors.navy}`, display: 'flex', alignItems: 'center', justifyItems: 'center', textAlign: 'center', opacity: 0.7 }}>
-                                                                    <span style={{ fontSize: '11px', width: '100%', color: STYLES.colors.navy }}>📍</span>
+                                                            <td style={{ padding: '0 15px 12px 0', verticalAlign: 'top' }}>
+                                                                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: STYLES.colors.blue, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                    <img src={WEB_ICON} width="14" height="14" style={{ display: 'block', margin: '7px auto' }} alt="web" />
                                                                 </div>
                                                             </td>
-                                                            <td>{editForm.addressLine1}<br/>{editForm.addressLine2}</td>
+                                                            <td style={{ padding: '0 0 12px 0', verticalAlign: 'middle', fontSize: '14px', fontWeight: '700', color: STYLES.colors.navy, lineHeight: '1.4' }}>
+                                                                <a href={`mailto:${editForm.email}`} style={{ textDecoration: 'none', color: STYLES.colors.navy }}>{editForm.email}</a><br/>
+                                                                <a href={`https://${editForm.website}`} style={{ textDecoration: 'none', color: STYLES.colors.navy, opacity: 0.5, fontWeight: '500' }}>{editForm.website}</a>
+                                                            </td>
+                                                        </tr>
+                                                        {/* Address Row */}
+                                                        <tr>
+                                                            <td style={{ padding: '0 15px 0 0', verticalAlign: 'top' }}>
+                                                                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: STYLES.colors.blue, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                    <img src={PIN_ICON} width="14" height="14" style={{ display: 'block', margin: '7px auto' }} alt="map" />
+                                                                </div>
+                                                            </td>
+                                                            <td style={{ padding: '0', verticalAlign: 'middle', fontSize: '14px', fontWeight: '600', color: STYLES.colors.navy, lineHeight: '1.4' }}>
+                                                                {editForm.addressLine1}<br/>
+                                                                <span style={{ opacity: 0.5 }}>{editForm.addressLine2}</span>
+                                                            </td>
                                                         </tr>
                                                     </table>
                                                 </td>
 
                                                 {/* 4. VERTICAL SEPARATOR 2 */}
-                                                <td style={{ width: '1px', backgroundColor: STYLES.colors.navy, opacity: 0.15, verticalAlign: 'middle' }}></td>
+                                                <td style={{ width: '1px', padding: '0' }}>
+                                                    <div style={{ width: '1px', height: '140px', backgroundColor: STYLES.colors.navy, opacity: 0.15 }}></div>
+                                                </td>
 
                                                 {/* 5. RIGHT: LOGO & SOCIAL */}
                                                 <td style={{ paddingLeft: '40px', verticalAlign: 'middle', width: '180px' }}>
-                                                    {/* BRAND LOGO PART */}
-                                                    <table cellPadding="0" cellSpacing="0" style={{ marginBottom: '25px' }}>
+                                                    {/* CORPORATE LOGO */}
+                                                    <table cellPadding="0" cellSpacing="0" style={{ marginBottom: '20px' }}>
                                                         <tr>
                                                             <td style={{ verticalAlign: 'middle', paddingRight: '12px' }}>
-                                                                <div style={{ backgroundColor: STYLES.colors.navy, padding: '6px', borderRadius: '6px' }}>
-                                                                    <img src={logoBase64} width="28" height="28" alt="Logo" style={{ display: 'block' }} />
+                                                                <div style={{ backgroundColor: STYLES.colors.navy, padding: '8px', borderRadius: '8px' }}>
+                                                                    <img src={logoBase64} width="32" height="32" alt="NHFG" style={{ display: 'block' }} />
                                                                 </div>
                                                             </td>
                                                             <td style={{ verticalAlign: 'middle' }}>
-                                                                <div style={{ fontSize: '15px', fontWeight: '900', color: STYLES.colors.navy, lineHeight: '1.1' }}>New Holland</div>
-                                                                <div style={{ fontSize: '7px', fontWeight: '800', color: STYLES.colors.lightGrey, letterSpacing: '1.5px', textTransform: 'uppercase', marginTop: '2px' }}>FINANCIAL GROUP</div>
+                                                                <div style={{ fontSize: '16px', fontWeight: '900', color: STYLES.colors.navy, lineHeight: '1.1' }}>New Holland</div>
+                                                                <div style={{ fontSize: '8px', fontWeight: '800', color: STYLES.colors.lightGrey, letterSpacing: '1.5px', textTransform: 'uppercase', marginTop: '3px' }}>FINANCIAL GROUP</div>
                                                             </td>
                                                         </tr>
                                                     </table>
 
-                                                    {/* SOCIAL ICONS BLOCK */}
+                                                    {/* SOCIAL ICONS */}
                                                     <table cellPadding="0" cellSpacing="0">
                                                         <tr>
                                                             <td style={{ paddingRight: '10px' }}>
-                                                                <a href="#"><img src="https://cdn-icons-png.flaticon.com/32/733/733547.png" width="20" height="20" style={{ borderRadius: '50%', backgroundColor: STYLES.colors.navy, padding: '6px' }} alt="f" /></a>
+                                                                <a href="#"><img src="https://cdn-icons-png.flaticon.com/32/3128/3128304.png" width="22" height="22" style={{ borderRadius: '50%', backgroundColor: STYLES.colors.navy, padding: '6px' }} alt="fb" /></a>
                                                             </td>
                                                             <td style={{ paddingRight: '10px' }}>
-                                                                <a href="#"><img src="https://cdn-icons-png.flaticon.com/32/733/733579.png" width="20" height="20" style={{ borderRadius: '50%', backgroundColor: STYLES.colors.navy, padding: '6px' }} alt="t" /></a>
+                                                                <a href="#"><img src="https://cdn-icons-png.flaticon.com/32/3128/3128310.png" width="22" height="22" style={{ borderRadius: '50%', backgroundColor: STYLES.colors.navy, padding: '6px' }} alt="tw" /></a>
                                                             </td>
                                                             <td style={{ paddingRight: '10px' }}>
-                                                                <a href="#"><img src="https://cdn-icons-png.flaticon.com/32/733/733561.png" width="20" height="20" style={{ borderRadius: '50%', backgroundColor: STYLES.colors.navy, padding: '6px' }} alt="l" /></a>
+                                                                <a href="#"><img src="https://cdn-icons-png.flaticon.com/32/3128/3128311.png" width="22" height="22" style={{ borderRadius: '50%', backgroundColor: STYLES.colors.navy, padding: '6px' }} alt="ln" /></a>
                                                             </td>
                                                             <td>
-                                                                <a href="#"><img src="https://cdn-icons-png.flaticon.com/32/733/733558.png" width="20" height="20" style={{ borderRadius: '50%', backgroundColor: STYLES.colors.navy, padding: '6px' }} alt="i" /></a>
+                                                                <a href="#"><img src="https://cdn-icons-png.flaticon.com/32/3128/3128307.png" width="22" height="22" style={{ borderRadius: '50%', backgroundColor: STYLES.colors.navy, padding: '6px' }} alt="in" /></a>
                                                             </td>
                                                         </tr>
                                                     </table>
@@ -419,7 +442,7 @@ export const EmailSignature: React.FC = () => {
                                 </tr>
                                 <tr>
                                     <td style={{ borderTop: '1px solid #F3F4F6', paddingTop: '15px' }}>
-                                        <p style={{ fontSize: '9px', color: STYLES.colors.lightGrey, lineHeight: '1.5', margin: '0' }}>
+                                        <p style={{ fontSize: '10px', color: STYLES.colors.lightGrey, lineHeight: '1.5', margin: '0', fontStyle: 'normal' }}>
                                             {editForm.legalText}
                                         </p>
                                     </td>

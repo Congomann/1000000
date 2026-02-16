@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -225,14 +224,14 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
             key={item.path}
             to={item.path} 
             id={item.tourId}
-            className={`flex items-center gap-4 px-5 py-3 text-sm font-bold rounded-2xl transition-all duration-300 group relative ${
+            className={`flex items-center gap-4 px-6 py-3.5 text-sm font-bold transition-all duration-300 group relative ${
                 isActive 
-                ? 'bg-[#3B82F6] text-white shadow-md' 
-                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                ? 'bg-[#3B82F6] text-white shadow-[0_4px_20px_rgba(59,130,246,0.3)] rounded-full' 
+                : 'text-slate-400 hover:bg-white/5 hover:text-white rounded-[1.5rem]'
             } ${isHighlighted ? 'z-[70] ring-4 ring-blue-500 bg-blue-600 text-white shadow-[0_0_50px_rgba(59,130,246,0.8)] scale-105' : ''}`}
         >
-            <item.icon className={`h-5 w-5 transition-colors ${isActive || isHighlighted ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'}`} strokeWidth={2.5} /> 
-            <span className="tracking-tight">{item.label}</span>
+            <item.icon className={`h-5 w-5 transition-colors ${isActive || isHighlighted ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'}`} strokeWidth={isActive ? 3 : 2.5} /> 
+            <span className={`tracking-tight ${isActive ? 'font-black' : ''}`}>{item.label}</span>
             {isHighlighted && <span className="absolute -right-2 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full animate-ping"></span>}
         </Link>
     );
@@ -272,70 +271,82 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
           </>
       )}
 
-      <div className="w-full h-full max-w-[1920px] bg-[#F1F5F9] sm:rounded-[2.5rem] shadow-2xl flex relative overflow-hidden ring-1 ring-black/5">
+      <div className="w-full h-full max-w-[1920px] bg-[#F1F5F9] sm:rounded-[3rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.2)] flex relative overflow-hidden ring-1 ring-black/5">
         <aside ref={sidebarRef} className={`hidden lg:flex flex-col w-72 bg-[#1E293B] text-white h-full overflow-y-auto py-10 flex-shrink-0 no-scrollbar border-r border-white/5 relative ${isTourActive ? 'z-[65]' : 'z-10'}`}>
-            <div className="px-8 mb-12 flex items-center gap-4">
-                <div className="relative w-12 h-12 flex-shrink-0">
-                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-                        <rect x="5" y="15" width="90" height="60" rx="12" fill="#F59E0B" />
-                        <rect x="10" y="35" width="80" height="55" rx="12" fill="#FCD34D" />
-                        <rect x="42" y="52" width="16" height="22" rx="4" fill="#B45309" fillOpacity="0.25" />
-                    </svg>
-                </div>
-                <div>
-                    <h1 className="font-black text-xl leading-none tracking-tight text-white uppercase">New Holland</h1>
-                    <p className="text-[0.6rem] text-slate-400 uppercase tracking-[0.2em] mt-1.5 font-black">Financial Group</p>
+            <div className="px-8 mb-12 flex flex-col gap-8">
+                <div className="flex items-center gap-4">
+                    <div className="relative w-12 h-12 flex-shrink-0">
+                        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+                            <rect x="5" y="15" width="90" height="60" rx="12" fill="#F59E0B" />
+                            <rect x="10" y="35" width="80" height="55" rx="12" fill="#FCD34D" />
+                            <rect x="42" y="52" width="16" height="22" rx="4" fill="#B45309" fillOpacity="0.25" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 className="font-black text-xl leading-none tracking-tight text-white uppercase">New Holland</h1>
+                        <p className="text-[0.6rem] text-slate-400 uppercase tracking-[0.2em] mt-1.5 font-black">Financial Group</p>
+                    </div>
                 </div>
             </div>
 
-            <nav className="flex-1 px-4 space-y-8">
-                <div className="space-y-1">{navStructure.main.map(renderNavLink)}</div>
+            <nav className="flex-1 px-4 space-y-10">
+                <div>
+                    <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-6 mb-4">Core</h3>
+                    <div className="space-y-1">{navStructure.main.map(renderNavLink)}</div>
+                </div>
 
                 {navStructure.vertical.length > 0 && (
-                    <div className="space-y-1">
-                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-5 mb-4">Vertical Tools</h3>
-                        {navStructure.vertical.map(renderNavLink)}
+                    <div>
+                        <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-6 mb-4">Verticals</h3>
+                        <div className="space-y-1">{navStructure.vertical.map(renderNavLink)}</div>
                     </div>
                 )}
 
-                <div className="space-y-1">{navStructure.shared.map(renderNavLink)}</div>
+                <div>
+                    <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-6 mb-4">Shared</h3>
+                    <div className="space-y-1">{navStructure.shared.map(renderNavLink)}</div>
+                </div>
 
                 {navStructure.admin.length > 0 && (
-                    <div className="space-y-1">
-                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-5 mb-4">Administration</h3>
-                        {navStructure.admin.map(renderNavLink)}
+                    <div>
+                        <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest px-6 mb-4">Administration</h3>
+                        <div className="space-y-1">{navStructure.admin.map(renderNavLink)}</div>
                     </div>
                 )}
             </nav>
 
             <div className="px-4 mt-8 pt-6 border-t border-white/5">
-                <button onClick={handleLogout} className="flex items-center gap-4 px-5 py-4 text-sm font-black text-[#FF6B6B] hover:bg-red-500/10 rounded-2xl w-full transition-all uppercase tracking-widest">
-                    <LogOut className="h-5 w-5" strokeWidth={2.5} /> Sign Out
+                <button onClick={handleLogout} className="flex items-center gap-4 px-6 py-4 text-sm font-black text-[#FF6B6B] hover:bg-red-500/10 rounded-[1.5rem] w-full transition-all uppercase tracking-widest">
+                    <LogOut className="h-5 w-5" strokeWidth={3} /> Sign Out
                 </button>
             </div>
         </aside>
 
         <div className="flex-1 h-full flex flex-col overflow-hidden bg-[#F8FAFC]">
-            <header className="h-20 bg-white border-b border-slate-200 px-10 flex items-center justify-between z-20 shadow-sm">
+            <header className="h-24 bg-white border-b border-slate-200 px-10 flex items-center justify-between z-20 shadow-sm">
                 <div className="flex items-center gap-6">
-                    <h2 className="text-sm font-black text-[#1E293B] tracking-tight flex items-center gap-2">Terminal Console</h2>
+                    <h2 className="text-sm font-black text-[#1E293B] tracking-[0.1em] uppercase">Terminal Console</h2>
                 </div>
                 <div className="flex items-center gap-8">
-                    <button onClick={startTour} className="flex items-center gap-3 px-6 py-3 bg-[#F1F5F9] hover:bg-blue-600 hover:text-white rounded-full text-[10px] font-black text-slate-600 transition-all uppercase tracking-[0.2em] shadow-sm active:scale-95 group border border-slate-200">
-                        <HelpCircle size={16} className="text-blue-500 group-hover:text-white transition-colors" /> Start Tour
-                    </button>
-                    <div className="flex items-center gap-4 pl-8 border-l border-slate-200">
-                        <div className="text-right hidden sm:block">
-                            <p className="text-sm font-black text-[#1E293B]">{user?.name}</p>
-                            <p className="text-[9px] font-black text-blue-600 uppercase tracking-[0.2em]">{user?.role}</p>
+                    <button onClick={startTour} className="flex items-center gap-4 px-8 py-3.5 bg-[#F1F5F9] hover:bg-white rounded-full text-[11px] font-black text-slate-600 transition-all uppercase tracking-widest shadow-sm active:scale-95 group border border-slate-200">
+                        <div className="h-6 w-6 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-lg">
+                            <HelpCircle size={14} strokeWidth={3} />
                         </div>
-                        <div className="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 border-2 border-white shadow-md">
+                        START TOUR
+                    </button>
+                    
+                    <div className="flex items-center gap-4 pl-8 border-l border-slate-200 h-10">
+                        <div className="text-right hidden sm:block">
+                            <p className="text-sm font-black text-[#1E293B] leading-none uppercase">{user?.name}</p>
+                            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mt-1.5">{user?.role}</p>
+                        </div>
+                        <div className="h-14 w-14 rounded-2xl overflow-hidden bg-slate-100 border-2 border-white shadow-xl">
                              {user?.avatar ? <img src={user.avatar} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center font-black text-slate-400">{user?.name[0]}</div>}
                         </div>
                     </div>
                 </div>
             </header>
-            <main className="flex-1 overflow-y-auto p-6 lg:p-10 no-scrollbar relative bg-[#F1F5F9]">{children}</main>
+            <main className="flex-1 overflow-y-auto p-6 lg:p-12 no-scrollbar relative bg-[#F1F5F9]">{children}</main>
         </div>
       </div>
     </div>

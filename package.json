@@ -19,7 +19,8 @@
     "jspdf-autotable": "3.8.2",
     "crypto": "4.2.0",
     "clsx": "2.1.0",
-    "tailwind-merge": "2.2.1"
+    "tailwind-merge": "2.2.1",
+    "html-to-image": "1.11.11"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

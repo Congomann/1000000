@@ -61,7 +61,7 @@ export enum AdvisorCategory {
 }
 
 export interface SocialLink {
-  platform: 'LinkedIn' | 'Facebook' | 'Twitter' | 'Instagram' | 'TikTok' | 'X' | 'YouTube';
+  platform: 'LinkedIn' | 'Facebook' | 'Twitter' | 'Instagram' | 'TikTok' | 'X' | 'YouTube' | 'Snapchat';
   url: string;
 }
 

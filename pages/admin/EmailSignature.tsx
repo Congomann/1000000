@@ -1,15 +1,167 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { useData } from '../../context/DataContext';
 import { UserRole, SocialLink as SocialLinkType } from '../../types';
-import { Copy, Check, Download, Plus, Trash2, RotateCcw, X, Mail, Phone, Globe, MapPin, Facebook, Linkedin, Twitter, Instagram } from 'lucide-react';
+import { Copy, Check, Download, Plus, Trash2, RotateCcw, X, Mail, Phone, Globe, MapPin, Facebook, Linkedin, Twitter, Instagram, Maximize2, Move } from 'lucide-react';
 
-type Tab = 'Personal' | 'Contact' | 'Social' | 'Legal' | 'Calendar';
+type Tab = 'Personal' | 'Contact' | 'Social' | 'Legal';
+
+interface CropperProps {
+    imageUrl: string;
+    onSave: (croppedImageUrl: string) => void;
+    onCancel: () => void;
+}
+
+const ImageCropper: React.FC<CropperProps> = ({ imageUrl, onSave, onCancel }) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [zoom, setZoom] = useState(1);
+    const [offset, setOffset] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const imageRef = useRef<HTMLImageElement | null>(null);
+
+    useEffect(() => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = imageUrl;
+        img.onload = () => {
+            imageRef.current = img;
+            draw();
+        };
+    }, [imageUrl]);
+
+    const draw = () => {
+        const canvas = canvasRef.current;
+        const img = imageRef.current;
+        if (!canvas || !img) return;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const size = Math.min(canvas.width, canvas.height);
+        const drawWidth = img.width * zoom;
+        const drawHeight = img.height * zoom;
+        
+        // Center the image + offset
+        const x = (canvas.width - drawWidth) / 2 + offset.x;
+        const y = (canvas.height - drawHeight) / 2 + offset.y;
+
+        ctx.save();
+        // Circular clipping mask
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, canvas.height / 2, size / 2 - 10, 0, Math.PI * 2);
+        ctx.clip();
+        
+        ctx.drawImage(img, x, y, drawWidth, drawHeight);
+        ctx.restore();
+
+        // Draw guide circle
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, canvas.height / 2, size / 2 - 10, 0, Math.PI * 2);
+        ctx.strokeStyle = '#3B82F6';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    };
+
+    useEffect(() => {
+        draw();
+    }, [zoom, offset]);
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        setIsDragging(true);
+        setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!isDragging) return;
+        setOffset({
+            x: e.clientX - dragStart.x,
+            y: e.clientY - dragStart.y
+        });
+    };
+
+    const handleMouseUp = () => setIsDragging(false);
+
+    const handleSave = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 400;
+        canvas.height = 400;
+        const ctx = canvas.getContext('2d');
+        const img = imageRef.current;
+        if (!ctx || !img) return;
+
+        const zoomFactor = 400 / 300; // Modal canvas size is 300
+        const drawWidth = img.width * zoom * zoomFactor;
+        const drawHeight = img.height * zoom * zoomFactor;
+        const x = (400 - drawWidth) / 2 + offset.x * zoomFactor;
+        const y = (400 - drawHeight) / 2 + offset.y * zoomFactor;
+
+        ctx.beginPath();
+        ctx.arc(200, 200, 200, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(img, x, y, drawWidth, drawHeight);
+        
+        onSave(canvas.toDataURL('image/png'));
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-md p-4">
+            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md p-8 animate-fade-in">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-xl font-bold text-[#0B2240]">Crop & Fit Photo</h3>
+                    <button onClick={onCancel} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X /></button>
+                </div>
+                
+                <div className="flex flex-col items-center gap-6">
+                    <div 
+                        className="cursor-move bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden shadow-inner"
+                        onMouseDown={handleMouseDown}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                        onMouseLeave={handleMouseUp}
+                    >
+                        <canvas ref={canvasRef} width={300} height={300} className="block" />
+                    </div>
+                    
+                    <div className="w-full space-y-2">
+                        <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            <span>Zoom</span>
+                            <span>{Math.round(zoom * 100)}%</span>
+                        </div>
+                        <input 
+                            type="range" 
+                            min="0.1" 
+                            max="3" 
+                            step="0.01" 
+                            className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                            value={zoom} 
+                            onChange={(e) => setZoom(parseFloat(e.target.value))} 
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                        <Move size={12} /> Drag to position image within the frame
+                    </div>
+
+                    <div className="flex gap-4 w-full pt-4">
+                        <button onClick={onCancel} className="flex-1 py-4 bg-slate-100 text-slate-500 font-bold rounded-2xl hover:bg-slate-200 transition-all">Cancel</button>
+                        <button onClick={handleSave} className="flex-1 py-4 bg-[#0B2240] text-white font-bold rounded-2xl hover:bg-blue-900 transition-all shadow-lg">Apply Crop</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 export const EmailSignature: React.FC = () => {
   const { allUsers, companySettings, updateUser, user } = useData();
   const [selectedAdvisorId, setSelectedAdvisorId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<Tab>('Personal');
   const [copied, setCopied] = useState(false);
+  const [isCropping, setIsCropping] = useState(false);
+  const [tempImage, setTempImage] = useState<string>('');
   
   const signatureRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -112,7 +264,8 @@ export const EmailSignature: React.FC = () => {
       if (file) {
           const reader = new FileReader();
           reader.onloadend = () => {
-              setEditForm(prev => ({ ...prev, avatar: reader.result as string }));
+              setTempImage(reader.result as string);
+              setIsCropping(true);
           };
           reader.readAsDataURL(file);
       }
@@ -171,13 +324,24 @@ export const EmailSignature: React.FC = () => {
 
   const logoBase64 = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3QgeD0iNSIgeT0iMTUiIHdpZHRoPSI5MCIgaGVpZ2h0PSI2MCIgcng9IjEyIiBmaWxsPSIjRjU5RTBCIiAvPjxyZWN0IHg9IjEwIiB5PSIzNSIgd2lkdGg9IjgwIiBoZWlnaHQ9IjU1IiByeD0iMTIiIGZpbGw9IiNGQ0QzNEQiIC8+PHJlY3QgeD0iNDIiIHk9IjUyIiB3aWR0aD0iMTYiIGhlaWdodD0iMjIiIHJ4PSI0IiBmaWxsPSIjQjQ1MzA5IiBmaWxsLW9wYWNpdHk9IjAuMjUiIC8+PC9zdmc+";
 
-  // White icons on blue circles based on screenshot
-  const PHONE_ICON = "https://cdn-icons-png.flaticon.com/32/3059/3059502.png"; // White phone
-  const WEB_ICON = "https://cdn-icons-png.flaticon.com/32/2885/2885417.png";   // White globe
-  const PIN_ICON = "https://cdn-icons-png.flaticon.com/32/3082/3082383.png";   // White pin
+  // Signature White Icons on Blue Circles
+  const PHONE_ICON = "https://cdn-icons-png.flaticon.com/32/3059/3059502.png"; 
+  const WEB_ICON = "https://cdn-icons-png.flaticon.com/32/2885/2885417.png";   
+  const PIN_ICON = "https://cdn-icons-png.flaticon.com/32/3082/3082383.png";   
 
   return (
     <div className="space-y-8 pb-10 animate-fade-in">
+      {isCropping && (
+          <ImageCropper 
+            imageUrl={tempImage} 
+            onSave={(cropped) => {
+                setEditForm(prev => ({ ...prev, avatar: cropped }));
+                setIsCropping(false);
+            }} 
+            onCancel={() => setIsCropping(false)} 
+          />
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-black text-[#0B2240] tracking-tight uppercase">Email Signature</h1>
@@ -230,13 +394,22 @@ export const EmailSignature: React.FC = () => {
                                 <input className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 outline-none" value={editForm.title} onChange={e => handleInputChange('title', e.target.value)} />
                             </div>
                             <div className="pt-4 border-t border-slate-100">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block ml-1">Identity Photo</label>
+                                <div className="flex justify-between items-center mb-3 ml-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Identity Photo</label>
+                                    <span className="text-[9px] font-bold text-blue-500 uppercase tracking-wider">Crop on upload</span>
+                                </div>
                                 <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-200 border-2 border-white shadow-md">
-                                        {editForm.avatar && <img src={editForm.avatar} className="w-full h-full object-cover" />}
+                                    <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-200 border-2 border-white shadow-md relative">
+                                        {editForm.avatar ? (
+                                            <img src={editForm.avatar} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-400"><X size={20}/></div>
+                                        )}
                                     </div>
                                     <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" />
-                                    <button onClick={() => fileInputRef.current?.click()} className="text-[10px] font-black bg-blue-50 text-blue-600 px-4 py-2 rounded-lg uppercase tracking-widest">Update Photo</button>
+                                    <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 text-[10px] font-black bg-blue-50 text-blue-600 px-4 py-2 rounded-lg uppercase tracking-widest hover:bg-blue-100 transition-colors">
+                                        <Maximize2 size={12}/> Update & Crop
+                                    </button>
                                 </div>
                             </div>
                         </>
@@ -302,19 +475,19 @@ export const EmailSignature: React.FC = () => {
         <div className="xl:col-span-8 flex flex-col h-full">
             <div className="bg-white p-12 rounded-[4rem] shadow-xl border border-slate-200 flex flex-col items-center justify-center flex-grow">
                 
-                <div className="w-full max-w-[850px] bg-[#F1F5F9] p-10 rounded-[3.5rem] shadow-inner flex items-center justify-center">
+                <div className="w-full max-w-[850px] bg-[#F1F5F9] p-10 rounded-[3.5rem] shadow-inner flex items-center justify-center overflow-hidden">
                     {/* THE SIGNATURE CARD - DESIGNED TO MATCH SCREENSHOT */}
-                    <div className="bg-white rounded-3xl shadow-2xl border border-white/50 overflow-hidden w-full p-10" style={{ minWidth: '780px' }}>
+                    <div className="bg-white rounded-3xl shadow-2xl border border-white/50 w-full p-10" style={{ minWidth: '780px' }}>
                         <div ref={signatureRef} style={{ width: '100%', backgroundColor: '#ffffff', textAlign: 'left', fontFamily: 'Inter, Arial, sans-serif' }}>
                             <table cellPadding="0" cellSpacing="0" style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <tr>
-                                    <td style={{ padding: '0 0 20px 0' }}>
+                                    <td style={{ padding: '0 0 25px 0' }}>
                                         <table cellPadding="0" cellSpacing="0" style={{ width: '100%' }}>
                                             <tr>
                                                 {/* 1. LEFT: AVATAR WITH CIRCULAR ACCENT */}
                                                 <td style={{ width: '180px', verticalAlign: 'middle', textAlign: 'center' }}>
                                                     <div style={{ position: 'relative', display: 'inline-block' }}>
-                                                        {/* Decorative arc simulating the screenshot design */}
+                                                        {/* Decorative arc as seen in Remmy screenshot */}
                                                         <div style={{ 
                                                             position: 'absolute', 
                                                             top: '-8px', 
@@ -325,15 +498,15 @@ export const EmailSignature: React.FC = () => {
                                                             borderRadius: '50%', 
                                                             borderColor: `${STYLES.colors.navy} transparent transparent ${STYLES.colors.navy}`,
                                                             transform: 'rotate(-45deg)',
-                                                            opacity: 0.2
+                                                            opacity: 0.15
                                                         }}></div>
-                                                        <div style={{ width: '140px', height: '140px', borderRadius: '50%', border: `4px solid ${STYLES.colors.navy}`, overflow: 'hidden', padding: '0' }}>
+                                                        <div style={{ width: '150px', height: '150px', borderRadius: '50%', border: `4px solid ${STYLES.colors.navy}`, overflow: 'hidden', padding: '0', backgroundColor: '#F8FAFC' }}>
                                                             <img 
                                                                 src={editForm.avatar || `https://ui-avatars.com/api/?name=${editForm.firstName}+${editForm.lastName}&background=E5E7EB&color=6B7280&size=200`} 
                                                                 alt="Advisor" 
-                                                                width="140" 
-                                                                height="140" 
-                                                                style={{ borderRadius: '50%', display: 'block', objectFit: 'cover', width: '140px', height: '140px' }}
+                                                                width="150" 
+                                                                height="150" 
+                                                                style={{ borderRadius: '50%', display: 'block', objectFit: 'cover', width: '100%', height: '100%' }}
                                                             />
                                                         </div>
                                                     </div>
@@ -341,54 +514,54 @@ export const EmailSignature: React.FC = () => {
 
                                                 {/* 2. VERTICAL SEPARATOR 1 */}
                                                 <td style={{ width: '1px', padding: '0' }}>
-                                                    <div style={{ width: '1px', height: '140px', backgroundColor: STYLES.colors.navy, opacity: 0.15 }}></div>
+                                                    <div style={{ width: '1px', height: '140px', backgroundColor: STYLES.colors.navy, opacity: 0.1 }}></div>
                                                 </td>
 
                                                 {/* 3. CENTER: NAME, TITLE & CONTACT */}
                                                 <td style={{ padding: '0 40px', verticalAlign: 'middle' }}>
-                                                    <div style={{ fontSize: '28px', fontStyle: 'normal', fontWeight: '900', color: STYLES.colors.navy, lineHeight: '1.2', letterSpacing: '-0.02em', margin: '0 0 4px 0' }}>
+                                                    <div style={{ fontSize: '30px', fontStyle: 'normal', fontWeight: '900', color: STYLES.colors.navy, lineHeight: '1.1', letterSpacing: '-0.02em', margin: '0 0 6px 0' }}>
                                                         {editForm.firstName} {editForm.lastName}
                                                     </div>
-                                                    <div style={{ fontSize: '15px', fontStyle: 'normal', fontWeight: '600', color: STYLES.colors.grey, margin: '0 0 12px 0' }}>
+                                                    <div style={{ fontSize: '15px', fontStyle: 'normal', fontWeight: '600', color: STYLES.colors.grey, margin: '0 0 14px 0' }}>
                                                         {editForm.title}
                                                     </div>
-                                                    {/* Accent line under title as per screenshot */}
-                                                    <div style={{ height: '2px', width: '40px', backgroundColor: STYLES.colors.navy, margin: '0 0 20px 0' }}></div>
+                                                    {/* Divider Line */}
+                                                    <div style={{ height: '2px', width: '40px', backgroundColor: STYLES.colors.navy, margin: '0 0 25px 0' }}></div>
                                                     
-                                                    {/* ICON ALIGNMENT UPDATE */}
+                                                    {/* CONTACT TABLE */}
                                                     <table cellPadding="0" cellSpacing="0" style={{ borderCollapse: 'collapse' }}>
                                                         {/* Phone Row */}
                                                         <tr>
-                                                            <td style={{ padding: '0 15px 12px 0', verticalAlign: 'top' }}>
-                                                                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: STYLES.colors.blue, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                                    <img src={PHONE_ICON} width="14" height="14" style={{ display: 'block', margin: '7px auto' }} alt="phone" />
+                                                            <td style={{ padding: '0 15px 14px 0', verticalAlign: 'top' }}>
+                                                                <div style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: STYLES.colors.blue, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                    <img src={PHONE_ICON} width="14" height="14" style={{ display: 'block', margin: '8px auto' }} alt="phone" />
                                                                 </div>
                                                             </td>
-                                                            <td style={{ padding: '0 0 12px 0', verticalAlign: 'middle', fontSize: '14px', fontWeight: '700', color: STYLES.colors.navy, lineHeight: '1.4' }}>
+                                                            <td style={{ padding: '0 0 14px 0', verticalAlign: 'middle', fontSize: '14px', fontWeight: '700', color: STYLES.colors.navy, lineHeight: '1.4' }}>
                                                                 {editForm.phone}<br/>
-                                                                <span style={{ opacity: 0.5, fontWeight: '500' }}>{editForm.phone2}</span>
+                                                                <span style={{ opacity: 0.5, fontWeight: '500', fontSize: '12px' }}>{editForm.phone2}</span>
                                                             </td>
                                                         </tr>
                                                         {/* Email/Web Row */}
                                                         <tr>
-                                                            <td style={{ padding: '0 15px 12px 0', verticalAlign: 'top' }}>
-                                                                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: STYLES.colors.blue, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                                    <img src={WEB_ICON} width="14" height="14" style={{ display: 'block', margin: '7px auto' }} alt="web" />
+                                                            <td style={{ padding: '0 15px 14px 0', verticalAlign: 'top' }}>
+                                                                <div style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: STYLES.colors.blue, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                    <img src={WEB_ICON} width="14" height="14" style={{ display: 'block', margin: '8px auto' }} alt="web" />
                                                                 </div>
                                                             </td>
-                                                            <td style={{ padding: '0 0 12px 0', verticalAlign: 'middle', fontSize: '14px', fontWeight: '700', color: STYLES.colors.navy, lineHeight: '1.4' }}>
+                                                            <td style={{ padding: '0 0 14px 0', verticalAlign: 'middle', fontSize: '14px', fontWeight: '700', color: STYLES.colors.navy, lineHeight: '1.4' }}>
                                                                 <a href={`mailto:${editForm.email}`} style={{ textDecoration: 'none', color: STYLES.colors.navy }}>{editForm.email}</a><br/>
-                                                                <a href={`https://${editForm.website}`} style={{ textDecoration: 'none', color: STYLES.colors.navy, opacity: 0.5, fontWeight: '500' }}>{editForm.website}</a>
+                                                                <a href={`https://${editForm.website}`} style={{ textDecoration: 'none', color: STYLES.colors.navy, opacity: 0.5, fontWeight: '500', fontSize: '12px' }}>{editForm.website}</a>
                                                             </td>
                                                         </tr>
                                                         {/* Address Row */}
                                                         <tr>
                                                             <td style={{ padding: '0 15px 0 0', verticalAlign: 'top' }}>
-                                                                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: STYLES.colors.blue, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                                    <img src={PIN_ICON} width="14" height="14" style={{ display: 'block', margin: '7px auto' }} alt="map" />
+                                                                <div style={{ width: '30px', height: '30px', borderRadius: '50%', backgroundColor: STYLES.colors.blue, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                    <img src={PIN_ICON} width="14" height="14" style={{ display: 'block', margin: '8px auto' }} alt="map" />
                                                                 </div>
                                                             </td>
-                                                            <td style={{ padding: '0', verticalAlign: 'middle', fontSize: '14px', fontWeight: '600', color: STYLES.colors.navy, lineHeight: '1.4' }}>
+                                                            <td style={{ padding: '0', verticalAlign: 'middle', fontSize: '13px', fontWeight: '600', color: STYLES.colors.navy, lineHeight: '1.4' }}>
                                                                 {editForm.addressLine1}<br/>
                                                                 <span style={{ opacity: 0.5 }}>{editForm.addressLine2}</span>
                                                             </td>
@@ -398,13 +571,13 @@ export const EmailSignature: React.FC = () => {
 
                                                 {/* 4. VERTICAL SEPARATOR 2 */}
                                                 <td style={{ width: '1px', padding: '0' }}>
-                                                    <div style={{ width: '1px', height: '140px', backgroundColor: STYLES.colors.navy, opacity: 0.15 }}></div>
+                                                    <div style={{ width: '1px', height: '140px', backgroundColor: STYLES.colors.navy, opacity: 0.1 }}></div>
                                                 </td>
 
                                                 {/* 5. RIGHT: LOGO & SOCIAL */}
-                                                <td style={{ paddingLeft: '40px', verticalAlign: 'middle', width: '180px' }}>
+                                                <td style={{ paddingLeft: '40px', verticalAlign: 'middle', width: '200px' }}>
                                                     {/* CORPORATE LOGO */}
-                                                    <table cellPadding="0" cellSpacing="0" style={{ marginBottom: '20px' }}>
+                                                    <table cellPadding="0" cellSpacing="0" style={{ marginBottom: '25px' }}>
                                                         <tr>
                                                             <td style={{ verticalAlign: 'middle', paddingRight: '12px' }}>
                                                                 <div style={{ backgroundColor: STYLES.colors.navy, padding: '8px', borderRadius: '8px' }}>
@@ -421,17 +594,17 @@ export const EmailSignature: React.FC = () => {
                                                     {/* SOCIAL ICONS */}
                                                     <table cellPadding="0" cellSpacing="0">
                                                         <tr>
-                                                            <td style={{ paddingRight: '10px' }}>
-                                                                <a href="#"><img src="https://cdn-icons-png.flaticon.com/32/3128/3128304.png" width="22" height="22" style={{ borderRadius: '50%', backgroundColor: STYLES.colors.navy, padding: '6px' }} alt="fb" /></a>
+                                                            <td style={{ paddingRight: '12px' }}>
+                                                                <a href="#"><img src="https://cdn-icons-png.flaticon.com/32/3128/3128304.png" width="24" height="24" style={{ borderRadius: '50%', backgroundColor: STYLES.colors.navy, padding: '6px', opacity: 0.8 }} alt="fb" /></a>
                                                             </td>
-                                                            <td style={{ paddingRight: '10px' }}>
-                                                                <a href="#"><img src="https://cdn-icons-png.flaticon.com/32/3128/3128310.png" width="22" height="22" style={{ borderRadius: '50%', backgroundColor: STYLES.colors.navy, padding: '6px' }} alt="tw" /></a>
+                                                            <td style={{ paddingRight: '12px' }}>
+                                                                <a href="#"><img src="https://cdn-icons-png.flaticon.com/32/3128/3128310.png" width="24" height="24" style={{ borderRadius: '50%', backgroundColor: STYLES.colors.navy, padding: '6px', opacity: 0.8 }} alt="tw" /></a>
                                                             </td>
-                                                            <td style={{ paddingRight: '10px' }}>
-                                                                <a href="#"><img src="https://cdn-icons-png.flaticon.com/32/3128/3128311.png" width="22" height="22" style={{ borderRadius: '50%', backgroundColor: STYLES.colors.navy, padding: '6px' }} alt="ln" /></a>
+                                                            <td style={{ paddingRight: '12px' }}>
+                                                                <a href="#"><img src="https://cdn-icons-png.flaticon.com/32/3128/3128311.png" width="24" height="24" style={{ borderRadius: '50%', backgroundColor: STYLES.colors.navy, padding: '6px', opacity: 0.8 }} alt="ln" /></a>
                                                             </td>
                                                             <td>
-                                                                <a href="#"><img src="https://cdn-icons-png.flaticon.com/32/3128/3128307.png" width="22" height="22" style={{ borderRadius: '50%', backgroundColor: STYLES.colors.navy, padding: '6px' }} alt="in" /></a>
+                                                                <a href="#"><img src="https://cdn-icons-png.flaticon.com/32/3128/3128307.png" width="24" height="24" style={{ borderRadius: '50%', backgroundColor: STYLES.colors.navy, padding: '6px', opacity: 0.8 }} alt="in" /></a>
                                                             </td>
                                                         </tr>
                                                     </table>
@@ -441,8 +614,8 @@ export const EmailSignature: React.FC = () => {
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td style={{ borderTop: '1px solid #F3F4F6', paddingTop: '15px' }}>
-                                        <p style={{ fontSize: '10px', color: STYLES.colors.lightGrey, lineHeight: '1.5', margin: '0', fontStyle: 'normal' }}>
+                                    <td style={{ borderTop: '1px solid #F1F5F9', paddingTop: '20px' }}>
+                                        <p style={{ fontSize: '10px', color: STYLES.colors.lightGrey, lineHeight: '1.6', margin: '0', fontStyle: 'normal', opacity: 0.8 }}>
                                             {editForm.legalText}
                                         </p>
                                     </td>

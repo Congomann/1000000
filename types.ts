@@ -324,6 +324,14 @@ export interface Resource {
   tags?: string[];
 }
 
+export interface RealEstateResourceLink {
+  id: string;
+  title: string;
+  url: string;
+  description: string;
+  type: 'Buying' | 'Selling' | 'Investing' | 'Legal';
+}
+
 export interface CompanySettings {
   phone: string;
   email: string;
@@ -345,6 +353,11 @@ export interface CompanySettings {
   solicitorAgreement?: string;
   footerDescription?: string;
   socialLinks?: SocialLink[];
+  
+  // Real Estate Portal Specifics
+  realEstateAbout?: string;
+  realEstateContactCta?: string;
+  realEstateResources?: RealEstateResourceLink[];
 }
 
 export interface Testimonial {
@@ -407,7 +420,7 @@ export interface PropertyListing {
   county?: string;
   price: number;
   type: 'Residential' | 'Commercial' | 'Land' | 'Multi-Family' | 'Acreage';
-  status: 'Active' | 'Pending' | 'Sold' | 'Off Market';
+  status: 'Active' | 'Pending' | 'Sold' | 'Off Market' | 'Pending Approval' | 'Rejected';
   bedrooms?: number;
   bathrooms?: number;
   sqft?: number;

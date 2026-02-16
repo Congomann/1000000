@@ -62,6 +62,8 @@ import {
 import { AIChatWidget } from './components/AIChatWidget';
 import { IntegrationsHub } from './pages/crm/IntegrationsHub';
 import { AutomationStudio } from './pages/crm/AutomationStudio';
+import { RealEstateAdmin } from './pages/admin/RealEstateAdmin';
+import { RealEstateCms } from './pages/admin/RealEstateCms';
 
 /**
  * DEVELOPER NOTE: App Routing Architecture
@@ -169,6 +171,8 @@ const App: React.FC = () => {
               <Route element={<ManagerRoute />}>
                   <Route path="admin" element={<AdminUsers />} />
                   <Route path="onboarding" element={<Onboarding />} />
+                  <Route path="admin/real-estate" element={<RealEstateAdmin />} />
+                  <Route path="admin/real-estate-cms" element={<RealEstateCms />} />
               </Route>
               
               {/* SUPER ADMIN ONLY - Based on screenshot request */}

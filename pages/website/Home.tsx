@@ -204,6 +204,19 @@ export const Home: React.FC = () => {
               </div>
           </div>
       )}
+      
+      {/* Real Estate Overlay Section - Updated to remove local mention and specific years */}
+      <div className="relative py-20 px-8">
+          <div className="max-w-7xl mx-auto">
+              <div className="relative rounded-[3rem] overflow-hidden shadow-2xl h-[400px]">
+                  <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=1000" className="w-full h-full object-cover" alt="Modern Home" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0B2240]/80 to-transparent"></div>
+                  <div className="absolute bottom-10 left-10 text-white">
+                      <p className="text-3xl font-black tracking-tighter leading-tight">Experts with Years<br/>of Experience</p>
+                  </div>
+              </div>
+          </div>
+      </div>
     </div>
   );
 };

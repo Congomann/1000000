@@ -161,9 +161,8 @@ export const Login: React.FC = () => {
                <button type="button" onClick={() => handleQuickLogin('mortgage@nhfg.com')} className="bg-cyan-50 text-cyan-700 py-2 px-3 rounded-xl text-xs font-bold hover:bg-cyan-100 transition-colors border border-cyan-200">Mortgage Advisor</button>
                <button type="button" onClick={() => handleQuickLogin('securities@nhfg.com')} className="bg-green-50 text-green-700 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-green-100 transition-colors border border-green-200">Securities Advisor</button>
                
-               <button type="button" onClick={() => handleQuickLogin('manager@nhfg.com')} className="bg-purple-50 text-purple-700 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-purple-100 transition-colors border border-purple-200">Manager</button>
                <button type="button" onClick={() => handleQuickLogin('subadmin@nhfg.com')} className="bg-indigo-50 text-indigo-700 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-indigo-100 transition-colors border border-indigo-200">Sub-Admin</button>
-               
+               <button type="button" onClick={() => handleQuickLogin('manager@nhfg.com')} className="bg-purple-50 text-purple-700 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-purple-100 transition-colors border border-purple-200">Manager</button>
                <button type="button" onClick={() => handleQuickLogin('admin@nhfg.com')} className="bg-red-50 text-red-700 py-2 px-3 rounded-xl text-xs font-semibold hover:bg-red-100 transition-colors border border-red-200">System Admin</button>
             </div>
           </div>

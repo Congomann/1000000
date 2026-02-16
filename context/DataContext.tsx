@@ -129,6 +129,11 @@ const INITIAL_USERS: User[] = [
   { id: '1', name: 'NHFG Admin', email: 'admin@nhfg.com', role: UserRole.ADMIN, category: AdvisorCategory.ADMIN, avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200', onboardingCompleted: true },
   { id: '2', name: 'James Manager', email: 'manager@nhfg.com', role: UserRole.MANAGER, category: AdvisorCategory.ADMIN, avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200', onboardingCompleted: true },
   { id: '4', name: 'David Insurance', email: 'insurance@nhfg.com', phone: '(555) 123-4567', role: UserRole.ADVISOR, category: AdvisorCategory.INSURANCE, productsSold: [ProductType.LIFE, ProductType.IUL, ProductType.ANNUITY], onboardingCompleted: true, micrositeEnabled: true },
+  { id: '5', name: 'Sarah RealEstate', email: 'realestate@nhfg.com', phone: '(555) 987-6543', role: UserRole.ADVISOR, category: AdvisorCategory.REAL_ESTATE, productsSold: [ProductType.REAL_ESTATE], onboardingCompleted: true, micrositeEnabled: true },
+  { id: '6', name: 'Marcus Mortgage', email: 'mortgage@nhfg.com', phone: '(555) 444-3333', role: UserRole.ADVISOR, category: AdvisorCategory.MORTGAGE, productsSold: [ProductType.MORTGAGE], onboardingCompleted: true, micrositeEnabled: true },
+  { id: '7', name: 'Sophia Securities', email: 'securities@nhfg.com', phone: '(555) 777-8888', role: UserRole.ADVISOR, category: AdvisorCategory.SECURITIES, productsSold: [ProductType.SECURITIES, ProductType.INVESTMENT], onboardingCompleted: true, micrositeEnabled: true },
+  { id: '8', name: 'Jordan SubAdmin', email: 'subadmin@nhfg.com', role: UserRole.SUB_ADMIN, category: AdvisorCategory.ADMIN, onboardingCompleted: true },
+  { id: '9', name: 'New Recruits', email: 'newbie@nhfg.com', role: UserRole.ADVISOR, category: AdvisorCategory.INSURANCE, onboardingCompleted: false },
   { id: AI_ASSISTANT_ID, name: 'Gemini Logic Hub', email: 'intelligence@nhfg.com', role: UserRole.SUB_ADMIN, category: AdvisorCategory.ADMIN, avatar: 'https://img.icons8.com/color/512/google-gemini.png', onboardingCompleted: true }
 ];
 
@@ -173,7 +178,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       heroTitle: 'Securing Your Future', heroSubtitle: 'Comprehensive financial solutions for every stage of life.',
       footerDescription: 'Providing tailored insurance solutions that secure financial peace of mind for individuals, families, and businesses.',
       socialLinks: [{ platform: 'Facebook', url: '#' }, { platform: 'LinkedIn', url: '#' }, { platform: 'X', url: '#' }, { platform: 'Instagram', url: '#' }, { platform: 'YouTube', url: '#' }, { platform: 'TikTok', url: '#' }],
-      termsOfUse: '', solicitorAgreement: '', heroVideoPlaylist: []
+      termsOfUse: '', solicitorAgreement: '', heroVideoPlaylist: [],
+      realEstateAbout: "Our entire team of agents with years of combined experience represents the gold standard in real estate. We don't just sell properties; we build communities and secure legacies.",
+      realEstateContactCta: "Ready to start your real estate journey? Our team is standing by to provide expert guidance tailored to your specific goals.",
+      realEstateResources: [
+        { id: '1', title: 'Home Buying Guide 2024', url: '#', description: 'Comprehensive roadmap for first-time buyers.', type: 'Buying' },
+        { id: '2', title: 'Market Trends Report', url: '#', description: 'Analysis of residential market shifts.', type: 'Investing' }
+      ]
   });
 
   const pushNotification = useCallback((title: string, message: string, type: 'info' | 'success' | 'warning' | 'alert' = 'info', resourceType?: any, relatedId?: string) => {
@@ -464,7 +475,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setApplications(prev => prev.map(app => app.id === id ? { ...app, status } : app));
   };
   const addProperty = (p: any) => {
-      const newProp: PropertyListing = { id: crypto.randomUUID(), address: '', city: '', state: '', zip: '', price: 0, type: 'Residential', status: 'Active', listedDate: new Date().toISOString(), sellerName: '', advisorId: user?.id || '', image: '', ...p };
+      const newProp: PropertyListing = { id: crypto.randomUUID(), address: '', city: '', state: '', zip: '', price: 0, type: 'Residential', status: 'Pending Approval', listedDate: new Date().toISOString(), sellerName: '', advisorId: user?.id || '', image: '', ...p };
       setProperties(prev => [newProp, ...prev]);
   };
   const updateProperty = (id: string, property: Partial<PropertyListing>) => {

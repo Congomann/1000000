@@ -2,9 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
-// Added UserRole to imports to fix error on line 446
 import { PropertyListing, ProductType, UserRole } from '../../types';
-// Added Briefcase and PlayCircle to imports to fix errors on lines 234 and 390
 import { 
   Home as HomeIcon, 
   MapPin, 
@@ -37,11 +35,15 @@ import {
   Star,
   Play,
   Briefcase,
-  PlayCircle
+  PlayCircle,
+  PhoneIncoming,
+  Mail,
+  Smartphone,
+  ChevronDown
 } from 'lucide-react';
 
 export const RealEstate: React.FC = () => {
-  const { properties, addLead, testimonials, allUsers } = useData();
+  const { properties, addLead, testimonials, allUsers, companySettings } = useData();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const viewMode = (searchParams.get('view') || 'home') as 'home' | 'properties' | 'buyers' | 'sellers' | 'resources' | 'about' | 'contact';
@@ -65,11 +67,7 @@ export const RealEstate: React.FC = () => {
   const filteredProperties = useMemo(() => {
     let list = properties.filter(p => p.status === 'Active');
     if (typeFilter) {
-      if (typeFilter === 'Webster City') {
-          list = list.filter(p => p.city.toLowerCase() === 'webster city');
-      } else {
-          list = list.filter(p => p.type.toLowerCase() === typeFilter.toLowerCase());
-      }
+      list = list.filter(p => p.type.toLowerCase() === typeFilter.toLowerCase());
     }
     return list;
   }, [properties, typeFilter]);
@@ -124,13 +122,13 @@ export const RealEstate: React.FC = () => {
                  viewMode === 'sellers' ? 'Strategic Listing Process' : 
                  viewMode === 'properties' ? 'Exclusive Listings' : 
                  viewMode === 'resources' ? 'Strategic Hub' : 
-                 viewMode === 'about' ? '150+ Years Combined' : 'The NHFG Experience'}
+                 viewMode === 'about' ? 'Our Story' : 'The NHFG Experience'}
             </h1>
             <p className="text-xl text-blue-100 max-w-3xl mx-auto font-medium leading-relaxed opacity-80 uppercase tracking-widest text-[11px]">
                 {viewMode === 'buyers' ? 'Strategic roadmap to your next property acquisition.' : 
                  viewMode === 'sellers' ? 'From market analysis to closing, we maximize your ROI.' : 
                  viewMode === 'resources' ? 'Professional tools for the sophisticated market participant.' : 
-                 'Unrivaled local expertise in Webster City and surrounding residential markets.'}
+                 'Unrivaled expertise in surrounding residential markets.'}
             </p>
          </div>
       </div>
@@ -142,9 +140,9 @@ export const RealEstate: React.FC = () => {
               <div className="space-y-32 animate-fade-in">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                       <div>
-                          <h2 className="text-4xl font-black text-[#0B2240] uppercase tracking-tighter mb-6">Unrivaled Local Presence</h2>
+                          <h2 className="text-4xl font-black text-[#0B2240] uppercase tracking-tighter mb-6">Unrivaled Presence</h2>
                           <p className="text-slate-600 text-lg leading-relaxed mb-8">
-                             Our entire team of agents brings over 150 years of combined experience to the table. Whether you are searching for your first home, an investment complex, or commercial acreage, our depth of knowledge is your greatest asset.
+                             {companySettings.realEstateAbout}
                           </p>
                           <div className="flex gap-4">
                               <Link to="/real-estate?view=buyers" className="px-8 py-4 bg-[#0B2240] text-white rounded-full font-black text-xs uppercase tracking-widest shadow-xl hover:bg-slate-800 transition-all">Buy a Home</Link>
@@ -155,8 +153,7 @@ export const RealEstate: React.FC = () => {
                           <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=1000" className="w-full h-full object-cover" alt="Modern Home" />
                           <div className="absolute inset-0 bg-gradient-to-t from-[#0B2240]/80 to-transparent"></div>
                           <div className="absolute bottom-10 left-10 text-white">
-                              <p className="text-3xl font-black tracking-tighter">Webster City Experts</p>
-                              <p className="text-xs font-bold uppercase tracking-widest text-amber-400 mt-2">150+ Years Experience</p>
+                              <p className="text-3xl font-black tracking-tighter">Experts with Years of Experience</p>
                           </div>
                       </div>
                   </div>
@@ -176,7 +173,7 @@ export const RealEstate: React.FC = () => {
               </div>
           )}
 
-          {/* BUYERS VIEW (Section 1) */}
+          {/* BUYERS VIEW */}
           {viewMode === 'buyers' && (
               <div className="space-y-24 animate-fade-in">
                   <div className="text-center max-w-3xl mx-auto space-y-6">
@@ -203,25 +200,10 @@ export const RealEstate: React.FC = () => {
                         </div>
                       ))}
                   </div>
-
-                  <div className="bg-slate-50 p-12 rounded-[4rem] border border-slate-200 text-center space-y-8">
-                      <h3 className="text-3xl font-black text-[#0B2240] uppercase tracking-tighter">Relocating outside our area?</h3>
-                      <p className="text-lg text-slate-600 font-medium max-w-2xl mx-auto">We can also refer you to a top-tier vetted agent in your destination market! Let us ensure you are in good hands wherever you go.</p>
-                      <Link to="/real-estate?view=contact" className="inline-flex items-center gap-2 text-blue-600 font-black uppercase tracking-widest hover:translate-x-1 transition-all">Request a referral <ArrowRight size={16}/></Link>
-                  </div>
-
-                  {/* FREE MOVING TRAILER CTA */}
-                  <div className="bg-[#0B2240] rounded-[4rem] p-12 lg:p-20 text-white flex flex-col md:flex-row items-center gap-12 shadow-2xl">
-                      <div className="flex-1">
-                          <h3 className="text-4xl font-black uppercase tracking-tighter mb-4">FREE Moving Trailer</h3>
-                          <p className="text-blue-100 text-lg font-medium leading-relaxed">Trusted by our home buyers and sellers. Move with ease using our complementary professional equipment.</p>
-                      </div>
-                      <Link to="/real-estate?view=contact" className="px-12 py-5 bg-white text-slate-900 rounded-full font-black text-xs uppercase tracking-widest shadow-xl hover:bg-amber-50 transition-all flex items-center gap-3">Reserve Now</Link>
-                  </div>
               </div>
           )}
 
-          {/* SELLERS VIEW (Section 2) */}
+          {/* SELLERS VIEW */}
           {viewMode === 'sellers' && (
               <div className="space-y-24 animate-fade-in">
                    <div className="text-center max-w-3xl mx-auto space-y-6">
@@ -250,16 +232,103 @@ export const RealEstate: React.FC = () => {
                         </div>
                       ))}
                   </div>
+              </div>
+          )}
 
-                  <div className="bg-blue-600 rounded-[4rem] p-12 lg:p-20 text-white text-center">
-                      <h3 className="text-4xl font-black uppercase mb-6 tracking-tighter">Buying your next home?</h3>
-                      <p className="text-blue-100 text-xl mb-10 font-medium max-w-2xl mx-auto">We can seamlessly coordinate your sale and purchase to ensure a smooth transition of ownership.</p>
-                      <Link to="/real-estate?view=contact" className="px-12 py-5 bg-white text-blue-600 rounded-full font-black text-xs uppercase tracking-widest shadow-xl hover:bg-blue-50 transition-all">Coordinate My Moves</Link>
+          {/* RESOURCES VIEW (Dynamic from CMS) */}
+          {viewMode === 'resources' && (
+              <div className="space-y-12 animate-fade-in">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                      {companySettings.realEstateResources?.map(res => (
+                          <a 
+                            key={res.id} 
+                            href={res.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group flex flex-col h-full"
+                          >
+                              <div className="flex justify-between items-start mb-6">
+                                  <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                      <FileText size={24}/>
+                                  </div>
+                                  <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full">{res.type}</span>
+                              </div>
+                              <h3 className="text-xl font-black text-slate-900 mb-2 uppercase tracking-tight">{res.title}</h3>
+                              <p className="text-slate-500 text-sm font-medium leading-relaxed mb-8 flex-1">{res.description}</p>
+                              <div className="flex items-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-[0.2em] group-hover:translate-x-2 transition-transform">
+                                  Access Resource <ArrowRight size={14}/>
+                              </div>
+                          </a>
+                      ))}
+                      {(!companySettings.realEstateResources || companySettings.realEstateResources.length === 0) && (
+                          <div className="col-span-full py-32 text-center text-slate-300 italic">No specialized resources currently available.</div>
+                      )}
                   </div>
               </div>
           )}
 
-          {/* PROPERTIES VIEW (Section 3) */}
+          {/* CONTACT VIEW */}
+          {viewMode === 'contact' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 animate-fade-in">
+                  <div className="space-y-10">
+                      <h2 className="text-5xl font-black text-[#0B2240] tracking-tighter uppercase leading-none">Let's Connect</h2>
+                      <p className="text-xl text-slate-600 leading-relaxed font-medium">{companySettings.realEstateContactCta}</p>
+                      
+                      <div className="space-y-6">
+                          <div className="flex gap-4 items-center group">
+                              <div className="p-4 bg-white shadow-lg rounded-2xl border border-slate-100 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                  <Smartphone size={24} />
+                              </div>
+                              <div>
+                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Primary Line</p>
+                                  <p className="text-xl font-black text-[#0B2240]">{companySettings.phone}</p>
+                              </div>
+                          </div>
+                          <div className="flex gap-4 items-center group">
+                              <div className="p-4 bg-white shadow-lg rounded-2xl border border-slate-100 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                  <Mail size={24} />
+                              </div>
+                              <div>
+                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">General Inbox</p>
+                                  <p className="text-xl font-black text-[#0B2240]">{companySettings.email}</p>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+
+                  <div className="bg-white rounded-[3rem] p-10 lg:p-14 shadow-2xl border border-slate-100">
+                      {formSubmitted ? (
+                          <div className="text-center py-20">
+                              <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner"><CheckCircle2 size={40}/></div>
+                              <h3 className="text-3xl font-black text-slate-900">Request Sent</h3>
+                              <p className="text-slate-500 mt-2 font-medium">An expert advisor will reach out to you shortly.</p>
+                          </div>
+                      ) : (
+                          <form onSubmit={handleContactSubmit} className="space-y-6">
+                              <div>
+                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-2 block">Name</label>
+                                  <input required className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none shadow-inner" placeholder="John Doe" value={contactForm.name} onChange={e => setContactForm({...contactForm, name: e.target.value})} />
+                              </div>
+                              <div>
+                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-2 block">Email</label>
+                                  <input type="email" required className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none shadow-inner" placeholder="john@example.com" value={contactForm.email} onChange={e => setContactForm({...contactForm, email: e.target.value})} />
+                              </div>
+                              <div>
+                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-2 block">Phone</label>
+                                  <input required className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none shadow-inner" placeholder="(555) 555-5555" value={contactForm.phone} onChange={e => setContactForm({...contactForm, phone: e.target.value})} />
+                              </div>
+                              <div>
+                                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-2 block">Message</label>
+                                  <textarea rows={4} className="w-full bg-slate-50 border border-slate-200 rounded-[2rem] p-6 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none shadow-inner resize-none" placeholder="How can we help you?" value={contactForm.message} onChange={e => setContactForm({...contactForm, message: e.target.value})} />
+                              </div>
+                              <button type="submit" className="w-full py-5 bg-[#0B2240] text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-slate-800 transition-all">Submit Strategy Request</button>
+                          </form>
+                      )}
+                  </div>
+              </div>
+          )}
+
+          {/* PROPERTIES VIEW */}
           {viewMode === 'properties' && (
               <div className="space-y-12 animate-fade-in">
                   <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-8 border-b border-slate-100 pb-10">
@@ -267,10 +336,10 @@ export const RealEstate: React.FC = () => {
                           <h2 className="text-4xl font-black text-[#0B2240] tracking-tight uppercase">
                             {typeFilter ? `${typeFilter} Inventory` : 'Our Listings'}
                           </h2>
-                          <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-[10px] mt-2">Webster City & All Area Residential</p>
+                          <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-[10px] mt-2">Premier Residential Markets</p>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                          {['All', 'Webster City', 'Residential', 'Acreage', 'Commercial', 'Land'].map(filter => (
+                          {['All', 'Residential', 'Acreage', 'Commercial', 'Land'].map(filter => (
                             <Link 
                                 key={filter}
                                 to={`/real-estate?view=properties${filter === 'All' ? '' : `&type=${filter}`}`}
@@ -325,15 +394,6 @@ export const RealEstate: React.FC = () => {
                                               <span className="font-black text-slate-800 text-lg">{prop.sqft?.toLocaleString()}</span>
                                           </div>
                                       </div>
-
-                                      <div className="mt-auto pt-6 border-t border-slate-100 flex justify-between items-center">
-                                          <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">Listing ID: {prop.id.split('-')[0]}</span>
-                                          <div className="flex gap-2">
-                                              <span className="p-2 bg-slate-50 rounded-xl text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                                  <ArrowRight size={16} strokeWidth={3} />
-                                              </span>
-                                          </div>
-                                      </div>
                                   </div>
                               </div>
                           ))}
@@ -342,100 +402,14 @@ export const RealEstate: React.FC = () => {
               </div>
           )}
 
-          {/* RESOURCES VIEW (Section 4) */}
-          {viewMode === 'resources' && (
-              <div className="space-y-24 animate-fade-in">
-                  <section id="calculator" className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                      <div className="lg:col-span-7 bg-white p-12 rounded-[3.5rem] border border-slate-100 shadow-sm">
-                          <h3 className="text-2xl font-black text-[#0B2240] mb-12 flex items-center gap-3 uppercase tracking-tight"><Calculator className="h-8 w-8 text-blue-600"/> Mortgage Estimator</h3>
-                          <div className="space-y-10">
-                              <div>
-                                  <div className="flex justify-between mb-4">
-                                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Home Price</label>
-                                      <span className="text-xl font-black text-slate-800">${price.toLocaleString()}</span>
-                                  </div>
-                                  <input type="range" min="100000" max="3000000" step="10000" value={price} onChange={e => setPrice(Number(e.target.value))} className="w-full accent-blue-600" />
-                              </div>
-                              <div className="grid grid-cols-2 gap-10">
-                                  <div>
-                                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Interest Rate (%)</label>
-                                      <input type="number" step="0.1" value={rate} onChange={e => setRate(Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 font-black text-slate-800 outline-none focus:ring-2 focus:ring-blue-500" />
-                                  </div>
-                                  <div>
-                                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Term (Years)</label>
-                                      <select value={years} onChange={e => setYears(Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 font-black text-slate-800 outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
-                                          <option value={30}>30 Years</option>
-                                          <option value={15}>15 Years</option>
-                                      </select>
-                                  </div>
-                              </div>
-                          </div>
-                      </div>
-                      <div className="lg:col-span-5 bg-[#0B2240] text-white p-12 rounded-[3.5rem] flex flex-col justify-between shadow-2xl relative overflow-hidden group">
-                          <div className="absolute top-0 right-0 p-10 opacity-5 -rotate-12 transition-transform group-hover:scale-110"><DollarSign size={200} /></div>
-                          <div className="relative z-10">
-                              <h4 className="text-[10px] font-black text-blue-300 uppercase tracking-[0.3em] mb-6">Estimated Monthly Payment</h4>
-                              <p className="text-8xl font-black tracking-tighter mb-4">${Math.round(monthlyPayment).toLocaleString()}</p>
-                              <p className="text-blue-200/60 text-sm font-medium leading-relaxed italic">Principle & Interest. Final rates subject to approval.</p>
-                          </div>
-                          <div className="relative z-10 pt-10 border-t border-white/10">
-                              <button onClick={() => navigate('/contact?inquiry=preapproval')} className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl hover:bg-blue-500 transition-all active:scale-95">Get pre-approved</button>
-                          </div>
-                      </div>
-                  </section>
-
-                  {/* Virtual Tour Section */}
-                  <section className="bg-slate-900 rounded-[4rem] p-12 lg:p-20 text-white relative overflow-hidden group">
-                      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=1000')] bg-cover bg-center opacity-20 group-hover:scale-110 transition-transform duration-1000"></div>
-                      <div className="relative z-10 text-center max-w-2xl mx-auto space-y-8">
-                          <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter">Virtual Office Tour</h2>
-                          <p className="text-blue-200 text-lg font-medium">Experience the New Holland headquarters from anywhere. Walk through our strategic terminal and meet the intelligence engine.</p>
-                          <button className="inline-flex items-center gap-3 px-12 py-5 bg-white text-slate-900 rounded-full font-black text-xs uppercase tracking-[0.3em] shadow-2xl transition-all hover:bg-blue-50 active:scale-95">
-                              <PlayCircle size={20} /> Start Tour
-                          </button>
-                      </div>
-                  </section>
-
-                  {/* Testimonials */}
-                  <section className="space-y-12">
-                      <h2 className="text-4xl font-black text-[#0B2240] text-center uppercase tracking-tighter">Client Testimonials</h2>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                          {reTestimonials.slice(0, 3).map(t => (
-                              <div key={t.id} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-lg transition-all flex flex-col h-full">
-                                  <div className="flex gap-1 mb-6">
-                                      {[...Array(5)].map((_, i) => <Star key={i} size={14} className={i < t.rating ? 'text-yellow-400 fill-yellow-400' : 'text-slate-200'} />)}
-                                  </div>
-                                  <p className="text-slate-600 leading-relaxed font-medium italic flex-1">"{t.reviewText}"</p>
-                                  <div className="mt-8 pt-6 border-t border-slate-50 flex items-center gap-3">
-                                      <div className="h-10 w-10 bg-slate-100 rounded-full flex items-center justify-center font-black text-slate-400">{t.clientName[0]}</div>
-                                      <span className="font-black text-slate-800 text-sm">{t.clientName}</span>
-                                  </div>
-                              </div>
-                          ))}
-                      </div>
-                  </section>
-              </div>
-          )}
-
-          {/* ABOUT VIEW (Section 5) */}
+          {/* ABOUT VIEW (Dynamic from CMS) */}
           {viewMode === 'about' && (
               <div className="space-y-24 animate-fade-in">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
                       <div className="space-y-8">
-                          <h2 className="text-5xl font-black text-[#0B2240] uppercase tracking-tighter leading-tight">Our Story</h2>
+                          <h2 className="text-5xl font-black text-[#0B2240] uppercase tracking-tighter leading-none">Our Story</h2>
                           <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed text-lg font-medium">
-                             "Our entire team of agents with over 150 years of combined experience represents the gold standard in Webster City real estate. We don't just sell properties; we build communities and secure legacies."
-                          </div>
-                          <div className="flex items-center gap-8 py-8 border-y border-slate-100">
-                               <div>
-                                   <p className="text-4xl font-black text-blue-600">150+</p>
-                                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mt-1">Combined Years</p>
-                               </div>
-                               <div className="h-10 w-px bg-slate-200"></div>
-                               <div>
-                                   <p className="text-4xl font-black text-amber-500">2.5k+</p>
-                                   <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mt-1">Properties Moved</p>
-                               </div>
+                             "{companySettings.realEstateAbout}"
                           </div>
                       </div>
                       <div className="bg-slate-200 rounded-[4rem] h-[500px] overflow-hidden shadow-2xl relative group">
@@ -443,98 +417,11 @@ export const RealEstate: React.FC = () => {
                           <div className="absolute inset-0 bg-[#0B2240]/20"></div>
                       </div>
                   </div>
-
-                  <div className="space-y-12">
-                      <h2 className="text-4xl font-black text-[#0B2240] text-center uppercase tracking-tighter">Meet the Team</h2>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                          {allUsers.filter(u => u.role === UserRole.ADVISOR || u.role === UserRole.MANAGER).slice(0, 4).map(adv => (
-                              <div key={adv.id} className="text-center group">
-                                  <div className="h-48 w-48 rounded-[2.5rem] bg-slate-100 mx-auto overflow-hidden border-4 border-white shadow-xl transition-all group-hover:scale-105 mb-6">
-                                      <img src={adv.avatar || `https://ui-avatars.com/api/?name=${adv.name}&background=random`} className="w-full h-full object-cover" />
-                                  </div>
-                                  <h3 className="font-black text-slate-900 text-lg">{adv.name}</h3>
-                                  <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mt-1">{adv.title || adv.role}</p>
-                              </div>
-                          ))}
-                      </div>
-                  </div>
-
-                  <section className="bg-slate-50 p-12 lg:p-20 rounded-[4rem] border border-slate-200 text-center">
-                      <h2 className="text-4xl font-black uppercase mb-6 tracking-tighter">Take a Virtual Tour of Our Office</h2>
-                      <p className="text-slate-600 text-lg mb-10 font-medium max-xl mx-auto">See where the strategy happens. Experience our high-tech terminal and client suites from the comfort of your home.</p>
-                      <button className="px-10 py-5 bg-[#0B2240] text-white rounded-full font-black text-xs uppercase tracking-widest shadow-xl flex items-center gap-3 mx-auto">
-                          <Video size={18}/> Watch Office Tour
-                      </button>
-                  </section>
-              </div>
-          )}
-
-          {/* CONTACT VIEW */}
-          {viewMode === 'contact' && (
-              <div className="animate-fade-in max-w-4xl mx-auto space-y-12">
-                  <div className="text-center space-y-4">
-                      <h2 className="text-5xl font-black text-[#0B2240] uppercase tracking-tighter">Get in Touch</h2>
-                      <p className="text-slate-500 font-medium">Have a question about a listing or process? We are here to help.</p>
-                  </div>
-
-                  <div className="bg-white rounded-[3.5rem] shadow-2xl p-10 md:p-16 border border-slate-100">
-                      {formSubmitted ? (
-                          <div className="text-center py-20 animate-fade-in">
-                               <CheckCircle2 size={80} className="text-green-500 mx-auto mb-8" />
-                               <h3 className="text-3xl font-black text-slate-900 mb-4">Message Sent</h3>
-                               <p className="text-slate-500 font-medium">An advisor will contact you within one business hour.</p>
-                          </div>
-                      ) : (
-                          <form onSubmit={handleContactSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                              <div>
-                                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-3">Full Name</label>
-                                  <input 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-black focus:ring-4 focus:ring-blue-100 outline-none" 
-                                    required 
-                                    value={contactForm.name}
-                                    onChange={e => setContactForm({...contactForm, name: e.target.value})}
-                                  />
-                              </div>
-                              <div>
-                                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-3">Phone</label>
-                                  <input 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-black focus:ring-4 focus:ring-blue-100 outline-none" 
-                                    required 
-                                    value={contactForm.phone}
-                                    onChange={e => setContactForm({...contactForm, phone: e.target.value})}
-                                  />
-                              </div>
-                              <div className="md:col-span-2">
-                                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-3">Email</label>
-                                  <input 
-                                    type="email"
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-black focus:ring-4 focus:ring-blue-100 outline-none" 
-                                    required 
-                                    value={contactForm.email}
-                                    onChange={e => setContactForm({...contactForm, email: e.target.value})}
-                                  />
-                              </div>
-                              <div className="md:col-span-2">
-                                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-3">Your Message</label>
-                                  <textarea 
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-3xl px-6 py-4 text-sm font-medium focus:ring-4 focus:ring-blue-100 outline-none resize-none" 
-                                    rows={5}
-                                    required
-                                    value={contactForm.message}
-                                    onChange={e => setContactForm({...contactForm, message: e.target.value})}
-                                  />
-                              </div>
-                              <div className="md:col-span-2">
-                                  <button type="submit" className="w-full py-6 bg-[#0B2240] text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-slate-900 transition-all active:scale-95">Send Strategic Inquiry</button>
-                              </div>
-                          </form>
-                      )}
-                  </div>
               </div>
           )}
       </div>
 
-      {/* Property Detail Modal (Section 3 Template) */}
+      {/* Property Detail Modal */}
       {selectedProperty && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0B2240]/80 backdrop-blur-md p-4 animate-fade-in overflow-y-auto">
               <div className="bg-white rounded-[4rem] w-full max-w-5xl shadow-2xl relative overflow-hidden flex flex-col max-h-[95vh]">
@@ -561,101 +448,7 @@ export const RealEstate: React.FC = () => {
                               </div>
                           </div>
                       </div>
-
-                      <div className="grid grid-cols-1 lg:grid-cols-3">
-                          <div className="bg-slate-50 p-12 border-r border-slate-100 space-y-10">
-                              <div>
-                                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-6">Template Specifications</h3>
-                                <div className="space-y-4">
-                                    {[
-                                      { l: 'Property Type', v: selectedProperty.type, i: HomeIcon },
-                                      { l: 'Year Built', v: selectedProperty.yearBuilt || 'N/A', i: Calendar },
-                                      { l: 'Taxes', v: selectedProperty.taxes || selectedProperty.taxAmount || 'N/A', i: DollarSign },
-                                      { l: 'Lot Size', v: selectedProperty.lotSize || 'N/A', i: Map },
-                                      { l: 'County', v: selectedProperty.county || 'N/A', i: MapPin },
-                                      { l: 'Subdivision', v: selectedProperty.subdivision || 'N/A', i: Landmark },
-                                      { l: 'Beds/Baths', v: `${selectedProperty.bedrooms} / ${selectedProperty.bathrooms}`, i: BedDouble },
-                                      { l: 'Sq Ft', v: selectedProperty.sqft?.toLocaleString() || 'N/A', i: Square },
-                                      { l: 'Schools', v: selectedProperty.schoolDistrict || 'N/A', i: School },
-                                    ].map((spec, i) => (
-                                      <div key={i} className="flex justify-between items-center py-3 border-b border-slate-200">
-                                          <div className="flex items-center gap-2 text-slate-500">
-                                              <spec.i size={12}/>
-                                              <span className="text-[10px] font-black uppercase tracking-widest">{spec.l}</span>
-                                          </div>
-                                          <span className="text-xs font-black text-slate-900">{spec.v}</span>
-                                      </div>
-                                    ))}
-                                </div>
-                              </div>
-
-                              <div className="bg-amber-500 rounded-3xl p-6 text-slate-900 shadow-xl">
-                                 <h4 className="font-black text-xs uppercase tracking-widest mb-3 flex items-center gap-2"><Truck size={14}/> FREE Moving Trailer</h4>
-                                 <p className="text-xs font-bold text-amber-900 opacity-80 leading-relaxed">This property is eligible for our complimentary moving trailer program for buyers and sellers.</p>
-                              </div>
-                          </div>
-
-                          <div className="lg:col-span-2 p-12">
-                              <div className="mb-12">
-                                  <h3 className="text-3xl font-black text-[#0B2240] mb-8 tracking-tight uppercase">Feature Highlights</h3>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-                                      <div className="space-y-4">
-                                          <h4 className="text-xs font-black text-blue-600 uppercase tracking-widest border-b border-blue-50 pb-1">Interior Features</h4>
-                                          <p className="text-sm text-slate-600 font-medium">{selectedProperty.interiorFeatures || 'N/A'}</p>
-                                      </div>
-                                      <div className="space-y-4">
-                                          <h4 className="text-xs font-black text-blue-600 uppercase tracking-widest border-b border-blue-50 pb-1">Exterior Features</h4>
-                                          <p className="text-sm text-slate-600 font-medium">{selectedProperty.exteriorFeatures || 'N/A'}</p>
-                                      </div>
-                                      <div className="space-y-4">
-                                          <h4 className="text-xs font-black text-blue-600 uppercase tracking-widest border-b border-blue-50 pb-1">Inclusions</h4>
-                                          <p className="text-sm text-slate-600 font-medium">{selectedProperty.inclusions || 'N/A'}</p>
-                                      </div>
-                                      <div className="space-y-4">
-                                          <h4 className="text-xs font-black text-blue-600 uppercase tracking-widest border-b border-blue-50 pb-1">Directions</h4>
-                                          <p className="text-sm text-slate-600 font-medium italic">{selectedProperty.directions || 'N/A'}</p>
-                                      </div>
-                                  </div>
-                                  
-                                  <h4 className="text-xs font-black text-blue-600 uppercase tracking-widest mb-4">Description</h4>
-                                  <p className="text-slate-600 leading-relaxed text-lg font-medium whitespace-pre-wrap">
-                                      {selectedProperty.description || "Executive property within the New Holland Premier Portfolio. Private client inquiry recommended for comprehensive dossier."}
-                                  </p>
-                              </div>
-                              <div className="flex flex-col sm:flex-row gap-4 pt-10 border-t border-slate-100">
-                                  <button onClick={() => setIsContactFormOpen(true)} className="flex-1 py-5 bg-[#0B2240] text-white font-black rounded-3xl shadow-2xl hover:bg-slate-800 transition-all text-xs uppercase tracking-[0.2em]">Schedule Showing</button>
-                                  <button onClick={() => setIsContactFormOpen(true)} className="flex-1 py-5 bg-white border-2 border-slate-200 text-slate-700 font-black rounded-3xl hover:bg-slate-50 transition-all text-xs uppercase tracking-[0.2em]">Inquire for Info</button>
-                              </div>
-                          </div>
-                      </div>
                   </div>
-              </div>
-          </div>
-      )}
-
-      {/* Global Form Modal */}
-      {isContactFormOpen && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
-              <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-md p-12 relative">
-                  <button onClick={() => setIsContactFormOpen(false)} className="absolute top-10 right-10 text-slate-300 hover:text-slate-600 transition-colors"><X size={28}/></button>
-                  {formSubmitted ? (
-                      <div className="text-center py-12 animate-fade-in">
-                          <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-6" />
-                          <h3 className="text-3xl font-black text-[#0B2240] tracking-tight">Request Sent</h3>
-                          <p className="text-slate-500 mt-2 font-bold uppercase text-[10px] tracking-widest">An agent will contact you shortly.</p>
-                      </div>
-                  ) : (
-                      <>
-                        <h2 className="text-2xl font-black text-[#0B2240] mb-8 uppercase tracking-tighter">Inquire Today</h2>
-                        <form onSubmit={handleContactSubmit} className="space-y-4">
-                            <input className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500" placeholder="Full Name" required value={contactForm.name} onChange={e => setContactForm({...contactForm, name: e.target.value})} />
-                            <input className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500" placeholder="Email" type="email" required value={contactForm.email} onChange={e => setContactForm({...contactForm, email: e.target.value})} />
-                            <input className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contact Phone" required value={contactForm.phone} onChange={e => setContactForm({...contactForm, phone: e.target.value})} />
-                            <textarea className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500 resize-none" rows={3} placeholder="Additional Details..." value={contactForm.message} onChange={e => setContactForm({...contactForm, message: e.target.value})} />
-                            <button type="submit" className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl hover:bg-blue-700 transition-all active:scale-95">Send Request</button>
-                        </form>
-                      </>
-                  )}
               </div>
           </div>
       )}

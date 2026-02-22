@@ -353,6 +353,8 @@ export interface CompanySettings {
   solicitorAgreement?: string;
   footerDescription?: string;
   socialLinks?: SocialLink[];
+  logoUrl?: string;
+  hideLogo?: boolean;
   
   // Real Estate Portal Specifics
   realEstateAbout?: string;

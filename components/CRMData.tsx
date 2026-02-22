@@ -75,31 +75,27 @@ interface CRMLayoutProps {
 export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout, notifications } = useData();
+  const { user, logout } = useData();
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   // --- TOUR STATE ---
   const [isTourActive, setIsTourActive] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
-  // ADMIN PERMISSIONS logic updated based on screenshot requirements
+  // ADMIN PERMISSIONS logic
   const isSuperAdmin = user?.role === UserRole.ADMIN;
   const isManagerOrAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.MANAGER;
 
   // Filter tour steps based on user visibility
   const currentTourSteps = useMemo(() => {
-    return currentTourStepsHelper(user?.role);
-  }, [user?.role]);
-
-  function currentTourStepsHelper(role?: UserRole) {
-    if (role === UserRole.ADMIN) return ADMIN_TOUR_STEPS;
-    if (role === UserRole.MANAGER) {
+    if (user?.role === UserRole.ADMIN) return ADMIN_TOUR_STEPS;
+    if (user?.role === UserRole.MANAGER) {
         return ADMIN_TOUR_STEPS.filter(step => 
             !['nav-site-config', 'nav-carrier-setup', 'nav-client-reviews', 'nav-email-signature', 'nav-api-integrations'].includes(step.id)
         );
     }
     return ADMIN_TOUR_STEPS.filter(step => !step.id.includes('nav-') || !['nav-user-terminal', 'nav-onboarding', 'nav-re-approval', 'nav-re-cms', 'nav-site-config', 'nav-carrier-setup', 'nav-client-reviews', 'nav-email-signature', 'nav-api-integrations'].includes(step.id));
-  }
+  }, [user?.role]);
 
   const currentStep = currentTourSteps[currentStepIndex];
 
@@ -112,7 +108,6 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
               const elementRect = element.getBoundingClientRect();
               const sidebarRect = sidebarRef.current.getBoundingClientRect();
               
-              // Only scroll if it's not clearly visible
               if (elementRect.top < sidebarRect.top || elementRect.bottom > sidebarRect.bottom) {
                   element.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }
@@ -164,26 +159,22 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
     const vertical = [];
     const products = user.productsSold || [];
     
-    // STRICT INSURANCE FEATURES
     if (user.category === AdvisorCategory.INSURANCE || products.includes(ProductType.LIFE)) {
         vertical.push({ path: '/crm/applications', label: 'Policies & Apps', icon: FileText });
         vertical.push({ path: '/crm/commissions', label: 'Commissions', icon: LineChart });
     }
 
-    // STRICT REAL ESTATE FEATURES
     if (user.category === AdvisorCategory.REAL_ESTATE || products.includes(ProductType.REAL_ESTATE)) {
         vertical.push({ path: '/crm/properties', label: 'Property Pipeline', icon: Building2 });
         vertical.push({ path: '/crm/escrow', label: 'Transactions & Escrow', icon: Key });
     }
 
-    // STRICT MORTGAGE FEATURES
     if (user.category === AdvisorCategory.MORTGAGE || products.includes(ProductType.MORTGAGE)) {
         vertical.push({ path: '/crm/loans', label: 'Loan Applications', icon: FileText });
         vertical.push({ path: '/crm/rates', label: 'Rate Tools', icon: Percent });
         vertical.push({ path: '/crm/refi-calc', label: 'Refinance Calc', icon: Calculator });
     }
 
-    // STRICT SECURITIES FEATURES
     if (user.category === AdvisorCategory.SECURITIES || products.includes(ProductType.SECURITIES)) {
         vertical.push({ path: '/crm/portfolio', label: 'Portfolio Mgmt', icon: TrendingUp });
         vertical.push({ path: '/crm/compliance', label: 'Compliance Vault', icon: FileCheck });
@@ -203,7 +194,6 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
         admin.push({ path: '/crm/admin/real-estate-cms', label: 'Real Estate CMS', icon: Monitor, tourId: 'nav-re-cms' });
     }
     
-    // Technical administration restricted to Super Admins as per screenshot request
     if (isSuperAdmin) {
         admin.push({ path: '/crm/admin/website', label: 'Site Config', icon: Settings, tourId: 'nav-site-config' });
         admin.push({ path: '/crm/admin/carriers', label: 'Carrier Setup', icon: ShieldCheck, tourId: 'nav-carrier-setup' });
@@ -216,7 +206,8 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
   }, [user, isSuperAdmin, isManagerOrAdmin]);
 
   const renderNavLink = (item: any) => {
-    const isActive = location.pathname === item.path || (item.path !== '/crm/dashboard' && location.pathname.startsWith(item.path));
+    // ENHANCEMENT: Use strict matching only to prevent double highlighting
+    const isActive = location.pathname === item.path;
     const isHighlighted = isTourActive && currentStep?.targetId === item.tourId;
 
     return (
@@ -227,11 +218,11 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
             className={`flex items-center gap-4 px-6 py-3.5 text-sm font-bold transition-all duration-300 group relative ${
                 isActive 
                 ? 'bg-[#3B82F6] text-white shadow-[0_4px_20px_rgba(59,130,246,0.3)] rounded-full' 
-                : 'text-slate-400 hover:bg-white/5 hover:text-white rounded-[1.5rem]'
+                : 'text-slate-400 hover:bg-white/5 hover:text-white rounded-full'
             } ${isHighlighted ? 'z-[70] ring-4 ring-blue-500 bg-blue-600 text-white shadow-[0_0_50px_rgba(59,130,246,0.8)] scale-105' : ''}`}
         >
             <item.icon className={`h-5 w-5 transition-colors ${isActive || isHighlighted ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'}`} strokeWidth={isActive ? 3 : 2.5} /> 
-            <span className={`tracking-tight ${isActive ? 'font-black' : ''}`}>{item.label}</span>
+            <span className={`tracking-tight ${isActive ? 'font-black uppercase' : ''}`}>{item.label}</span>
             {isHighlighted && <span className="absolute -right-2 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full animate-ping"></span>}
         </Link>
     );
@@ -316,31 +307,31 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
             </nav>
 
             <div className="px-4 mt-8 pt-6 border-t border-white/5">
-                <button onClick={handleLogout} className="flex items-center gap-4 px-6 py-4 text-sm font-black text-[#FF6B6B] hover:bg-red-500/10 rounded-[1.5rem] w-full transition-all uppercase tracking-widest">
-                    <LogOut className="h-5 w-5" strokeWidth={3} /> Sign Out
+                <button onClick={handleLogout} className="flex items-center gap-4 px-6 py-4 text-sm font-black text-[#FF6B6B] hover:bg-red-500/10 rounded-full w-full transition-all uppercase tracking-widest">
+                    <LogOut className="h-5 w-5 rotate-180" strokeWidth={3} /> Sign Out
                 </button>
             </div>
         </aside>
 
-        <div className="flex-1 h-full flex flex-col overflow-hidden bg-[#F8FAFC]">
+        <div className="flex-1 h-full flex flex-col overflow-hidden bg-[#F1F5F9]">
             <header className="h-24 bg-white border-b border-slate-200 px-10 flex items-center justify-between z-20 shadow-sm">
                 <div className="flex items-center gap-6">
-                    <h2 className="text-sm font-black text-[#1E293B] tracking-[0.1em] uppercase">Terminal Console</h2>
+                    <h2 className="text-sm font-black text-slate-400 tracking-[0.1em] uppercase">Terminal Console</h2>
                 </div>
                 <div className="flex items-center gap-8">
-                    <button onClick={startTour} className="flex items-center gap-4 px-8 py-3.5 bg-[#F1F5F9] hover:bg-white rounded-full text-[11px] font-black text-slate-600 transition-all uppercase tracking-widest shadow-sm active:scale-95 group border border-slate-200">
-                        <div className="h-6 w-6 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-lg">
+                    <button onClick={startTour} className="flex items-center gap-4 px-8 py-3.5 bg-[#F1F5F9] hover:bg-[#E2E8F0] rounded-full text-[11px] font-black text-slate-600 transition-all uppercase tracking-widest shadow-sm active:scale-95 group border border-slate-200">
+                        <div className="h-6 w-6 rounded-full bg-[#3B82F6] flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
                             <HelpCircle size={14} strokeWidth={3} />
                         </div>
                         START TOUR
                     </button>
                     
-                    <div className="flex items-center gap-4 pl-8 border-l border-slate-200 h-10">
+                    <div className="flex items-center gap-6 pl-8 border-l border-slate-200 h-10">
                         <div className="text-right hidden sm:block">
-                            <p className="text-sm font-black text-[#1E293B] leading-none uppercase">{user?.name}</p>
-                            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mt-1.5">{user?.role}</p>
+                            <p className="text-sm font-black text-slate-900 leading-none uppercase tracking-tight">NHFG ADMIN</p>
+                            <p className="text-[10px] font-black text-[#3B82F6] uppercase tracking-widest mt-1.5">ADMINISTRATOR</p>
                         </div>
-                        <div className="h-14 w-14 rounded-2xl overflow-hidden bg-slate-100 border-2 border-white shadow-xl">
+                        <div className="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 border-2 border-white shadow-xl rotate-3 hover:rotate-0 transition-transform duration-500">
                              {user?.avatar ? <img src={user.avatar} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center font-black text-slate-400">{user?.name[0]}</div>}
                         </div>
                     </div>

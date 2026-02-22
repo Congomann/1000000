@@ -379,6 +379,67 @@ export const WebsiteSettings: React.FC = () => {
             </h2>
             <form onSubmit={handleSettingsSave} className="space-y-6">
                 
+                {/* Logo Settings */}
+                <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6">
+                    <h3 className="text-sm font-bold text-[#0B2240] mb-4 uppercase tracking-wide flex items-center gap-2">
+                        <ImageIcon className="h-4 w-4" /> Company Logo
+                    </h3>
+                    <div className="flex flex-col md:flex-row gap-6 items-center">
+                        <div className="w-24 h-24 bg-slate-200 rounded-xl overflow-hidden relative flex items-center justify-center">
+                            {settingsForm.logoUrl ? (
+                                <img 
+                                    src={settingsForm.logoUrl} 
+                                    className="w-full h-full object-contain p-2" 
+                                    alt="Logo" 
+                                />
+                            ) : (
+                                <span className="text-xs text-slate-400 font-bold">Default</span>
+                            )}
+                        </div>
+                        <div className="flex-1 w-full space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Logo URL</label>
+                                <div className="flex gap-3">
+                                    <input 
+                                        type="text" 
+                                        className="flex-1 bg-white text-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0A62A7] focus:border-transparent"
+                                        value={settingsForm.logoUrl || ''}
+                                        onChange={e => setSettingsForm({...settingsForm, logoUrl: e.target.value})}
+                                        placeholder="https://..."
+                                    />
+                                    <label className="cursor-pointer bg-white px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 flex items-center justify-center">
+                                        <Upload className="h-4 w-4 text-slate-600" />
+                                        <input 
+                                            type="file" 
+                                            className="hidden" 
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => {
+                                                        setSettingsForm(prev => ({ ...prev, logoUrl: reader.result as string }));
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            }}
+                                        />
+                                    </label>
+                                </div>
+                            </div>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                    checked={settingsForm.hideLogo || false}
+                                    onChange={e => setSettingsForm({...settingsForm, hideLogo: e.target.checked})}
+                                />
+                                <span className="text-sm font-bold text-slate-700">Hide Logo in Navbar</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Home & Services Page Product Visibility */}
                 <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6">
                     <h3 className="text-sm font-bold text-[#0B2240] mb-4 uppercase tracking-wide flex items-center gap-2">

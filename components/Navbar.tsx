@@ -59,7 +59,7 @@ export const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useData();
+  const { user, logout, companySettings } = useData();
 
   const isCRM = location.pathname.startsWith('/crm');
   const isRealEstate = location.pathname === '/real-estate';
@@ -102,13 +102,19 @@ export const Navbar: React.FC = () => {
           
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-3 group transition-transform active:scale-95">
-              <div className="relative w-9 h-9 flex-shrink-0">
-                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-md">
-                  <rect x="5" y="15" width="90" height="60" rx="12" fill="#F59E0B" />
-                  <rect x="10" y="35" width="80" height="55" rx="12" fill="#FCD34D" />
-                  <rect x="42" y="52" width="16" height="22" rx="4" fill="#B45309" fillOpacity="0.25" />
-                </svg>
-              </div>
+              {!companySettings?.hideLogo && (
+                <div className="relative w-9 h-9 flex-shrink-0">
+                  {companySettings?.logoUrl ? (
+                    <img src={companySettings.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                  ) : (
+                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full drop-shadow-md">
+                      <rect x="5" y="15" width="90" height="60" rx="12" fill="#F59E0B" />
+                      <rect x="10" y="35" width="80" height="55" rx="12" fill="#FCD34D" />
+                      <rect x="42" y="52" width="16" height="22" rx="4" fill="#B45309" fillOpacity="0.25" />
+                    </svg>
+                  )}
+                </div>
+              )}
               <div className="flex flex-col leading-none">
                 <span className="font-black text-lg text-white tracking-tight">New Holland</span>
                 <span className="text-[0.55rem] font-bold text-slate-400 tracking-[0.2em] uppercase mt-0.5">Financial Group</span>

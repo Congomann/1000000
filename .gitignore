@@ -22,3 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+import React from 'react';
+
+export default function App() {
+  return (
+    <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
+      <h1>New Holland System Recovery</h1>
+      <p>The app has been reset to bypass the internal error.</p>
+      <button onClick={() => window.location.reload()}>Reload App</button>
+    </div>
+  );
+}

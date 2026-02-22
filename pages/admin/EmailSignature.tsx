@@ -18,7 +18,6 @@ const ImageCropper: React.FC<CropperProps> = ({ imageUrl, onSave, onCancel }) =>
     const [offset, setOffset] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-    // FIX: Added missing 'const' declaration for imageRef
     const imageRef = useRef<HTMLImageElement | null>(null);
 
     useEffect(() => {
@@ -26,7 +25,6 @@ const ImageCropper: React.FC<CropperProps> = ({ imageUrl, onSave, onCancel }) =>
         img.crossOrigin = "anonymous";
         img.src = imageUrl;
         img.onload = () => {
-            // FIX: Using the declared imageRef
             imageRef.current = img;
             draw();
         };
@@ -34,7 +32,6 @@ const ImageCropper: React.FC<CropperProps> = ({ imageUrl, onSave, onCancel }) =>
 
     const draw = () => {
         const canvas = canvasRef.current;
-        // FIX: Using the declared imageRef
         const img = imageRef.current;
         if (!canvas || !img) return;
 
@@ -89,7 +86,6 @@ const ImageCropper: React.FC<CropperProps> = ({ imageUrl, onSave, onCancel }) =>
         canvas.width = 400;
         canvas.height = 400;
         const ctx = canvas.getContext('2d');
-        // FIX: Using the declared imageRef
         const img = imageRef.current;
         if (!ctx || !img) return;
 
@@ -298,7 +294,7 @@ export const EmailSignature: React.FC = () => {
     if (exportRef.current) {
       // Get the outerHTML to include the styling and container
       const outerHtml = exportRef.current.outerHTML;
-      // We wrap it in a basic font container for common email clients
+      // Wrap it in a basic font container for common email clients
       const fullHtml = `
         <div style="font-family: 'Inter', Arial, sans-serif; -webkit-font-smoothing: antialiased; max-width: 700px; margin: 0 auto;">
           ${outerHtml}
@@ -343,7 +339,7 @@ export const EmailSignature: React.FC = () => {
           blue: '#3B82F6',
           white: '#ffffff',
           btnGray: '#B7BDC5',
-          logoBar: '#0B2240' // Returned to navy as requested
+          logoBar: '#0B2240'
       }
   };
 
@@ -555,7 +551,6 @@ export const EmailSignature: React.FC = () => {
                                     {editForm.title}
                                 </p>
                                 <div style={{ height: '2px', width: '35px', backgroundColor: '#0B2240', margin: '15px 0' }}></div>
-                                {/* FIX: Corrected font-weight to fontWeight */}
                                 <p style={{ fontSize: '11px', fontWeight: '500', color: '#64748B', maxWidth: '200px', lineHeight: '1.6', margin: 0 }}>
                                     {editForm.tagline}
                                 </p>
@@ -582,7 +577,7 @@ export const EmailSignature: React.FC = () => {
                             </div>
 
                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', paddingTop: '10px' }}>
-                                <div style={{ display: 'flex', items: 'center', gap: '10px', marginBottom: '12px' }}>
+                                <a href={`tel:${editForm.phone}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
                                     <div style={{ textAlign: 'right' }}>
                                         <p style={{ fontSize: '10px', fontWeight: '800', color: '#0B2240', margin: 0 }}>{editForm.phone}</p>
                                         <p style={{ fontSize: '10px', fontWeight: '800', color: '#0B2240', margin: 0 }}>{editForm.phone2}</p>
@@ -590,8 +585,8 @@ export const EmailSignature: React.FC = () => {
                                     <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#0B2240', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <img src={ICON_PHONE} style={{ width: '10px', height: '10px', filter: 'brightness(0) invert(1)' }} />
                                     </div>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                                </a>
+                                <a href={`mailto:${editForm.email}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
                                     <div style={{ textAlign: 'right' }}>
                                         <p style={{ fontSize: '10px', fontWeight: '800', color: '#0B2240', margin: 0 }}>{editForm.email}</p>
                                         <p style={{ fontSize: '10px', fontWeight: '800', color: '#0B2240', margin: 0 }}>{editForm.website}</p>
@@ -599,8 +594,8 @@ export const EmailSignature: React.FC = () => {
                                     <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#0B2240', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <img src={ICON_WEB} style={{ width: '10px', height: '10px', filter: 'brightness(0) invert(1)' }} />
                                     </div>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                </a>
+                                <div style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     <div style={{ textAlign: 'right' }}>
                                         <p style={{ fontSize: '10px', fontWeight: '800', color: '#0B2240', margin: 0 }}>{editForm.addressLine1}</p>
                                         <p style={{ fontSize: '10px', fontWeight: '800', color: '#0B2240', margin: 0 }}>{editForm.city}, {editForm.state}</p>

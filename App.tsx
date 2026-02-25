@@ -64,6 +64,7 @@ import { IntegrationsHub } from './pages/crm/IntegrationsHub';
 import { AutomationStudio } from './pages/crm/AutomationStudio';
 import { RealEstateAdmin } from './pages/admin/RealEstateAdmin';
 import { RealEstateCms } from './pages/admin/RealEstateCms';
+import { ProductCms } from './pages/admin/ProductCms';
 
 /**
  * DEVELOPER NOTE: App Routing Architecture
@@ -178,6 +179,7 @@ const App: React.FC = () => {
               {/* SUPER ADMIN ONLY - Based on screenshot request */}
               <Route element={<SuperAdminRoute />}>
                   <Route path="admin/website" element={<WebsiteSettings />} />
+                  <Route path="admin/products" element={<ProductCms />} />
                   <Route path="admin/carriers" element={<CarrierAssignment />} />
                   <Route path="admin/testimonials" element={<AdminTestimonials />} />
                   <Route path="admin/signature" element={<EmailSignature />} /> 

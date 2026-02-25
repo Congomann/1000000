@@ -196,6 +196,7 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
     
     if (isSuperAdmin) {
         admin.push({ path: '/crm/admin/website', label: 'Site Config', icon: Settings, tourId: 'nav-site-config' });
+        admin.push({ path: '/crm/admin/products', label: 'Product CMS', icon: Database, tourId: 'nav-product-cms' });
         admin.push({ path: '/crm/admin/carriers', label: 'Carrier Setup', icon: ShieldCheck, tourId: 'nav-carrier-setup' });
         admin.push({ path: '/crm/admin/testimonials', label: 'Client Reviews', icon: Award, tourId: 'nav-client-reviews' });
         admin.push({ path: '/crm/admin/signature', label: 'Email Signature', icon: PenTool, tourId: 'nav-email-signature' });

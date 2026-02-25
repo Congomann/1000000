@@ -79,54 +79,23 @@ export const Services: React.FC = () => {
   const activeProperties = properties.filter(p => p.status === 'Active');
   const selectedProperty = properties.find(p => p.id === viewListing);
 
-  const products = [
-    {
-      title: ProductType.LIFE,
-      desc: "Ensure your family's financial security with our comprehensive life insurance plans.",
-      features: ['Term Life', 'Whole Life', 'Universal Life', 'Final Expense'],
-      image: companySettings.productImages?.[ProductType.LIFE] || "https://picsum.photos/600/400?random=1"
-    },
-    {
-      title: "Business & Professional Liability",
-      desc: "Protect your business assets, operations, and professional reputation with tailored commercial and E&O packages.",
-      features: ['General Liability', 'Worker\'s Comp', 'Professional Liability (E&O)', 'Cyber Liability'],
-      image: companySettings.productImages?.[ProductType.BUSINESS] || "https://picsum.photos/600/400?random=2"
-    },
-    {
-      title: ProductType.REAL_ESTATE,
-      desc: "Specialized coverage for real estate investors, landlords, and property managers.",
-      features: ['Loss of Rent', 'Vacant Property', 'Multi-family Dwelling', 'Renovation Risk'],
-      image: companySettings.productImages?.[ProductType.REAL_ESTATE] || "https://picsum.photos/600/400?random=3"
-    },
-    {
-      title: ProductType.MORTGAGE,
-      desc: "Transform your mortgage into a strategic financial tool with personalized lending and refinance solutions.",
-      features: ['Lower Monthly Payments', 'Cash-Out Refinance', 'Debt Consolidation', 'Strategic Mortgage Planning'],
-      image: companySettings.productImages?.[ProductType.MORTGAGE] || "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-1.2.1&auto=format&fit=crop&w=1600&q=80"
-    },
-    {
-      title: ProductType.AUTO,
-      desc: "Comprehensive auto coverage for personal vehicles and commercial fleets to keep you moving.",
-      features: ['Personal Auto', 'Commercial Fleet', 'Liability Coverage', 'Collision & Comprehensive'],
-      image: companySettings.productImages?.[ProductType.AUTO] || "https://picsum.photos/600/400?random=6"
-    },
-    {
-      title: "Securities & Investment Advisory",
-      desc: "Navigating financial securities, series licensing, and providing fiduciary retirement planning strategies.",
-      features: ['Series 6, 7, 63 Support', 'Fiduciary Planning', 'Portfolio Management', 'Wealth Management Compliance'],
-      image: companySettings.productImages?.[ProductType.SECURITIES] || "https://images.unsplash.com/photo-1611974765270-ca12586343bb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1600&q=80"
-    }
-  ];
+  const products = (companySettings.customProducts || []).map(p => ({
+    title: p.title,
+    desc: p.description,
+    features: p.features,
+    image: p.image,
+    id: p.id,
+    link: p.link,
+    isHidden: p.isHidden,
+    order: p.order
+  })).sort((a, b) => a.order - b.order);
 
-  const hiddenProducts = companySettings.hiddenProducts || [];
-  
   const displayedProducts = (categoryFilter
     ? products.filter(p => {
-        const sectionId = p.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        // Simple fuzzy match for category filters since we changed titles
-        return sectionId.includes(categoryFilter) || categoryFilter.includes(sectionId.split('-')[0]);
+        const sectionId = p.link.split('category=')[1] || p.id;
+        return sectionId.includes(categoryFilter) || categoryFilter.includes(sectionId);
       })
-    : products).filter(p => !hiddenProducts.includes(p.title));
+    : products).filter(p => !p.isHidden);
 
   const cleanPhone = companySettings.phone.replace(/\D/g, '');
 
@@ -233,7 +202,7 @@ export const Services: React.FC = () => {
 
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
           {displayedProducts.map((product) => (
-            <div key={product.title} className="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden service-card animate-on-scroll h-full">
+            <div key={product.id} className="flex flex-col bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden service-card animate-on-scroll h-full">
               <div className="flex-shrink-0 h-48 w-full overflow-hidden relative">
                 <img className="h-full w-full object-cover transform hover:scale-105 transition-transform duration-700" src={product.image} alt={product.title} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>

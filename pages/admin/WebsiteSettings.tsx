@@ -46,19 +46,6 @@ export const WebsiteSettings: React.FC = () => {
       setTimeout(() => setPartnersSaved(false), 3000);
   };
 
-  const toggleHiddenProduct = (productType: string) => {
-      setSettingsForm(prev => {
-          const currentHidden = prev.hiddenProducts || [];
-          const isHidden = currentHidden.includes(productType);
-          return {
-              ...prev,
-              hiddenProducts: isHidden 
-                  ? currentHidden.filter(p => p !== productType) 
-                  : [...currentHidden, productType]
-          };
-      });
-  };
-
   const handleResourceSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       if (isUploading) return;
@@ -317,17 +304,6 @@ export const WebsiteSettings: React.FC = () => {
     setSettingsForm(prev => ({ ...prev, socialLinks: updated }));
   };
 
-  const mainCategories = [
-      ProductType.LIFE,
-      ProductType.REAL_ESTATE,
-      ProductType.MORTGAGE,
-      ProductType.BUSINESS,
-      ProductType.AUTO,
-      ProductType.EO,
-      ProductType.SECURITIES,
-      ProductType.INVESTMENT
-  ];
-
   return (
     <div className="space-y-8 pb-10">
         <div>
@@ -437,31 +413,6 @@ export const WebsiteSettings: React.FC = () => {
                                 <span className="text-sm font-bold text-slate-700">Hide Logo in Navbar</span>
                             </label>
                         </div>
-                    </div>
-                </div>
-
-                {/* Home & Services Page Product Visibility */}
-                <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6">
-                    <h3 className="text-sm font-bold text-[#0B2240] mb-4 uppercase tracking-wide flex items-center gap-2">
-                        <Layout className="h-4 w-4" /> Public Product Visibility
-                    </h3>
-                    <p className="text-xs text-slate-500 mb-4">Toggle visibility of product cards on the Home page and Services page.</p>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {mainCategories.map(cat => {
-                            const isHidden = (settingsForm.hiddenProducts || []).includes(cat);
-                            return (
-                                <button
-                                    key={cat}
-                                    type="button"
-                                    onClick={() => toggleHiddenProduct(cat)}
-                                    className={`flex items-center justify-between p-4 rounded-xl border transition-all ${isHidden ? 'bg-slate-100 border-slate-200 text-slate-400' : 'bg-white border-blue-200 text-slate-800 shadow-sm'}`}
-                                >
-                                    <span className="font-bold text-xs truncate mr-2">{cat}</span>
-                                    {isHidden ? <EyeOff className="h-4 w-4 flex-shrink-0" /> : <Eye className="h-4 w-4 text-blue-600 flex-shrink-0" />}
-                                </button>
-                            );
-                        })}
                     </div>
                 </div>
 

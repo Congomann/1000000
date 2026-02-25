@@ -332,6 +332,19 @@ export interface RealEstateResourceLink {
   type: 'Buying' | 'Selling' | 'Investing' | 'Legal';
 }
 
+export interface ProductListing {
+  id: string;
+  title: string;
+  description: string;
+  features: string[];
+  image: string;
+  icon: string;
+  color: string;
+  link: string;
+  isHidden: boolean;
+  order: number;
+}
+
 export interface CompanySettings {
   phone: string;
   email: string;
@@ -349,6 +362,7 @@ export interface CompanySettings {
   productImages?: Record<string, string>;
   partners?: Record<string, string>;
   hiddenProducts?: string[];
+  customProducts?: ProductListing[];
   termsOfUse?: string;
   solicitorAgreement?: string;
   footerDescription?: string;

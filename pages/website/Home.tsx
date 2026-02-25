@@ -112,73 +112,28 @@ export const Home: React.FC = () => {
               </div>
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-                  {!hiddenProducts.includes(ProductType.LIFE) && (
-                      <Link to="/products?category=life-insurance" className="group relative flex flex-col justify-between p-8 rounded-3xl bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-blue-900/5 transition-all duration-300 hover:-translate-y-1">
-                          <div>
-                              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl flex items-center justify-center mb-6 shadow-md shadow-blue-500/20 group-hover:scale-110 transition-transform duration-500">
-                                  <ShieldCheck className="h-7 w-7" />
-                              </div>
-                              <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-blue-600 transition-colors">Life & Annuities</h3>
-                              <p className="text-slate-500 leading-relaxed text-sm">Wealth building and protection through Term, IUL, and Annuities.</p>
-                          </div>
-                          <div className="mt-8">
-                              <span className="w-10 h-10 rounded-full flex items-center justify-center border border-slate-200 text-slate-400 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all">
-                                  <ArrowRight className="h-5 w-5" />
-                              </span>
-                          </div>
-                      </Link>
-                  )}
-
-                  {!hiddenProducts.includes(ProductType.REAL_ESTATE) && (
-                      <Link to="/products?category=real-estate" className="group relative flex flex-col justify-between p-8 rounded-3xl bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-amber-900/5 transition-all duration-300 hover:-translate-y-1">
-                          <div>
-                              <div className="w-14 h-14 bg-gradient-to-br from-amber-400 to-amber-600 text-white rounded-2xl flex items-center justify-center mb-6 shadow-md shadow-amber-500/20 group-hover:scale-110 transition-transform duration-500">
-                                  <HomeIcon className="h-7 w-7" />
-                              </div>
-                              <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-amber-600 transition-colors">Real Estate</h3>
-                              <p className="text-slate-500 leading-relaxed text-sm">Commercial portfolios, residential listings, and property management.</p>
-                          </div>
-                          <div className="mt-8">
-                              <span className="w-10 h-10 rounded-full flex items-center justify-center border border-slate-200 text-slate-400 group-hover:bg-amber-50 group-hover:text-white group-hover:border-amber-500 transition-all">
-                                  <ArrowRight className="h-5 w-5" />
-                              </span>
-                          </div>
-                      </Link>
-                  )}
-
-                  {!hiddenProducts.includes(ProductType.MORTGAGE) && (
-                      <Link to="/products?category=mortgage-lending-refinance" className="group relative flex flex-col justify-between p-8 rounded-3xl bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-cyan-900/5 transition-all duration-300 hover:-translate-y-1">
-                          <div>
-                              <div className="w-14 h-14 bg-gradient-to-br from-cyan-400 to-cyan-600 text-white rounded-2xl flex items-center justify-center mb-6 shadow-md shadow-cyan-500/20 group-hover:scale-110 transition-transform duration-500">
-                                  <Landmark className="h-7 w-7" />
-                              </div>
-                              <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-cyan-600 transition-colors">Mortgage & Lending</h3>
-                              <p className="text-slate-500 leading-relaxed text-sm">Strategic refinancing, HELOCs, and purchase loans.</p>
-                          </div>
-                          <div className="mt-8">
-                              <span className="w-10 h-10 rounded-full flex items-center justify-center border border-slate-200 text-slate-400 group-hover:bg-cyan-50 group-hover:text-white group-hover:border-cyan-500 transition-all">
-                                  <ArrowRight className="h-5 w-5" />
-                              </span>
-                          </div>
-                      </Link>
-                  )}
-
-                  {!hiddenProducts.includes(ProductType.BUSINESS) && (
-                      <Link to="/products?category=business-insurance" className="group relative flex flex-col justify-between p-8 rounded-3xl bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-purple-900/5 transition-all duration-300 hover:-translate-y-1">
-                          <div>
-                              <div className="w-14 h-14 bg-gradient-to-br from-purple-400 to-purple-600 text-white rounded-2xl flex items-center justify-center mb-6 shadow-md shadow-purple-500/20 group-hover:scale-110 transition-transform duration-500">
-                                  <Briefcase className="h-7 w-7" />
-                              </div>
-                              <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-purple-600 transition-colors">Business & Commercial</h3>
-                              <p className="text-slate-500 leading-relaxed text-sm">Risk management, liability, and worker's comp solutions.</p>
-                          </div>
-                          <div className="mt-8">
-                              <span className="w-10 h-10 rounded-full flex items-center justify-center border border-slate-200 text-slate-400 group-hover:bg-purple-50 group-hover:text-white group-hover:border-purple-500 transition-all">
-                                  <ArrowRight className="h-5 w-5" />
-                              </span>
-                          </div>
-                      </Link>
-                  )}
+                  {(companySettings.customProducts || [])
+                    .filter(p => !p.isHidden)
+                    .sort((a, b) => a.order - b.order)
+                    .map(product => {
+                      const IconComponent = require('lucide-react')[product.icon] || require('lucide-react').ShieldCheck;
+                      return (
+                        <Link key={product.id} to={product.link} className={`group relative flex flex-col justify-between p-8 rounded-3xl bg-white border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-${product.color}-900/5 transition-all duration-300 hover:-translate-y-1`}>
+                            <div>
+                                <div className={`w-14 h-14 bg-gradient-to-br from-${product.color}-400 to-${product.color}-600 text-white rounded-2xl flex items-center justify-center mb-6 shadow-md shadow-${product.color}-500/20 group-hover:scale-110 transition-transform duration-500`}>
+                                    <IconComponent className="h-7 w-7" />
+                                </div>
+                                <h3 className={`text-xl font-bold text-slate-900 mb-3 group-hover:text-${product.color}-600 transition-colors`}>{product.title}</h3>
+                                <p className="text-slate-500 leading-relaxed text-sm">{product.description}</p>
+                            </div>
+                            <div className="mt-8">
+                                <span className={`w-10 h-10 rounded-full flex items-center justify-center border border-slate-200 text-slate-400 group-hover:bg-${product.color}-50 group-hover:text-white group-hover:border-${product.color}-500 transition-all`}>
+                                    <ArrowRight className="h-5 w-5" />
+                                </span>
+                            </div>
+                        </Link>
+                      );
+                  })}
               </div>
           </div>
       </div>

@@ -172,6 +172,7 @@ export const EmailSignature: React.FC = () => {
       firstName: '',
       lastName: '',
       title: '',
+      titleFontSize: 11,
       tagline: 'Leading the way in personalized financial solutions.',
       email: '',
       phone: '',
@@ -213,14 +214,15 @@ export const EmailSignature: React.FC = () => {
               firstName: nameParts[0] || '',
               lastName: nameParts.slice(1).join(' ') || '',
               title: adv.title || (adv.role === UserRole.ADVISOR ? `${adv.category} Advisor` : adv.role),
+              titleFontSize: 11,
               tagline: adv.bio?.substring(0, 80) || 'Leading the way in personalized financial solutions.',
               email: adv.email,
               phone: adv.phone || companySettings.phone,
               phone2: '(800) 555-0199',
-              addressLine1: companySettings.address,
-              addressLine2: `${companySettings.city}, ${companySettings.state} ${companySettings.zip}`,
-              city: companySettings.city,
-              state: companySettings.state,
+              addressLine1: adv.address || companySettings.address,
+              addressLine2: `${adv.city || companySettings.city}, ${adv.state || companySettings.state} ${companySettings.zip}`,
+              city: adv.city || companySettings.city,
+              state: adv.state || companySettings.state,
               zip: companySettings.zip,
               avatar: adv.avatar || '',
               website: 'www.newhollandfinancial.com',
@@ -246,7 +248,7 @@ export const EmailSignature: React.FC = () => {
   };
 
   const handleSocialChange = (index: number, field: keyof SocialLinkType, value: string) => {
-    const updated = [...editForm.socialLinks];
+    const updated = [...(editForm.socialLinks || [])];
     updated[index] = { ...updated[index], [field]: value };
     setEditForm(prev => ({ ...prev, socialLinks: updated }));
   };
@@ -254,12 +256,12 @@ export const EmailSignature: React.FC = () => {
   const handleAddSocial = () => {
     setEditForm(prev => ({
       ...prev,
-      socialLinks: [...prev.socialLinks, { platform: 'LinkedIn', url: '' }]
+      socialLinks: [...(prev.socialLinks || []), { platform: 'LinkedIn', url: '' }]
     }));
   };
 
   const handleRemoveSocial = (index: number) => {
-    const updated = [...editForm.socialLinks];
+    const updated = [...(editForm.socialLinks || [])];
     updated.splice(index, 1);
     setEditForm(prev => ({ ...prev, socialLinks: updated }));
   };
@@ -284,6 +286,9 @@ export const EmailSignature: React.FC = () => {
               email: editForm.email,
               phone: editForm.phone,
               avatar: editForm.avatar,
+              address: editForm.addressLine1,
+              city: editForm.city,
+              state: editForm.state,
               socialLinks: editForm.socialLinks
           });
           alert("User profile updated!");
@@ -292,14 +297,146 @@ export const EmailSignature: React.FC = () => {
 
   const handleCopyHtmlCode = () => {
     if (exportRef.current) {
-      // Get the outerHTML to include the styling and container
-      const outerHtml = exportRef.current.outerHTML;
-      // Wrap it in a basic font container for common email clients
       const fullHtml = `
-        <div style="font-family: 'Inter', Arial, sans-serif; -webkit-font-smoothing: antialiased; max-width: 700px; margin: 0 auto;">
-          ${outerHtml}
-        </div>
-      `;
+<table cellpadding="0" cellspacing="0" border="0" style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; width: 100%; background-color: #fafafa; border-collapse: collapse;">
+  <tr>
+    <td style="padding: 25px 35px 0 35px;">
+      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <!-- LEFT COLUMN: NAME & TITLE -->
+          <td width="35%" valign="top" style="padding-top: 10px;">
+            <h1 style="font-size: 22px; font-weight: 900; color: #0B2240; margin: 0; letter-spacing: -0.5px;">
+              ${editForm.firstName} ${editForm.lastName}
+            </h1>
+            <p style="font-size: ${editForm.titleFontSize}px; font-weight: 700; color: #3B82F6; margin: 2px 0 0 0; text-transform: uppercase; letter-spacing: 1px;">
+              ${editForm.title}
+            </p>
+            <div style="height: 2px; width: 35px; background-color: #0B2240; margin: 15px 0;"></div>
+            <p style="font-size: 10px; font-weight: 500; color: #64748B; line-height: 1.6; margin: 0;">
+              ${editForm.tagline}
+            </p>
+          </td>
+
+          <!-- MIDDLE COLUMN: PROFILE IMAGE -->
+          <td width="30%" align="center" valign="top">
+            <table cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="padding: 6px; border: 2px solid #3B82F6; border-radius: 50%;">
+                  <img src="${editForm.avatar || `https://ui-avatars.com/api/?name=${editForm.firstName}+${editForm.lastName}&background=F1F5F9&color=64748B&size=200`}" width="100" height="100" style="display: block; border-radius: 50%; border: 4px solid #ffffff; background-color: #f1f5f9;" alt="Profile Picture" />
+                </td>
+              </tr>
+            </table>
+          </td>
+
+          <!-- RIGHT COLUMN: CONTACT INFO -->
+          <td width="35%" align="right" valign="top" style="padding-top: 10px;">
+            <table cellpadding="0" cellspacing="0" border="0" width="100%">
+              <tr>
+                <td align="right" style="padding-bottom: 12px;">
+                  <table cellpadding="0" cellspacing="0" border="0" align="right">
+                    <tr>
+                      <td align="right" style="padding-right: 10px;">
+                        <a href="tel:${(editForm.phone || '').replace(/[^0-9]/g, '')}" style="text-decoration: none; color: #0B2240; display: block;">
+                          <p style="font-size: 9px; font-weight: 800; color: #0B2240; margin: 0;"><span style="font-weight: 500; color: #64748B; margin-right: 4px;">Direct:</span>${editForm.phone}</p>
+                        </a>
+                        <a href="tel:${(editForm.phone2 || '').replace(/[^0-9]/g, '')}" style="text-decoration: none; color: #0B2240; display: block;">
+                          <p style="font-size: 9px; font-weight: 800; color: #0B2240; margin: 0;"><span style="font-weight: 500; color: #64748B; margin-right: 4px;">Office:</span>${editForm.phone2}</p>
+                        </a>
+                      </td>
+                      <td width="22" height="22" bgcolor="#0B2240" align="center" style="border-radius: 50%;">
+                        <img src="https://img.icons8.com/ios-filled/50/ffffff/phone.png" width="10" height="10" style="display: block;" alt="Phone" />
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td align="right" style="padding-bottom: 12px;">
+                  <table cellpadding="0" cellspacing="0" border="0" align="right">
+                    <tr>
+                      <td align="right" style="padding-right: 10px;">
+                        <a href="mailto:${editForm.email || ''}" style="text-decoration: none; color: #0B2240; display: block;">
+                          <p style="font-size: 9px; font-weight: 800; color: #0B2240; margin: 0;">${editForm.email}</p>
+                        </a>
+                        <a href="${(editForm.website || '').startsWith('http') ? editForm.website : 'https://' + editForm.website}" style="text-decoration: none; color: #0B2240; display: block;">
+                          <p style="font-size: 9px; font-weight: 800; color: #0B2240; margin: 0;">${editForm.website}</p>
+                        </a>
+                      </td>
+                      <td width="22" height="22" bgcolor="#0B2240" align="center" style="border-radius: 50%;">
+                        <img src="https://img.icons8.com/ios-filled/50/ffffff/domain.png" width="10" height="10" style="display: block;" alt="Web" />
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td align="right">
+                  <a href="${(editForm.website || '').startsWith('http') ? editForm.website : 'https://' + editForm.website}" style="text-decoration: none; color: #0B2240;">
+                    <table cellpadding="0" cellspacing="0" border="0" align="right">
+                      <tr>
+                        <td align="right" style="padding-right: 10px;">
+                          <p style="font-size: 9px; font-weight: 800; color: #0B2240; margin: 0;">${editForm.addressLine1}</p>
+                          <p style="font-size: 9px; font-weight: 800; color: #0B2240; margin: 0;">${editForm.city}, ${editForm.state}</p>
+                        </td>
+                        <td width="22" height="22" bgcolor="#0B2240" align="center" style="border-radius: 50%;">
+                          <img src="https://img.icons8.com/ios-filled/50/ffffff/marker.png" width="10" height="10" style="display: block;" alt="Map" />
+                        </td>
+                      </tr>
+                    </table>
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- MIDDLE SECTION: LOGO BAR -->
+  <tr>
+    <td bgcolor="#0B2240" style="padding: 15px 35px;">
+      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <td width="50%" align="left" valign="middle">
+            <table cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td style="padding-right: 10px;">
+                  <img src="${companySettings.logoUrl || logoFullColorBase64}" width="24" height="24" style="display: block;" alt="Logo" />
+                </td>
+                <td>
+                  <p style="font-size: 11px; font-weight: 900; color: #ffffff; margin: 0; text-transform: uppercase; letter-spacing: 1px;">NEW HOLLAND</p>
+                  <p style="font-size: 6px; font-weight: 700; color: rgba(255,255,255,0.7); margin: 0; text-transform: uppercase; letter-spacing: 2px;">FINANCIAL GROUP</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+          <td width="50%" align="right" valign="middle">
+            <table cellpadding="0" cellspacing="0" border="0" align="right">
+              <tr>
+                ${(editForm.socialLinks || []).map(link => `
+                <td style="padding-left: 5px;">
+                  <a href="${link.url || '#'}"><img src="${getSocialIconUrl(link.platform)}" width="22" height="22" style="display: block; background-color: #ffffff; border-radius: 50%; padding: 4px; box-sizing: border-box;" alt="${link.platform}" /></a>
+                </td>
+                `).join('')}
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- BOTTOM SECTION: LEGAL DISCLOSURE -->
+  <tr>
+    <td style="padding: 12px 35px; border-top: 1px solid #fecaca;">
+      <p style="font-size: 8px; color: #64748B; line-height: 1.4; margin: 0; font-weight: 500;">
+        ${editForm.confidentialityNotice}
+      </p>
+    </td>
+  </tr>
+</table>
+`;
       navigator.clipboard.writeText(fullHtml);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -347,13 +484,16 @@ export const EmailSignature: React.FC = () => {
   const logoFullColorBase64 = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3QgeD0iNSIgeT0iMTUiIHdpZHRoPSI5MCIgaGVpZ2h0PSI2MCIgcng9IjEyIiBmaWxsPSIjRjU5RTBCIiAvPjxyZWN0IHg9IjEwIiB5PSIzNSIgd2lkdGg9IjgwIiBoZWlnaHQ9IjU1IiByeD0iMTIiIGZpbGw9IiNGQ0QzNEQiIC8+PHJlY3QgeD0iNDIiIHk9IjUyIiB3aWR0aD0iMTYiIGhlaWdodD0iMjIiIHJ4PSI0IiBmaWxsPSIjQjQ1MzA5IiBmaWxsLW9wYWNpdHk9IjAuMjUiIC8+PC9zdmc+";
 
   const getSocialIconUrl = (platform: string) => {
+    const color = "0B2240";
     switch (platform) {
-        case 'LinkedIn': return "https://cdn-icons-png.flaticon.com/32/3128/3128311.png";
-        case 'Facebook': return "https://cdn-icons-png.flaticon.com/32/3128/3128304.png";
-        case 'Twitter': case 'X': return "https://cdn-icons-png.flaticon.com/32/3128/3128310.png";
-        case 'Instagram': return "https://cdn-icons-png.flaticon.com/32/3128/3128307.png";
-        case 'YouTube': return "https://cdn-icons-png.flaticon.com/32/3128/3128315.png";
-        default: return "https://cdn-icons-png.flaticon.com/32/3128/3128311.png";
+        case 'LinkedIn': return `https://img.icons8.com/ios-filled/50/${color}/linkedin.png`;
+        case 'Facebook': return `https://img.icons8.com/ios-filled/50/${color}/facebook-new.png`;
+        case 'Twitter': case 'X': return `https://img.icons8.com/ios-filled/50/${color}/twitter.png`;
+        case 'Instagram': return `https://img.icons8.com/ios-filled/50/${color}/instagram-new.png`;
+        case 'YouTube': return `https://img.icons8.com/ios-filled/50/${color}/youtube-play.png`;
+        case 'TikTok': return `https://img.icons8.com/ios-filled/50/${color}/tiktok.png`;
+        case 'Snapchat': return `https://img.icons8.com/ios-filled/50/${color}/snapchat.png`;
+        default: return `https://img.icons8.com/ios-filled/50/${color}/domain.png`;
     }
   };
 
@@ -425,6 +565,21 @@ export const EmailSignature: React.FC = () => {
                                 <input className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 outline-none" value={editForm.title} onChange={e => handleInputChange('title', e.target.value)} />
                             </div>
                             <div>
+                                <div className="flex justify-between items-center mb-2 ml-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Title Font Size</label>
+                                    <span className="text-[10px] font-bold text-slate-500">{editForm.titleFontSize}px</span>
+                                </div>
+                                <input 
+                                    type="range" 
+                                    min="8" 
+                                    max="24" 
+                                    step="1" 
+                                    className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                    value={editForm.titleFontSize} 
+                                    onChange={(e) => handleInputChange('titleFontSize', parseInt(e.target.value))} 
+                                />
+                            </div>
+                            <div>
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">Microsite Tagline</label>
                                 <textarea className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 outline-none h-24 resize-none" value={editForm.tagline} onChange={e => handleInputChange('tagline', e.target.value)} />
                             </div>
@@ -470,8 +625,18 @@ export const EmailSignature: React.FC = () => {
                                 <input className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 outline-none" value={editForm.website} onChange={e => handleInputChange('website', e.target.value)} />
                             </div>
                             <div>
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">Location View</label>
-                                <input className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-400 outline-none cursor-not-allowed" value={`${editForm.city}, ${editForm.state}`} readOnly />
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">Street Address</label>
+                                <input className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 outline-none" value={editForm.addressLine1} onChange={e => handleInputChange('addressLine1', e.target.value)} placeholder="e.g. 123 Main St" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">City</label>
+                                    <input className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 outline-none" value={editForm.city} onChange={e => handleInputChange('city', e.target.value)} placeholder="e.g. New York" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">State</label>
+                                    <input className="w-full border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 outline-none" value={editForm.state} onChange={e => handleInputChange('state', e.target.value)} placeholder="e.g. NY" />
+                                </div>
                             </div>
                         </>
                     )}
@@ -481,7 +646,7 @@ export const EmailSignature: React.FC = () => {
                                 <Plus size={14}/> Add Profile Link
                             </button>
                             <div className="space-y-3">
-                                {editForm.socialLinks.map((link, idx) => (
+                                {(editForm.socialLinks || []).map((link, idx) => (
                                     <div key={idx} className="flex gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-100">
                                         <select value={link.platform} onChange={e => handleSocialChange(idx, 'platform', e.target.value as any)} className="bg-white border border-slate-200 rounded-lg px-2 py-2 text-[10px] font-black uppercase text-slate-700">
                                             {['LinkedIn', 'Facebook', 'Twitter', 'Instagram', 'TikTok', 'YouTube', 'Snapchat', 'X'].map(k => <option key={k} value={k}>{k}</option>)}
@@ -531,23 +696,22 @@ export const EmailSignature: React.FC = () => {
         </div>
 
         {/* PREVIEW CONTAINER - MICHEL SMITH STYLE */}
-        <div className="xl:col-span-8 flex flex-col h-full space-y-12">
+        <div className="xl:col-span-8 flex flex-col space-y-12 overflow-x-auto">
             {/* MAIN BANNER PREVIEW */}
-            <div className="bg-white p-12 rounded-[4rem] shadow-2xl border border-slate-200 flex flex-col items-center justify-center flex-grow overflow-hidden">
+            <div className="bg-white p-12 rounded-[4rem] shadow-2xl border border-slate-200 flex flex-col items-center justify-center flex-grow min-w-[800px]">
                 
-                <div className="w-full max-w-[850px] bg-[#F1F5F9] p-12 rounded-[4rem] shadow-inner flex flex-col items-center justify-center overflow-hidden">
+                <div className="w-full max-w-[850px] bg-gradient-to-br from-blue-50 to-yellow-50 p-12 rounded-[4rem] shadow-inner flex flex-col items-center justify-center">
                     {/* THE SIGNATURE CARD - EXPORT TARGET */}
-                    <div ref={exportRef} className="bg-white shadow-2xl relative overflow-hidden" style={{ width: '700px', height: '250px', display: 'flex', flexDirection: 'column' }}>
+                    <div ref={exportRef} className="shadow-2xl relative overflow-hidden" style={{ width: '700px', minHeight: '250px', height: 'auto', display: 'flex', flexDirection: 'column', background: '#fafafa' }}>
                         
-                        {/* 1. TOP SECTION: WHITE CONTENT */}
+                        {/* 1. TOP SECTION: CONTENT */}
                         <div style={{ flex: 1, position: 'relative', display: 'flex', padding: '25px 35px 0 35px' }}>
-                            <div style={{ position: 'absolute', top: '-40px', right: '40px', width: '120px', height: '120px', backgroundColor: '#F8FAFC', borderRadius: '50%', opacity: 0.8 }}></div>
                             
                             <div style={{ flex: 1, paddingTop: '10px' }}>
                                 <h1 style={{ fontSize: '26px', fontWeight: '900', color: '#0B2240', margin: 0, letterSpacing: '-0.5px' }}>
                                     {editForm.firstName} {editForm.lastName}
                                 </h1>
-                                <p style={{ fontSize: '13px', fontWeight: '700', color: '#3B82F6', margin: '2px 0 0 0', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                <p style={{ fontSize: `${editForm.titleFontSize}px`, fontWeight: '700', color: '#3B82F6', margin: '2px 0 0 0', textTransform: 'uppercase', letterSpacing: '1px' }}>
                                     {editForm.title}
                                 </p>
                                 <div style={{ height: '2px', width: '35px', backgroundColor: '#0B2240', margin: '15px 0' }}></div>
@@ -577,24 +741,28 @@ export const EmailSignature: React.FC = () => {
                             </div>
 
                             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', paddingTop: '10px' }}>
-                                <a href={`tel:${editForm.phone}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <p style={{ fontSize: '10px', fontWeight: '800', color: '#0B2240', margin: 0 }}>{editForm.phone}</p>
-                                        <p style={{ fontSize: '10px', fontWeight: '800', color: '#0B2240', margin: 0 }}>{editForm.phone2}</p>
+                                <div style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                                    <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }}>
+                                        <a href={`tel:${(editForm.phone || '').replace(/[^0-9]/g, '')}`} style={{ fontSize: '10px', fontWeight: '800', color: '#0B2240', margin: 0, textDecoration: 'none' }}>
+                                            <span style={{ fontWeight: '500', color: '#64748B', marginRight: '4px' }}>Direct:</span>{editForm.phone}
+                                        </a>
+                                        <a href={`tel:${(editForm.phone2 || '').replace(/[^0-9]/g, '')}`} style={{ fontSize: '10px', fontWeight: '800', color: '#0B2240', margin: 0, textDecoration: 'none' }}>
+                                            <span style={{ fontWeight: '500', color: '#64748B', marginRight: '4px' }}>Office:</span>{editForm.phone2}
+                                        </a>
                                     </div>
                                     <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#0B2240', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <img src={ICON_PHONE} style={{ width: '10px', height: '10px', filter: 'brightness(0) invert(1)' }} />
                                     </div>
-                                </a>
-                                <a href={`mailto:${editForm.email}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <p style={{ fontSize: '10px', fontWeight: '800', color: '#0B2240', margin: 0 }}>{editForm.email}</p>
-                                        <p style={{ fontSize: '10px', fontWeight: '800', color: '#0B2240', margin: 0 }}>{editForm.website}</p>
+                                </div>
+                                <div style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                                    <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }}>
+                                        <a href={`mailto:${editForm.email || ''}`} style={{ fontSize: '10px', fontWeight: '800', color: '#0B2240', margin: 0, textDecoration: 'none' }}>{editForm.email}</a>
+                                        <a href={(editForm.website || '').startsWith('http') ? editForm.website : `https://${editForm.website}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '10px', fontWeight: '800', color: '#0B2240', margin: 0, textDecoration: 'none' }}>{editForm.website}</a>
                                     </div>
                                     <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#0B2240', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <img src={ICON_WEB} style={{ width: '10px', height: '10px', filter: 'brightness(0) invert(1)' }} />
                                     </div>
-                                </a>
+                                </div>
                                 <div style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     <div style={{ textAlign: 'right' }}>
                                         <p style={{ fontSize: '10px', fontWeight: '800', color: '#0B2240', margin: 0 }}>{editForm.addressLine1}</p>
@@ -610,7 +778,7 @@ export const EmailSignature: React.FC = () => {
                         {/* 2. MIDDLE SECTION: LOGO BAR */}
                         <div style={{ height: '55px', backgroundColor: '#0B2240', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 35px', position: 'relative' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <img src={logoFullColorBase64} style={{ width: '24px', height: '24px' }} alt="Logo" />
+                                <img src={companySettings.logoUrl || logoFullColorBase64} style={{ width: '24px', height: '24px' }} alt="Logo" />
                                 <div style={{ color: 'white' }}>
                                     <p style={{ fontSize: '12px', fontWeight: '900', margin: 0, textTransform: 'uppercase', letterSpacing: '1px' }}>NEW HOLLAND</p>
                                     <p style={{ fontSize: '7px', fontWeight: '700', color: 'rgba(255,255,255,0.7)', margin: 0, textTransform: 'uppercase', letterSpacing: '2px' }}>FINANCIAL GROUP</p>
@@ -620,16 +788,16 @@ export const EmailSignature: React.FC = () => {
                                 {[...Array(15)].map((_, i) => <div key={i} style={{ width: '2.5px', height: '2.5px', borderRadius: '50%', backgroundColor: 'white' }}></div>)}
                             </div>
                             <div style={{ display: 'flex', gap: '10px' }}>
-                                {['Facebook', 'LinkedIn', 'Twitter', 'Instagram', 'YouTube'].map(platform => (
-                                    <div key={platform} style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <img src={getSocialIconUrl(platform)} style={{ width: '10px', height: '10px', filter: 'brightness(0) invert(0)' }} />
-                                    </div>
+                                {(editForm.socialLinks || []).map((link, idx) => (
+                                    <a key={idx} href={link.url || '#'} style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
+                                        <img src={getSocialIconUrl(link.platform)} style={{ width: '14px', height: '14px' }} alt={link.platform} />
+                                    </a>
                                 ))}
                             </div>
                         </div>
 
                         {/* 3. BOTTOM SECTION: LEGAL DISCLOSURE */}
-                        <div style={{ padding: '12px 35px', borderTop: '1px solid #f1f5f9', flex: 1, display: 'flex', alignItems: 'center' }}>
+                        <div style={{ padding: '12px 35px', borderTop: '1px solid #fecaca', flex: 1, display: 'flex', alignItems: 'center' }}>
                             <p style={{ fontSize: '8px', color: '#64748B', lineHeight: '1.4', margin: 0, fontWeight: '500' }}>
                                 {editForm.confidentialityNotice}
                             </p>

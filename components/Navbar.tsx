@@ -116,23 +116,31 @@ export const Navbar: React.FC = () => {
                 </div>
               )}
               <div className="flex flex-col leading-none">
-                <span className="font-black text-lg text-white tracking-tight">New Holland</span>
-                <span className="text-[0.55rem] font-bold text-slate-400 tracking-[0.2em] uppercase mt-0.5">Financial Group</span>
+                <span className="font-black text-xl text-white group-hover:text-blue-300 transition-colors duration-300 tracking-tight drop-shadow-md">New Holland</span>
+                <span className="text-[0.55rem] font-bold text-slate-300 group-hover:text-slate-200 transition-colors duration-300 tracking-[0.2em] uppercase mt-0.5">Financial Group</span>
               </div>
             </Link>
           </div>
           
           <div className="hidden lg:flex items-center gap-0.5">
             {!isRealEstate ? (
-              standardLinks.map(link => (
-                <Link 
-                  key={link.path}
-                  to={link.path} 
-                  className={`text-[12px] font-bold px-4 py-2 rounded-full transition-all uppercase tracking-tight ${location.pathname === link.path ? 'text-white bg-white/10' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}
-                >
-                  {link.label}
-                </Link>
-              ))
+              <>
+                <Link to="/" className={`text-[12px] font-bold px-4 py-2 rounded-full transition-all uppercase tracking-tight ${location.pathname === '/' ? 'text-white bg-white/10' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}>Home</Link>
+                <NavDropdown 
+                  label="Products" 
+                  items={[
+                    { label: 'Life Insurance', path: '/life-insurance' },
+                    { label: 'Mortgage', path: '/mortgage' },
+                    { label: 'Business Insurance', path: '/business-insurance' },
+                    { label: 'Auto Insurance', path: '/auto-insurance' },
+                    { label: 'Securities', path: '/securities' },
+                    { label: 'Real Estate', path: '/real-estate' },
+                  ]} 
+                />
+                <Link to="/advisors" className={`text-[12px] font-bold px-4 py-2 rounded-full transition-all uppercase tracking-tight ${location.pathname === '/advisors' ? 'text-white bg-white/10' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}>Advisors</Link>
+                <Link to="/resources" className={`text-[12px] font-bold px-4 py-2 rounded-full transition-all uppercase tracking-tight ${location.pathname === '/resources' ? 'text-white bg-white/10' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}>Resources</Link>
+                <Link to="/about" className={`text-[12px] font-bold px-4 py-2 rounded-full transition-all uppercase tracking-tight ${location.pathname === '/about' ? 'text-white bg-white/10' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}>About Us</Link>
+              </>
             ) : (
               <div className="flex items-center">
                 {reLinks.map(link => (
@@ -172,14 +180,31 @@ export const Navbar: React.FC = () => {
               <Link to="/" onClick={() => setIsOpen(false)} className="block text-xl font-black text-white uppercase tracking-tighter">Home</Link>
               {!isRealEstate ? (
                 <div className="space-y-4">
-                   {standardLinks.slice(1).map(link => (
-                     <Link key={link.path} to={link.path} onClick={() => setIsOpen(false)} className="block text-slate-400 font-bold hover:text-white transition-colors">{link.label}</Link>
-                   ))}
+                   <div className="space-y-2">
+                     <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">Products</p>
+                     <Link to="/life-insurance" onClick={() => setIsOpen(false)} className="block font-bold text-slate-400 hover:text-white transition-colors pl-4">Life Insurance</Link>
+                     <Link to="/mortgage" onClick={() => setIsOpen(false)} className="block font-bold text-slate-400 hover:text-white transition-colors pl-4">Mortgage</Link>
+                     <Link to="/business-insurance" onClick={() => setIsOpen(false)} className="block font-bold text-slate-400 hover:text-white transition-colors pl-4">Business Insurance</Link>
+                     <Link to="/auto-insurance" onClick={() => setIsOpen(false)} className="block font-bold text-slate-400 hover:text-white transition-colors pl-4">Auto Insurance</Link>
+                     <Link to="/securities" onClick={() => setIsOpen(false)} className="block font-bold text-slate-400 hover:text-white transition-colors pl-4">Securities</Link>
+                     <Link to="/real-estate" onClick={() => setIsOpen(false)} className="block font-bold text-slate-400 hover:text-white transition-colors pl-4">Real Estate</Link>
+                   </div>
+                   <div className="h-px bg-white/10 my-6"></div>
+                   <Link to="/advisors" onClick={() => setIsOpen(false)} className="block font-bold text-slate-400 hover:text-white transition-colors">Advisors</Link>
+                   <Link to="/resources" onClick={() => setIsOpen(false)} className="block font-bold text-slate-400 hover:text-white transition-colors">Resources</Link>
+                   <Link to="/about" onClick={() => setIsOpen(false)} className="block font-bold text-slate-400 hover:text-white transition-colors">About Us</Link>
                 </div>
               ) : (
                 <div className="space-y-4">
-                   {reLinks.map(link => (
-                     <Link key={link.path} to={link.path} onClick={() => setIsOpen(false)} className="block text-slate-400 font-bold hover:text-white transition-colors">{link.label}</Link>
+                   {reLinks.slice(1).map(link => (
+                     <Link 
+                       key={link.path} 
+                       to={link.path} 
+                       onClick={() => setIsOpen(false)} 
+                       className={`block font-bold transition-colors ${location.search === link.path.split('?')[1] || (link.path === '/real-estate' && !location.search) ? 'text-white' : 'text-slate-400 hover:text-white'}`}
+                     >
+                       {link.label}
+                     </Link>
                    ))}
                 </div>
               )}

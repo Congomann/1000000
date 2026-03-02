@@ -6,7 +6,12 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { Home } from './pages/website/Home';
 import { Services } from './pages/website/Services';
+import { LifeInsurance } from './pages/website/LifeInsurance';
 import { RealEstate } from './pages/website/RealEstate';
+import { Mortgage } from './pages/website/Mortgage';
+import { BusinessInsurance } from './pages/website/BusinessInsurance';
+import { AutoInsurance } from './pages/website/AutoInsurance';
+import { Securities } from './pages/website/Securities';
 import { Advisors } from './pages/website/Advisors';
 import { About } from './pages/website/About'; 
 import { Resources } from './pages/website/Resources'; 
@@ -127,7 +132,12 @@ const App: React.FC = () => {
             <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
             <Route path="/about" element={<PublicLayout><About /></PublicLayout>} />
             <Route path="/products" element={<PublicLayout><Services /></PublicLayout>} />
+            <Route path="/life-insurance" element={<PublicLayout><LifeInsurance /></PublicLayout>} />
             <Route path="/real-estate" element={<PublicLayout><RealEstate /></PublicLayout>} />
+            <Route path="/mortgage" element={<PublicLayout><Mortgage /></PublicLayout>} />
+            <Route path="/business-insurance" element={<PublicLayout><BusinessInsurance /></PublicLayout>} />
+            <Route path="/auto-insurance" element={<PublicLayout><AutoInsurance /></PublicLayout>} />
+            <Route path="/securities" element={<PublicLayout><Securities /></PublicLayout>} />
             <Route path="/advisors" element={<PublicLayout><Advisors /></PublicLayout>} />
             <Route path="/advisor/:slug" element={<PublicLayout><AdvisorMicrosite /></PublicLayout>} />
             <Route path="/resources" element={<PublicLayout><Resources /></PublicLayout>} />

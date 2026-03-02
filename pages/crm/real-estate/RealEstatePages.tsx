@@ -106,6 +106,11 @@ export const PropertyPipeline: React.FC = () => {
                             <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-lg text-xs font-bold text-slate-800">
                                 {prop.type}
                             </div>
+                            {prop.source && (
+                                <div className="absolute bottom-4 right-4 bg-blue-600/90 backdrop-blur-sm text-white px-3 py-1 rounded-lg text-xs font-bold">
+                                    {prop.source}
+                                </div>
+                            )}
                         </div>
                         <div className="p-6 flex-1 flex flex-col">
                             <div className="mb-4">
@@ -252,8 +257,19 @@ export const PropertyPipeline: React.FC = () => {
                                                 <option value="Commercial">Commercial</option>
                                                 <option value="Land">Land</option>
                                                 <option value="Multi-Family">Multi-Family</option>
+                                                <option value="Acreage">Acreage</option>
                                             </select>
                                         </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Listing Source</label>
+                                        <input 
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-[#0A62A7] outline-none" 
+                                            placeholder="e.g. MLS, Zillow, Internal, Off-Market"
+                                            value={formData.source || ''}
+                                            onChange={e => setFormData({...formData, source: e.target.value})}
+                                        />
                                     </div>
                                     
                                     <div className="grid grid-cols-3 gap-4">
@@ -336,6 +352,49 @@ export const PropertyPipeline: React.FC = () => {
                                                     onChange={e => setFormData({...formData, zoning: e.target.value})}
                                                 />
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Year Built</label>
+                                            <input 
+                                                type="number"
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-medium focus:ring-2 focus:ring-[#0A62A7] outline-none" 
+                                                placeholder="2020"
+                                                value={formData.yearBuilt || ''}
+                                                onChange={e => setFormData({...formData, yearBuilt: Number(e.target.value)})}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Heating</label>
+                                            <input 
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-medium focus:ring-2 focus:ring-[#0A62A7] outline-none" 
+                                                placeholder="Central, Electric"
+                                                value={formData.heating}
+                                                onChange={e => setFormData({...formData, heating: e.target.value})}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Cooling</label>
+                                            <input 
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-medium focus:ring-2 focus:ring-[#0A62A7] outline-none" 
+                                                placeholder="Central Air"
+                                                value={formData.cooling}
+                                                onChange={e => setFormData({...formData, cooling: e.target.value})}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Parking</label>
+                                            <input 
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-medium focus:ring-2 focus:ring-[#0A62A7] outline-none" 
+                                                placeholder="2 Attached Garage spaces"
+                                                value={formData.parking}
+                                                onChange={e => setFormData({...formData, parking: e.target.value})}
+                                            />
                                         </div>
                                     </div>
 

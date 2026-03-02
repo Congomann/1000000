@@ -124,6 +124,11 @@ export const RealEstateAdmin: React.FC = () => {
                <div className="absolute bottom-6 right-6 bg-white/90 backdrop-blur-md px-5 py-2 rounded-2xl shadow-xl">
                  <p className="text-xl font-black text-slate-900">${prop.price.toLocaleString()}</p>
                </div>
+               {prop.source && (
+                 <div className="absolute bottom-6 left-6 bg-blue-600/90 backdrop-blur-md text-white px-4 py-2 rounded-2xl shadow-xl">
+                   <p className="text-xs font-black uppercase tracking-widest">{prop.source}</p>
+                 </div>
+               )}
             </div>
 
             <div className="p-8 flex-1 flex flex-col">
@@ -223,6 +228,81 @@ export const RealEstateAdmin: React.FC = () => {
                         <span className="text-2xl font-black text-slate-800">{selectedProperty.sqft?.toLocaleString()}</span>
                       </div>
                     </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
+                        {/* Interior */}
+                        <div>
+                            <h4 className="text-lg font-bold text-slate-900 mb-4 border-b pb-2">Interior</h4>
+                            <ul className="space-y-2 text-sm text-slate-600">
+                                {selectedProperty.fullBathrooms && <li><span className="font-bold">Full Bathrooms:</span> {selectedProperty.fullBathrooms}</li>}
+                                {selectedProperty.mainLevelBedrooms && <li><span className="font-bold">Main Level Bedrooms:</span> {selectedProperty.mainLevelBedrooms}</li>}
+                                {selectedProperty.heating && <li><span className="font-bold">Heating:</span> {selectedProperty.heating}</li>}
+                                {selectedProperty.cooling && <li><span className="font-bold">Cooling:</span> {selectedProperty.cooling}</li>}
+                                {selectedProperty.appliances && <li><span className="font-bold">Appliances:</span> {selectedProperty.appliances}</li>}
+                                {selectedProperty.interiorFeatures && <li><span className="font-bold">Features:</span> {selectedProperty.interiorFeatures}</li>}
+                                {selectedProperty.flooring && <li><span className="font-bold">Flooring:</span> {selectedProperty.flooring}</li>}
+                                {selectedProperty.basement && <li><span className="font-bold">Basement:</span> {selectedProperty.basement}</li>}
+                                {selectedProperty.totalStructureArea && <li><span className="font-bold">Total Structure Area:</span> {selectedProperty.totalStructureArea.toLocaleString()} sqft</li>}
+                                {selectedProperty.totalInteriorLivableArea && <li><span className="font-bold">Total Interior Livable Area:</span> {selectedProperty.totalInteriorLivableArea.toLocaleString()} sqft</li>}
+                            </ul>
+                        </div>
+
+                        {/* Property & Construction */}
+                        <div>
+                            <h4 className="text-lg font-bold text-slate-900 mb-4 border-b pb-2">Property & Construction</h4>
+                            <ul className="space-y-2 text-sm text-slate-600">
+                                {selectedProperty.levels && <li><span className="font-bold">Levels:</span> {selectedProperty.levels}</li>}
+                                {selectedProperty.stories && <li><span className="font-bold">Stories:</span> {selectedProperty.stories}</li>}
+                                {selectedProperty.exteriorFeatures && <li><span className="font-bold">Exterior Features:</span> {selectedProperty.exteriorFeatures}</li>}
+                                {selectedProperty.fencing && <li><span className="font-bold">Fencing:</span> {selectedProperty.fencing}</li>}
+                                {selectedProperty.homeType && <li><span className="font-bold">Home Type:</span> {selectedProperty.homeType}</li>}
+                                {selectedProperty.architecturalStyle && <li><span className="font-bold">Architectural Style:</span> {selectedProperty.architecturalStyle}</li>}
+                                {selectedProperty.propertySubtype && <li><span className="font-bold">Property Subtype:</span> {selectedProperty.propertySubtype}</li>}
+                                {selectedProperty.foundation && <li><span className="font-bold">Foundation:</span> {selectedProperty.foundation}</li>}
+                                {selectedProperty.roof && <li><span className="font-bold">Roof:</span> {selectedProperty.roof}</li>}
+                                {selectedProperty.yearBuilt && <li><span className="font-bold">Year Built:</span> {selectedProperty.yearBuilt}</li>}
+                            </ul>
+                        </div>
+
+                        {/* Lot & Details */}
+                        <div>
+                            <h4 className="text-lg font-bold text-slate-900 mb-4 border-b pb-2">Lot & Details</h4>
+                            <ul className="space-y-2 text-sm text-slate-600">
+                                {selectedProperty.lotSize && <li><span className="font-bold">Lot Size:</span> {selectedProperty.lotSize}</li>}
+                                {selectedProperty.lotDimensions && <li><span className="font-bold">Lot Dimensions:</span> {selectedProperty.lotDimensions}</li>}
+                                {selectedProperty.lotFeatures && <li><span className="font-bold">Lot Features:</span> {selectedProperty.lotFeatures}</li>}
+                                {selectedProperty.parcelNumber && <li><span className="font-bold">Parcel Number:</span> {selectedProperty.parcelNumber}</li>}
+                                {selectedProperty.water && <li><span className="font-bold">Water:</span> {selectedProperty.water}</li>}
+                                {selectedProperty.region && <li><span className="font-bold">Region:</span> {selectedProperty.region}</li>}
+                            </ul>
+                        </div>
+
+                        {/* Financial & Listing */}
+                        <div>
+                            <h4 className="text-lg font-bold text-slate-900 mb-4 border-b pb-2">Financial & Listing Details</h4>
+                            <ul className="space-y-2 text-sm text-slate-600">
+                                {selectedProperty.pricePerSqft && <li><span className="font-bold">Price per Sqft:</span> ${selectedProperty.pricePerSqft.toLocaleString()}/sqft</li>}
+                                {selectedProperty.taxAssessedValue && <li><span className="font-bold">Tax Assessed Value:</span> ${selectedProperty.taxAssessedValue.toLocaleString()}</li>}
+                                {selectedProperty.cumulativeDaysOnMarket && <li><span className="font-bold">Cumulative Days on Market:</span> {selectedProperty.cumulativeDaysOnMarket} days</li>}
+                                {selectedProperty.listingTerms && <li><span className="font-bold">Listing Terms:</span> {selectedProperty.listingTerms}</li>}
+                                {selectedProperty.roadSurfaceType && <li><span className="font-bold">Road Surface Type:</span> {selectedProperty.roadSurfaceType}</li>}
+                            </ul>
+                        </div>
+                    </div>
+
+                    {/* Source Badge */}
+                    {(selectedProperty.sourceName || selectedProperty.mlsNumber || selectedProperty.mlsName) && (
+                        <div className="mt-10 p-4 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-4">
+                            {selectedProperty.sourceLogo && (
+                                <img src={selectedProperty.sourceLogo} alt="Source Logo" className="h-10 w-auto object-contain" />
+                            )}
+                            <div className="text-sm text-slate-600">
+                                {selectedProperty.sourceName && <span className="font-bold">Source: {selectedProperty.sourceName}</span>}
+                                {selectedProperty.mlsNumber && <span className="ml-4">MLS#: {selectedProperty.mlsNumber}</span>}
+                                {selectedProperty.mlsName && <span className="ml-4">MLS: {selectedProperty.mlsName}</span>}
+                            </div>
+                        </div>
+                    )}
                  </div>
 
                  <div className="lg:col-span-1 space-y-6">
@@ -241,6 +321,12 @@ export const RealEstateAdmin: React.FC = () => {
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Listed Since</p>
                           <p className="text-sm font-black text-[#0B2240]">{new Date(selectedProperty.listedDate).toLocaleDateString()}</p>
                         </div>
+                        {selectedProperty.source && (
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Listing Source</p>
+                            <p className="text-sm font-black text-[#0B2240]">{selectedProperty.source}</p>
+                          </div>
+                        )}
                       </div>
                     </div>
 

@@ -79,6 +79,9 @@ export interface User {
   avatar?: string;
   phone?: string;
   bio?: string;
+  address?: string;
+  city?: string;
+  state?: string;
   socialLinks?: SocialLink[];
   license_state?: string;
   license_states?: string[];
@@ -441,27 +444,106 @@ export interface PropertyListing {
   bathrooms?: number;
   sqft?: number;
   image: string;
+  images?: string[]; // For photo gallery
   videoUrl?: string;
   listedDate: string;
   sellerName: string;
   advisorId: string;
+  
+  // Overview
+  headline?: string;
   description?: string;
-  zoning?: string;
-  restrictions?: string;
+  highlights?: string[]; // e.g., ["Move-in Ready", "Cul-de-Sac"]
+
+  // Key Facts
+  yearBuilt?: number;
+  heating?: string;
+  cooling?: string;
+  parking?: string;
   hoa?: boolean;
   hoaFee?: number;
-  taxAmount?: number;
-  
-  // New Real Estate Specific Fields
-  yearBuilt?: number;
-  taxes?: string; // e.g. "$7,686 (2024)"
-  lotSize?: string; // e.g. "6.44 acres / 280,526 Sq. Ft."
-  subdivision?: string;
+  pricePerSqft?: number;
+
+  // Interior
+  flooring?: string;
+  basement?: string;
+  appliances?: string;
+  laundry?: string;
   interiorFeatures?: string;
+
+  // Property & Exterior
+  levels?: string;
+  stories?: number;
   exteriorFeatures?: string;
-  inclusions?: string;
+  fencing?: string;
+  patioPorch?: string;
+  poolSpa?: string;
+
+  // Lot
+  lotSize?: string; // e.g. "6.44 acres / 280,526 Sq. Ft."
+  lotDimensions?: string;
+  lotFeatures?: string;
+  roadSurface?: string;
+
+  // Construction
+  architecturalStyle?: string;
+  foundation?: string;
+  roof?: string;
+  materials?: string;
+  condition?: string;
+
+  // Utilities & Green Energy
+  water?: string;
+  sewer?: string;
+  electric?: string;
+  gas?: string;
+  energyFeatures?: string;
+
+  // Added missing properties from linter
+  fullBathrooms?: number;
+  mainLevelBedrooms?: number;
+  totalStructureArea?: number;
+  totalInteriorLivableArea?: number;
+  homeType?: string;
+  propertySubtype?: string;
+  region?: string;
+  cumulativeDaysOnMarket?: number;
+  roadSurfaceType?: string;
+  sourceName?: string;
+  mlsNumber?: string;
+  mlsName?: string;
+  sourceLogo?: string;
+
+  // Community & HOA
+  hoaIncludes?: string;
+  associationName?: string;
+  communityFeatures?: string;
+  subdivision?: string;
   schoolDistrict?: string;
+
+  // Tax & History
+  taxAmount?: number;
+  taxAssessedValue?: number;
+  priceHistory?: { date: string; price: number; event: string }[];
+
+  // Neighborhood
+  walkScore?: number;
+  nearbySchools?: string[];
+  nearbyAmenities?: string[];
+  neighborhoodDescription?: string;
+
+  // Metadata
+  parcelNumber?: string;
+  zoning?: string;
+  mlsId?: string;
+  listingTerms?: string;
+  daysOnMarket?: number;
+
+  // Other
+  restrictions?: string;
+  inclusions?: string;
   directions?: string;
+  source?: string;
 }
 
 export interface EscrowTransaction {

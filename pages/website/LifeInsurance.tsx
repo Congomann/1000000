@@ -9,6 +9,9 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { TestimonialsSection } from "../../components/TestimonialsSection";
+import { SpeakToAdvisorForm } from "../../components/SpeakToAdvisorForm";
+import { ProductType } from "../../types";
 
 export const LifeInsurance: React.FC = () => {
   useEffect(() => {
@@ -344,6 +347,9 @@ export const LifeInsurance: React.FC = () => {
           })}
         </div>
       </div>
+
+      <SpeakToAdvisorForm productType={ProductType.LIFE} />
+      <TestimonialsSection />
 
       {/* CTA Section */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-24">

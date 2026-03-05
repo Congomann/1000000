@@ -3,6 +3,7 @@ import { Mail, ArrowRight } from "lucide-react";
 import { useData } from "../../context/DataContext";
 import { UserRole } from "../../types";
 import { Link } from "react-router-dom";
+import { TestimonialsSection } from "../../components/TestimonialsSection";
 
 export const Advisors: React.FC = () => {
   const { allUsers } = useData();
@@ -239,6 +240,8 @@ export const Advisors: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <TestimonialsSection />
     </div>
   );
 };

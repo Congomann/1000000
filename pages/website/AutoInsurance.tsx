@@ -7,6 +7,9 @@ import {
   CheckCircle,
   HelpCircle,
 } from "lucide-react";
+import { TestimonialsSection } from "../../components/TestimonialsSection";
+import { SpeakToAdvisorForm } from "../../components/SpeakToAdvisorForm";
+import { ProductType } from "../../types";
 
 export const AutoInsurance: React.FC = () => {
   useEffect(() => {
@@ -310,6 +313,10 @@ export const AutoInsurance: React.FC = () => {
           })}
         </div>
       </div>
+
+      <SpeakToAdvisorForm productType={ProductType.AUTO} />
+
+      <TestimonialsSection />
     </div>
   );
 };

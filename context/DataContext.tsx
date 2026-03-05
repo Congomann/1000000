@@ -110,6 +110,7 @@ interface DataContextType {
   addWorkflow: (workflow: Partial<Workflow>) => void;
   toggleWorkflow: (id: string) => void;
   reAnalyzeLead: (leadId: string) => Promise<void>;
+  triggerPulse: () => void;
 
   addTask: (task: Omit<Task, 'id' | 'order'>) => void;
   toggleTask: (id: string) => void;
@@ -611,6 +612,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }));
   };
 
+  const triggerPulse = useCallback(() => {
+    pushNotification('Global Pulse Initiated', 'Recalibrating all neural chain nodes...', 'warning');
+    
+    // Simulate a system-wide recalibration
+    setProcessingLeads(prev => {
+      const activeLeads = leads.filter(l => l.status === LeadStatus.NEW || l.status === LeadStatus.ASSIGNED).slice(0, 3);
+      return activeLeads.map(l => ({ leadId: l.id, activeNode: 'SYSTEM SYNC' }));
+    });
+
+    setTimeout(() => {
+      setProcessingLeads([]);
+      pushNotification('Pulse Complete', 'All nodes synchronized and operational.', 'success');
+      setAutomationMetrics(prev => ({
+        ...prev,
+        executions: prev.executions + 15,
+        bandwidthSaved: prev.bandwidthSaved + 60
+      }));
+    }, 3000);
+  }, [leads, pushNotification]);
+
   return (
     <DataContext.Provider value={{
       user, allUsers, leads, clients, tasks, metrics: { totalRevenue: 1250000, activeClients: 450, pendingLeads: 12, monthlyPerformance: [], totalCommission: 85000 },
@@ -625,7 +646,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       assignCarriers, markChatRead, editChatMessage, deleteChatMessage, sendChatMessage, submitJobApplication, updateJobApplicationStatus,
       updateApplicationStatus, updateTransactionStatus, addPortfolio, updatePortfolio, deletePortfolio, addComplianceDoc,
       updateFeeStatus, addAdvisoryFee, updateAdvisoryFee, deleteAdvisoryFee, addLoanApplication, updateLoanApplication, deleteLoanApplication,
-      addProperty, updateProperty, deleteProperty, addWorkflow, toggleWorkflow, reAnalyzeLead, properties, transactions,
+      addProperty, updateProperty, deleteProperty, addWorkflow, toggleWorkflow, reAnalyzeLead, triggerPulse, properties, transactions,
       addTask, toggleTask, deleteTask, reorderTasks
     }}>
       {children}

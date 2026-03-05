@@ -3,7 +3,7 @@ import React, { useState, useRef } from 'react';
 import { Menu, X, LogOut, User, ChevronDown } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
-import { UserRole } from '../types';
+import { UserRole, ProductType } from '../types';
 
 interface NavDropdownProps {
   label: string;
@@ -65,6 +65,17 @@ export const Navbar: React.FC = () => {
   const isRealEstate = location.pathname === '/real-estate';
 
   if (isCRM) return null;
+
+  const hiddenProducts = companySettings?.hiddenProducts || [];
+  
+  const productLinks = [
+    { label: 'Life Insurance', path: '/life-insurance', type: ProductType.LIFE },
+    { label: 'Mortgage', path: '/mortgage', type: ProductType.MORTGAGE },
+    { label: 'Business Insurance', path: '/business-insurance', type: ProductType.BUSINESS },
+    { label: 'Auto Insurance', path: '/auto-insurance', type: ProductType.AUTO },
+    { label: 'Securities', path: '/securities', type: ProductType.SECURITIES },
+    { label: 'Real Estate', path: '/real-estate', type: ProductType.REAL_ESTATE },
+  ].filter(link => !hiddenProducts.includes(link.type));
 
   const handleAuthAction = () => {
     if (user) {
@@ -128,14 +139,7 @@ export const Navbar: React.FC = () => {
                 <Link to="/" className={`text-[12px] font-bold px-4 py-2 rounded-full transition-all uppercase tracking-tight ${location.pathname === '/' ? 'text-white bg-white/10' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}>Home</Link>
                 <NavDropdown 
                   label="Products" 
-                  items={[
-                    { label: 'Life Insurance', path: '/life-insurance' },
-                    { label: 'Mortgage', path: '/mortgage' },
-                    { label: 'Business Insurance', path: '/business-insurance' },
-                    { label: 'Auto Insurance', path: '/auto-insurance' },
-                    { label: 'Securities', path: '/securities' },
-                    { label: 'Real Estate', path: '/real-estate' },
-                  ]} 
+                  items={productLinks.map(({ label, path }) => ({ label, path }))} 
                 />
                 <Link to="/advisors" className={`text-[12px] font-bold px-4 py-2 rounded-full transition-all uppercase tracking-tight ${location.pathname === '/advisors' ? 'text-white bg-white/10' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}>Advisors</Link>
                 <Link to="/resources" className={`text-[12px] font-bold px-4 py-2 rounded-full transition-all uppercase tracking-tight ${location.pathname === '/resources' ? 'text-white bg-white/10' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}>Resources</Link>
@@ -182,12 +186,9 @@ export const Navbar: React.FC = () => {
                 <div className="space-y-4">
                    <div className="space-y-2">
                      <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">Products</p>
-                     <Link to="/life-insurance" onClick={() => setIsOpen(false)} className="block font-bold text-slate-400 hover:text-white transition-colors pl-4">Life Insurance</Link>
-                     <Link to="/mortgage" onClick={() => setIsOpen(false)} className="block font-bold text-slate-400 hover:text-white transition-colors pl-4">Mortgage</Link>
-                     <Link to="/business-insurance" onClick={() => setIsOpen(false)} className="block font-bold text-slate-400 hover:text-white transition-colors pl-4">Business Insurance</Link>
-                     <Link to="/auto-insurance" onClick={() => setIsOpen(false)} className="block font-bold text-slate-400 hover:text-white transition-colors pl-4">Auto Insurance</Link>
-                     <Link to="/securities" onClick={() => setIsOpen(false)} className="block font-bold text-slate-400 hover:text-white transition-colors pl-4">Securities</Link>
-                     <Link to="/real-estate" onClick={() => setIsOpen(false)} className="block font-bold text-slate-400 hover:text-white transition-colors pl-4">Real Estate</Link>
+                     {productLinks.map(({ label, path }) => (
+                       <Link key={path} to={path} onClick={() => setIsOpen(false)} className="block font-bold text-slate-400 hover:text-white transition-colors pl-4">{label}</Link>
+                     ))}
                    </div>
                    <div className="h-px bg-white/10 my-6"></div>
                    <Link to="/advisors" onClick={() => setIsOpen(false)} className="block font-bold text-slate-400 hover:text-white transition-colors">Advisors</Link>

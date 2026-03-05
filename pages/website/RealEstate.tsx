@@ -42,6 +42,8 @@ import {
 } from "lucide-react";
 
 import { PropertyDetailModal } from "../../components/PropertyDetailModal";
+import { TestimonialsSection } from "../../components/TestimonialsSection";
+import { SpeakToAdvisorForm } from "../../components/SpeakToAdvisorForm";
 
 export const RealEstate: React.FC = () => {
   const { properties, addLead, testimonials, allUsers, companySettings } =
@@ -668,6 +670,9 @@ export const RealEstate: React.FC = () => {
           </div>
         )}
       </div>
+
+      <SpeakToAdvisorForm productType={ProductType.REAL_ESTATE} />
+      <TestimonialsSection />
 
       {/* Property Detail Modal */}
       {selectedProperty && (

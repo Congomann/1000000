@@ -701,6 +701,36 @@ export const WebsiteSettings: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Hidden Products Setting */}
+                <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6">
+                    <h3 className="text-sm font-bold text-[#0B2240] mb-4 uppercase tracking-wide flex items-center gap-2">
+                        <EyeOff className="h-4 w-4" /> Hidden Products
+                    </h3>
+                    <p className="text-xs text-slate-500 mb-4">Select products to hide from the public website navigation and product listings.</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {Object.values(ProductType).map(productType => {
+                            const isHidden = settingsForm.hiddenProducts?.includes(productType) || false;
+                            return (
+                                <label key={productType} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${isHidden ? 'bg-red-50 border-red-200' : 'bg-white border-slate-200 hover:border-blue-300'}`}>
+                                    <input 
+                                        type="checkbox" 
+                                        className="rounded border-slate-300 text-red-600 focus:ring-red-500"
+                                        checked={isHidden}
+                                        onChange={(e) => {
+                                            const currentHidden = settingsForm.hiddenProducts || [];
+                                            const newHidden = e.target.checked 
+                                                ? [...currentHidden, productType]
+                                                : currentHidden.filter(p => p !== productType);
+                                            setSettingsForm(prev => ({ ...prev, hiddenProducts: newHidden }));
+                                        }}
+                                    />
+                                    <span className={`text-sm font-bold ${isHidden ? 'text-red-700' : 'text-slate-700'}`}>{productType}</span>
+                                </label>
+                            );
+                        })}
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Phone Number</label>

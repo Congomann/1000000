@@ -148,6 +148,37 @@ export const Home: React.FC = () => {
         )}
       </div>
 
+      {/* Partners Section */}
+      {Object.keys(partners).length > 0 && (
+        <div className="py-16 bg-white border-t border-slate-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <p className="text-center text-xs font-black text-slate-400 uppercase tracking-[0.25em] mb-12">
+              OUR PARTNERS
+            </p>
+            <div className="flex flex-wrap justify-center items-center gap-12 transition-all duration-500">
+              {Object.entries(partners).map(([name, url]) => (
+                <div key={name} className="h-16">
+                  <img
+                    src={
+                      (url as string).startsWith("http") ||
+                      (url as string).startsWith("data:")
+                        ? url
+                        : `https://logo.clearbit.com/${url}`
+                    }
+                    alt={name}
+                    className="h-full object-contain max-w-[200px]"
+                    title={name}
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="py-24 bg-slate-50 relative">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center mb-20">
@@ -161,7 +192,17 @@ export const Home: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
             {(companySettings.customProducts || [])
-              .filter((p) => !p.isHidden)
+              .filter((p) => {
+                if (p.isHidden) return false;
+                const hiddenProducts = companySettings.hiddenProducts || [];
+                if (p.id === 'life' && hiddenProducts.includes(ProductType.LIFE)) return false;
+                if (p.id === 'mortgage' && hiddenProducts.includes(ProductType.MORTGAGE)) return false;
+                if (p.id === 'business' && hiddenProducts.includes(ProductType.BUSINESS)) return false;
+                if (p.id === 'auto' && hiddenProducts.includes(ProductType.AUTO)) return false;
+                if (p.id === 'securities' && hiddenProducts.includes(ProductType.SECURITIES)) return false;
+                if (p.id === 'real-estate' && hiddenProducts.includes(ProductType.REAL_ESTATE)) return false;
+                return true;
+              })
               .sort((a, b) => a.order - b.order)
               .map((product) => {
                 const IconComponent =
@@ -265,57 +306,6 @@ export const Home: React.FC = () => {
         onClose={() => setIsRealEstateModalOpen(false)}
       />
 
-      {/* Partners Section */}
-      {Object.keys(partners).length > 0 && (
-        <div className="py-16 bg-white border-t border-slate-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <p className="text-center text-xs font-black text-slate-400 uppercase tracking-[0.25em] mb-12">
-              OUR PARTNERS
-            </p>
-            <div className="flex flex-wrap justify-center items-center gap-12 transition-all duration-500">
-              {Object.entries(partners).map(([name, url]) => (
-                <div key={name} className="h-16">
-                  <img
-                    src={
-                      (url as string).startsWith("http") ||
-                      (url as string).startsWith("data:")
-                        ? url
-                        : `https://logo.clearbit.com/${url}`
-                    }
-                    alt={name}
-                    className="h-full object-contain max-w-[200px]"
-                    title={name}
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Real Estate Overlay Section - Updated to remove local mention and specific years */}
-      <div className="relative py-20 px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="relative rounded-[3rem] overflow-hidden shadow-2xl h-[400px]">
-            <img
-              src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=1000"
-              className="w-full h-full object-cover"
-              alt="Modern Home"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0B2240]/80 to-transparent"></div>
-            <div className="absolute bottom-10 left-10 text-white">
-              <p className="text-3xl font-black tracking-tighter leading-tight">
-                Experts with Years
-                <br />
-                of Experience
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

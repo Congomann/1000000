@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Shield, Users, Award, Heart, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useData } from "../../context/DataContext";
+import { TestimonialsSection } from "../../components/TestimonialsSection";
 
 export const About: React.FC = () => {
   const { companySettings } = useData();
@@ -114,6 +115,8 @@ export const About: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <TestimonialsSection />
 
       {/* CTA to Advisors */}
       <div className="py-20 bg-white border-t border-slate-100">

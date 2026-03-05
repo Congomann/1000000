@@ -65,7 +65,6 @@ import {
   RefinanceCalc 
 } from './pages/crm/mortgage/MortgagePages';
 import { AIChatWidget } from './components/AIChatWidget';
-import { IntegrationsHub } from './pages/crm/IntegrationsHub';
 import { AutomationStudio } from './pages/crm/AutomationStudio';
 import { RealEstateAdmin } from './pages/admin/RealEstateAdmin';
 import { RealEstateCms } from './pages/admin/RealEstateCms';
@@ -164,7 +163,6 @@ const App: React.FC = () => {
               <Route path="calendar" element={<Calendar />} />
               <Route path="profile" element={<ProfileSettings />} />
               <Route path="legal" element={<LegalCompliance />} />
-              <Route path="integrations" element={<IntegrationsHub />} />
               <Route path="automation" element={<AutomationStudio />} />
               
               {/* VERTICAL HUBS */}

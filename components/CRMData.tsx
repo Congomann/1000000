@@ -49,7 +49,6 @@ import { UserRole, AdvisorCategory, ProductType } from '../types';
 const ADMIN_TOUR_STEPS = [
   { id: 'nav-dashboard', title: 'Dashboard', text: 'Overview of system-wide KPIs and health.', targetId: 'nav-dashboard', path: '/crm/dashboard' },
   { id: 'nav-automation', title: 'Automation Studio', text: 'Configure neural-chain logic for lead follow-ups.', targetId: 'nav-automation', path: '/crm/automation' },
-  { id: 'nav-integrations', title: 'API Ecosystem', text: 'Manage 3rd-party tool connections like Slack or DocuSign.', targetId: 'nav-integrations', path: '/crm/integrations' },
   { id: 'nav-leads', title: 'Leads DB', text: 'Central repository for all incoming prospect data.', targetId: 'nav-leads', path: '/crm/leads' },
   { id: 'nav-calendar', title: 'Calendar', text: 'Coordinate organization-wide meetings and events.', targetId: 'nav-calendar', path: '/crm/calendar' },
   { id: 'nav-chat', title: 'Team Chat', text: 'Encrypted real-time messaging for internal collaboration.', targetId: 'nav-chat', path: '/crm/chat' },
@@ -150,7 +149,6 @@ export const CRMLayout: React.FC<CRMLayoutProps> = ({ children }) => {
     const main = [
       { path: '/crm/dashboard', label: 'Dashboard', icon: LayoutGrid, tourId: 'nav-dashboard' },
       { path: '/crm/automation', label: 'Automation Studio', icon: Zap, tourId: 'nav-automation' },
-      { path: '/crm/integrations', label: 'API Ecosystem', icon: Puzzle, tourId: 'nav-integrations' },
       { path: '/crm/leads', label: 'Leads DB', icon: Database, tourId: 'nav-leads' },
       { path: '/crm/calendar', label: 'Calendar', icon: Calendar, tourId: 'nav-calendar' },
       { path: '/crm/chat', label: 'Team Chat', icon: MessageCircle, tourId: 'nav-chat' },

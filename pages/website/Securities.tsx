@@ -7,6 +7,9 @@ import {
   CheckCircle,
   HelpCircle,
 } from "lucide-react";
+import { TestimonialsSection } from "../../components/TestimonialsSection";
+import { SpeakToAdvisorForm } from "../../components/SpeakToAdvisorForm";
+import { ProductType } from "../../types";
 
 export const Securities: React.FC = () => {
   useEffect(() => {
@@ -311,6 +314,10 @@ export const Securities: React.FC = () => {
           })}
         </div>
       </div>
+
+      <SpeakToAdvisorForm productType={ProductType.SECURITIES} />
+
+      <TestimonialsSection />
     </div>
   );
 };

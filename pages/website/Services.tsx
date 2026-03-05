@@ -37,6 +37,7 @@ import { BusinessInsuranceRecommenderModal } from "../../components/BusinessInsu
 import { AutoInsuranceRecommenderModal } from "../../components/AutoInsuranceRecommenderModal";
 import { SecuritiesRecommenderModal } from "../../components/SecuritiesRecommenderModal";
 import { RealEstateRecommenderModal } from "../../components/RealEstateRecommenderModal";
+import { TestimonialsSection } from "../../components/TestimonialsSection";
 
 export const Services: React.FC = () => {
   const location = useLocation();
@@ -136,7 +137,19 @@ export const Services: React.FC = () => {
   const activeProperties = properties.filter((p) => p.status === "Active");
   const selectedProperty = properties.find((p) => p.id === viewListing);
 
+  const hiddenProducts = companySettings.hiddenProducts || [];
+
   const products = (companySettings.customProducts || [])
+    .filter((p) => {
+      if (p.isHidden) return false;
+      if (p.id === 'life' && hiddenProducts.includes(ProductType.LIFE)) return false;
+      if (p.id === 'mortgage' && hiddenProducts.includes(ProductType.MORTGAGE)) return false;
+      if (p.id === 'business' && hiddenProducts.includes(ProductType.BUSINESS)) return false;
+      if (p.id === 'auto' && hiddenProducts.includes(ProductType.AUTO)) return false;
+      if (p.id === 'securities' && hiddenProducts.includes(ProductType.SECURITIES)) return false;
+      if (p.id === 'real-estate' && hiddenProducts.includes(ProductType.REAL_ESTATE)) return false;
+      return true;
+    })
     .map((p) => ({
       title: p.title,
       desc: p.description,
@@ -159,7 +172,7 @@ export const Services: React.FC = () => {
           );
         })
       : products
-  ).filter((p) => !p.isHidden);
+  );
 
   const cleanPhone = companySettings.phone.replace(/\D/g, "");
 
@@ -393,6 +406,8 @@ export const Services: React.FC = () => {
           })}
         </div>
       </div>
+
+      <TestimonialsSection />
 
       <LifeInsuranceRecommenderModal
         isOpen={isLifeModalOpen}

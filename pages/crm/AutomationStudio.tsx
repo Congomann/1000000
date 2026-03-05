@@ -29,7 +29,7 @@ import {
 import { Workflow, WorkflowTrigger } from '../../types';
 
 export const AutomationStudio: React.FC = () => {
-  const { automationMetrics, workflows, addWorkflow, toggleWorkflow, processingLeads, leads } = useData();
+  const { automationMetrics, workflows, addWorkflow, toggleWorkflow, processingLeads, leads, triggerPulse } = useData();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
   const [deploymentSuccess, setDeploymentSuccess] = useState(false);
@@ -166,7 +166,7 @@ export const AutomationStudio: React.FC = () => {
       {/* Workflow Engine - High Contrast Cards */}
       <div className="space-y-12">
           {workflows.map((wf) => {
-            const isWfProcessing = processingLeads.length > 0 && wf.id === 'wf-1'; // Hardcoded for intake logic demo
+            const isWfProcessing = processingLeads.length > 0 && processingLeads.some(p => p.activeNode === wf.actions[0] || wf.actions.includes(p.activeNode));
             return (
                 <div key={wf.id} className={`bg-white rounded-[4rem] border shadow-2xl overflow-hidden p-12 lg:p-20 group relative transition-all duration-500 ${isWfProcessing ? 'border-blue-400 ring-4 ring-blue-50' : 'border-slate-200'}`}>
                     {isWfProcessing && (
@@ -220,7 +220,7 @@ export const AutomationStudio: React.FC = () => {
                                     <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-0.5 bg-slate-700 -z-10 mx-6"></div>
                                     
                                     {wf.actions.map((act, i) => {
-                                        const isStepActive = isWfProcessing && processingLeads[0].activeNode === act;
+                                        const isStepActive = isWfProcessing && processingLeads.some(p => p.activeNode === act);
                                         return (
                                             <React.Fragment key={i}>
                                                 <div className={`px-6 py-4 rounded-2xl border shadow-xl flex items-center justify-center min-w-[140px] shrink-0 transform transition-all duration-500 border-l-4 ${
@@ -275,6 +275,7 @@ export const AutomationStudio: React.FC = () => {
          </div>
          <div className="relative z-10 mt-12 md:mt-0">
             <button 
+              onClick={triggerPulse}
               className="px-20 py-8 bg-blue-600 hover:bg-blue-500 text-white rounded-full font-black text-sm uppercase tracking-[0.4em] shadow-[0_20px_50px_rgba(37,99,235,0.4)] transition-all flex items-center gap-5 transform hover:scale-105 active:scale-95"
             >
                Initiate Pulse <Terminal size={24} />

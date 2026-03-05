@@ -8,6 +8,9 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { TestimonialsSection } from "../../components/TestimonialsSection";
+import { SpeakToAdvisorForm } from "../../components/SpeakToAdvisorForm";
+import { ProductType } from "../../types";
 
 export const BusinessInsurance: React.FC = () => {
   useEffect(() => {
@@ -228,6 +231,10 @@ export const BusinessInsurance: React.FC = () => {
           })}
         </div>
       </div>
+
+      <SpeakToAdvisorForm productType={ProductType.BUSINESS} />
+
+      <TestimonialsSection />
     </div>
   );
 };

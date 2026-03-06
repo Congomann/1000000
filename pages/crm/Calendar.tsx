@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -12,7 +13,8 @@ import {
   Coffee, 
   ArrowLeft, 
   Save,
-  Lock
+  Lock,
+  Settings
 } from 'lucide-react';
 import { CalendarEvent } from '../../types';
 
@@ -20,8 +22,50 @@ export const Calendar: React.FC = () => {
   const { events, addEvent, updateEvent, deleteEvent, user } = useData();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [animationMode, setAnimationMode] = useState<'Minimal' | 'Professional' | 'Friendly' | 'Dynamic'>('Professional');
   
+  const [dragStartDate, setDragStartDate] = useState<string | null>(null);
+  const [dragCurrentDate, setDragCurrentDate] = useState<string | null>(null);
+
+  const [contextMenu, setContextMenu] = useState<{ x: number, y: number, dateStr: string } | null>(null);
+
+  const [activeReminder, setActiveReminder] = useState<CalendarEvent | null>(null);
+
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+  // Animation Profiles
+  const getAnimationConfig = () => {
+    switch (animationMode) {
+      case 'Minimal':
+        return {
+          container: { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.2 } },
+          event: { whileHover: { scale: 1 }, transition: { duration: 0.1 } },
+          modal: { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.15 } }
+        };
+      case 'Friendly':
+        return {
+          container: { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, transition: { type: 'spring' as const, bounce: 0.4 } },
+          event: { whileHover: { scale: 1.05, y: -2 }, transition: { type: 'spring' as const, stiffness: 400, damping: 10 } },
+          modal: { initial: { opacity: 0, scale: 0.95, y: 20 }, animate: { opacity: 1, scale: 1, y: 0 }, exit: { opacity: 0, scale: 0.95, y: 20 }, transition: { type: 'spring' as const, bounce: 0.3 } }
+        };
+      case 'Dynamic':
+        return {
+          container: { initial: { opacity: 0, scale: 0.98 }, animate: { opacity: 1, scale: 1 }, transition: { type: 'spring' as const, stiffness: 200, damping: 20 } },
+          event: { whileHover: { scale: 1.08, rotate: [-1, 1, 0] }, transition: { type: 'spring' as const, stiffness: 300, damping: 15 } },
+          modal: { initial: { opacity: 0, scale: 0.9, rotateX: 10 }, animate: { opacity: 1, scale: 1, rotateX: 0 }, exit: { opacity: 0, scale: 0.9, rotateX: -10 }, transition: { type: 'spring' as const, stiffness: 300, damping: 25 } }
+        };
+      case 'Professional':
+      default:
+        return {
+          container: { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.4, ease: 'easeOut' as const } },
+          event: { whileHover: { scale: 1.02, y: -1 }, transition: { duration: 0.2, ease: 'easeOut' as const } },
+          modal: { initial: { opacity: 0, y: 10 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 10 }, transition: { duration: 0.3, ease: 'easeInOut' as const } }
+        };
+    }
+  };
+
+  const animConfig = getAnimationConfig();
 
   /**
    * Filter logic for privacy:
@@ -101,6 +145,68 @@ export const Calendar: React.FC = () => {
         description: ''
     });
     setIsModalOpen(true);
+  };
+
+  const handleDragStart = (dateStr: string) => {
+    if (dateStr < todayStr) return;
+    setDragStartDate(dateStr);
+    setDragCurrentDate(dateStr);
+  };
+
+  const handleDragEnter = (dateStr: string) => {
+    if (!dragStartDate || dateStr < todayStr) return;
+    setDragCurrentDate(dateStr);
+  };
+
+  const handleDragEnd = () => {
+    if (!dragStartDate || !dragCurrentDate) {
+        setDragStartDate(null);
+        setDragCurrentDate(null);
+        return;
+    }
+
+    const start = dragStartDate < dragCurrentDate ? dragStartDate : dragCurrentDate;
+    const end = dragStartDate > dragCurrentDate ? dragStartDate : dragCurrentDate;
+
+    // Only open modal if we actually dragged across multiple days or if it's a distinct click
+    if (start !== end) {
+      setEditingId(null);
+      setFormData({
+          title: '',
+          startDate: start,
+          endDate: end,
+          time: '09:00',
+          type: 'meeting',
+          description: ''
+      });
+      setIsModalOpen(true);
+    }
+    
+    setDragStartDate(null);
+    setDragCurrentDate(null);
+  };
+
+  const handleContextMenu = (e: React.MouseEvent, dateStr: string) => {
+    e.preventDefault();
+    if (dateStr < todayStr) return;
+    setContextMenu({ x: e.clientX, y: e.clientY, dateStr });
+  };
+
+  const closeContextMenu = () => setContextMenu(null);
+
+  const handleQuickAction = (type: 'meeting' | 'reminder' | 'task' | 'off-day') => {
+    if (!contextMenu) return;
+    setEditingId(null);
+    setFormData({
+        title: '',
+        startDate: contextMenu.dateStr,
+        endDate: contextMenu.dateStr,
+        time: '09:00',
+        type,
+        description: ''
+    });
+    setIsModalOpen(true);
+    closeContextMenu();
   };
 
   const handleEventClick = (event: CalendarEvent) => {
@@ -207,8 +313,52 @@ export const Calendar: React.FC = () => {
         .filter(e => new Date(e.date) >= new Date(new Date().setHours(0,0,0,0)));
   }, [visibleEvents]);
 
+  const isEventStartingSoon = (dateStr: string, timeStr: string) => {
+    if (dateStr !== todayStr || timeStr === 'All Day') return false;
+    
+    try {
+      const [time, modifier] = timeStr.split(' ');
+      let [hours, minutes] = time.split(':');
+      let h = parseInt(hours, 10);
+      if (modifier === 'PM' && h !== 12) h += 12;
+      if (modifier === 'AM' && h === 12) h = 0;
+      
+      const eventTime = new Date();
+      eventTime.setHours(h, parseInt(minutes, 10), 0, 0);
+      
+      const now = new Date();
+      const diffMs = eventTime.getTime() - now.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      
+      return diffMins > 0 && diffMins <= 30; // Starting in next 30 mins
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // Check for upcoming meetings to show reminder toast
+  React.useEffect(() => {
+    const checkReminders = () => {
+      const upcomingMeeting = upcomingEvents.find(e => e.type === 'meeting' && isEventStartingSoon(e.date, e.time));
+      if (upcomingMeeting && activeReminder?.id !== upcomingMeeting.id) {
+        setActiveReminder(upcomingMeeting);
+      } else if (!upcomingMeeting) {
+        setActiveReminder(null);
+      }
+    };
+    
+    checkReminders();
+    const interval = setInterval(checkReminders, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, [upcomingEvents, activeReminder]);
+
   return (
-    <div className="flex flex-col lg:flex-row h-full gap-8 animate-fade-in">
+    <motion.div 
+      className="flex flex-col lg:flex-row h-full gap-8"
+      initial={animConfig.container.initial}
+      animate={animConfig.container.animate}
+      transition={animConfig.container.transition}
+    >
       <div className="flex-1 flex flex-col bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
         <div className="flex items-center justify-between px-10 py-8 border-b border-slate-200">
           <div className="flex items-center gap-8">
@@ -225,13 +375,21 @@ export const Calendar: React.FC = () => {
               </button>
             </div>
           </div>
-          <button 
-            onClick={handleOpenCreateModal}
-            className="inline-flex items-center px-8 py-4 bg-blue-600 text-white text-sm font-bold rounded-full hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95 hover:scale-105"
-          >
-            <Plus className="h-5 w-5 mr-2" />
-            New Event
-          </button>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setIsSettingsOpen(true)}
+              className="p-3 bg-slate-50 text-slate-600 rounded-full hover:bg-slate-100 transition-all border border-slate-200"
+            >
+              <Settings className="h-5 w-5" />
+            </button>
+            <button 
+              onClick={handleOpenCreateModal}
+              className="inline-flex items-center px-8 py-4 bg-blue-600 text-white text-sm font-bold rounded-full hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95 hover:scale-105"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              New Event
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/50">
@@ -251,31 +409,62 @@ export const Calendar: React.FC = () => {
             const dayEvents = visibleEvents.filter(e => e.date === dateStr);
             const isTodayDay = day === new Date().getDate() && currentDate.getMonth() === new Date().getMonth() && currentDate.getFullYear() === new Date().getFullYear();
             const isPast = dateStr < todayStr;
+            
+            const isDraggingOver = dragStartDate && dragCurrentDate && (
+                (dateStr >= dragStartDate && dateStr <= dragCurrentDate) ||
+                (dateStr <= dragStartDate && dateStr >= dragCurrentDate)
+            );
 
             return (
               <div 
                 key={day} 
                 onClick={() => handleDateClick(dateStr)}
-                className={`relative border-r border-b border-slate-100 p-4 min-h-[120px] transition-all duration-200 group ${isTodayDay ? 'bg-blue-50/40' : 'bg-white'} ${isPast ? 'opacity-60 cursor-default' : 'cursor-pointer hover:bg-slate-50'}`}
+                onMouseDown={() => handleDragStart(dateStr)}
+                onMouseEnter={() => handleDragEnter(dateStr)}
+                onMouseUp={handleDragEnd}
+                onContextMenu={(e) => handleContextMenu(e, dateStr)}
+                className={`relative border-r border-b border-slate-100 p-4 min-h-[120px] transition-all duration-200 group select-none ${isDraggingOver ? 'bg-blue-50/60 ring-2 ring-blue-400 ring-inset' : isTodayDay ? 'bg-blue-50/40' : 'bg-white'} ${isPast ? 'opacity-60 cursor-default' : 'cursor-pointer hover:bg-slate-50'}`}
               >
                 <span className={`inline-flex items-center justify-center w-9 h-9 text-sm font-bold rounded-full mb-3 transition-colors ${isTodayDay ? 'bg-blue-600 text-white shadow-lg' : isPast ? 'text-slate-300' : 'text-slate-700 group-hover:bg-slate-200'}`}>
                   {day}
                 </span>
                 
                 <div className="space-y-1.5">
-                  {dayEvents.map(event => (
-                    <div 
-                        key={event.id} 
-                        onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
-                        className={`group/event flex items-center justify-between text-[10px] leading-tight truncate px-2.5 py-1.5 rounded-lg font-black border transition-all hover:scale-[1.02] shadow-sm ${getEventStyles(event.type)}`}
-                    >
-                        <div className="flex items-center overflow-hidden">
-                            {event.creatorId !== user?.id && (event.type === 'reminder' || event.type === 'task') && <Lock className="h-3 w-3 mr-1 opacity-60" />}
-                            {getEventIcon(event.type)}
-                            <span className="truncate">{event.type === 'off-day' ? `${event.creatorName?.split(' ')[0]}: OFF` : event.title}</span>
-                        </div>
-                    </div>
-                  ))}
+                  <AnimatePresence>
+                    {dayEvents.map(event => {
+                      const startingSoon = isEventStartingSoon(event.date, event.time);
+                      return (
+                      <motion.div 
+                          key={event.id} 
+                          onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          whileHover={animConfig.event.whileHover}
+                          transition={animConfig.event.transition}
+                          className={`group/event flex flex-col gap-1 text-[10px] leading-tight px-2.5 py-2 rounded-xl font-black border cursor-pointer shadow-sm ${getEventStyles(event.type)} ${startingSoon ? 'animate-pulse ring-2 ring-white/50 ring-offset-1' : ''}`}
+                      >
+                          <div className="flex items-center justify-between overflow-hidden">
+                              <div className="flex items-center truncate">
+                                {event.creatorId !== user?.id && (event.type === 'reminder' || event.type === 'task') && <Lock className="h-3 w-3 mr-1 opacity-60" />}
+                                {getEventIcon(event.type)}
+                                <span className="truncate">{event.type === 'off-day' ? `${event.creatorName?.split(' ')[0]}: OFF` : event.title}</span>
+                              </div>
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="opacity-80 font-bold">{event.time}</span>
+                            {event.type === 'meeting' && (
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); window.open('https://meet.google.com', '_blank'); }}
+                                className="px-2 py-0.5 bg-white/20 hover:bg-white/30 rounded-md transition-colors flex items-center gap-1 text-[9px] uppercase tracking-wider"
+                              >
+                                Link
+                              </button>
+                            )}
+                          </div>
+                      </motion.div>
+                    )})}
+                  </AnimatePresence>
                 </div>
               </div>
             );
@@ -295,141 +484,293 @@ export const Calendar: React.FC = () => {
                 <p className="text-sm font-bold uppercase tracking-widest opacity-40">No upcoming events</p>
             </div>
           ) : (
-            upcomingEvents.slice(0, 10).map((event) => (
-              <div 
-                  key={event.id} 
-                  onClick={() => handleEventClick(event)}
-                  className={`p-5 rounded-[1.5rem] border cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 group/item ${getEventStyles(event.type)}`}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="flex-1">
-                    <h4 className="text-xs font-black leading-tight mb-2 flex items-center justify-between uppercase tracking-wide">
-                      <span className="flex items-center gap-2">
-                          {getEventIcon(event.type)}
-                          {event.type === 'off-day' ? `${event.creatorName}: OFF` : event.title}
-                      </span>
-                    </h4>
-                    <div className="flex items-center text-[10px] font-bold opacity-80 uppercase tracking-widest">
-                      <span className="bg-white/20 px-2 py-0.5 rounded-lg">{new Date(event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-                      <span className="mx-2">•</span>
-                      <span>{event.time}</span>
+            <AnimatePresence>
+              {upcomingEvents.slice(0, 10).map((event) => {
+                const startingSoon = isEventStartingSoon(event.date, event.time);
+                return (
+                <motion.div 
+                    key={event.id} 
+                    onClick={() => handleEventClick(event)}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    whileHover={animConfig.event.whileHover}
+                    transition={animConfig.event.transition}
+                    className={`p-5 rounded-[1.5rem] border cursor-pointer shadow-sm group/item flex flex-col gap-3 ${getEventStyles(event.type)} ${startingSoon ? 'animate-pulse ring-2 ring-white/50 ring-offset-2' : ''}`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="flex-1">
+                      <h4 className="text-xs font-black leading-tight mb-2 flex items-center justify-between uppercase tracking-wide">
+                        <span className="flex items-center gap-2">
+                            {getEventIcon(event.type)}
+                            {event.type === 'off-day' ? `${event.creatorName}: OFF` : event.title}
+                        </span>
+                      </h4>
+                      <div className="flex items-center text-[10px] font-bold opacity-80 uppercase tracking-widest">
+                        <span className="bg-white/20 px-2 py-0.5 rounded-lg">{new Date(event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                        <span className="mx-2">•</span>
+                        <span>{event.time}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            ))
+                  {event.type === 'meeting' && (
+                    <div className="pt-3 border-t border-white/20 flex justify-end">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); window.open('https://meet.google.com', '_blank'); }}
+                        className="px-4 py-1.5 bg-white text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider shadow-sm"
+                      >
+                        Join Meeting
+                      </button>
+                    </div>
+                  )}
+                </motion.div>
+              )})}
+            </AnimatePresence>
           )}
         </div>
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-white overflow-y-auto no-scrollbar animate-fade-in">
-          <div className="flex items-center justify-between px-10 py-8 border-b border-slate-100 bg-white sticky top-0 z-10 shadow-sm">
-            <button onClick={() => setIsModalOpen(false)} className="flex items-center gap-3 text-slate-800 hover:text-blue-600 transition-all font-black text-sm uppercase tracking-widest group">
-              <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" /> Back
-            </button>
-            <h3 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">
-              {editingId ? 'Event Details' : 'Create New Calendar Entry'}
-            </h3>
-            <div className="w-16" />
-          </div>
-
-          <div className="flex-1 w-full max-w-4xl mx-auto px-8 py-16 pb-32">
-            <form onSubmit={handleSubmit} className="space-y-12">
-              <div>
-                <label className="block text-[11px] font-black text-slate-400 uppercase mb-4 ml-2 tracking-[0.2em]">Title / Description</label>
-                <input 
-                  type="text" required autoFocus disabled={isReadOnly || formData.type === 'off-day'}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-[2.5rem] px-10 py-8 text-2xl font-black focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-200 shadow-inner disabled:opacity-70"
-                  placeholder={formData.type === 'off-day' ? "Advisor Out of Office" : "e.g. Portfolio Strategy Review"}
-                  value={formData.type === 'off-day' ? `${user?.name} Off-Day` : formData.title}
-                  onChange={e => setFormData({...formData, title: e.target.value})}
-                />
+      <AnimatePresence>
+        {activeReminder && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            transition={{ type: 'spring', bounce: 0.4 }}
+            className="fixed bottom-8 right-8 z-50 bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 flex flex-col gap-4 max-w-sm"
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-emerald-100 text-emerald-600 rounded-full animate-pulse">
+                <CalendarIcon className="h-6 w-6" />
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div>
-                  <label className="block text-[11px] font-black text-slate-400 uppercase mb-4 ml-2 tracking-[0.2em]">
-                    {formData.type === 'off-day' ? 'Start Date' : 'Event Date'}
-                  </label>
-                  <input type="date" required min={todayStr} disabled={isReadOnly}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-[2.5rem] px-8 py-6 text-xl font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-inner disabled:opacity-70"
-                    value={formData.startDate}
-                    onChange={e => setFormData({...formData, startDate: e.target.value, endDate: e.target.value > formData.endDate ? e.target.value : formData.endDate})}
-                  />
-                </div>
-                {formData.type === 'off-day' && (
+              <div>
+                <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">Meeting Starting Soon</h4>
+                <p className="text-xs font-bold text-slate-500 mt-1">{activeReminder.title}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{activeReminder.time}</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setActiveReminder(null)}
+                className="flex-1 px-4 py-2 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+              >
+                Dismiss
+              </button>
+              <button 
+                onClick={() => { window.open('https://meet.google.com', '_blank'); setActiveReminder(null); }}
+                className="flex-1 px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-lg shadow-emerald-600/20"
+              >
+                Join Now
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {contextMenu && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={closeContextMenu} onContextMenu={(e) => { e.preventDefault(); closeContextMenu(); }} />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.1 }}
+              style={{ top: contextMenu.y, left: contextMenu.x }}
+              className="fixed z-50 bg-white rounded-xl shadow-xl border border-slate-200 py-2 w-48 overflow-hidden"
+            >
+              <div className="px-3 py-2 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 mb-1">
+                Quick Add
+              </div>
+              <button onClick={() => handleQuickAction('meeting')} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-emerald-600 flex items-center gap-2 transition-colors">
+                <CalendarIcon className="h-4 w-4" /> Meeting
+              </button>
+              <button onClick={() => handleQuickAction('reminder')} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-amber-500 flex items-center gap-2 transition-colors">
+                <AlertCircle className="h-4 w-4" /> Reminder
+              </button>
+              <button onClick={() => handleQuickAction('task')} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 flex items-center gap-2 transition-colors">
+                <CheckCircle2 className="h-4 w-4" /> Task
+              </button>
+              <button onClick={() => handleQuickAction('off-day')} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-rose-600 flex items-center gap-2 transition-colors">
+                <Coffee className="h-4 w-4" /> Off Day
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isModalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex flex-col bg-white overflow-y-auto no-scrollbar"
+          >
+            <motion.div 
+              initial={animConfig.modal.initial}
+              animate={animConfig.modal.animate}
+              exit={animConfig.modal.exit}
+              transition={animConfig.modal.transition}
+              className="flex-1 flex flex-col w-full"
+            >
+              <div className="flex items-center justify-between px-10 py-8 border-b border-slate-100 bg-white sticky top-0 z-10 shadow-sm">
+                <button onClick={() => setIsModalOpen(false)} className="flex items-center gap-3 text-slate-800 hover:text-blue-600 transition-all font-black text-sm uppercase tracking-widest group">
+                  <ArrowLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" /> Back
+                </button>
+                <h3 className="text-2xl font-black text-slate-800 tracking-tighter uppercase">
+                  {editingId ? 'Event Details' : 'Create New Calendar Entry'}
+                </h3>
+                <div className="w-16" />
+              </div>
+
+              <div className="flex-1 w-full max-w-4xl mx-auto px-8 py-16 pb-32">
+                <form onSubmit={handleSubmit} className="space-y-12">
                   <div>
-                    <label className="block text-[11px] font-black text-slate-400 uppercase mb-4 ml-2 tracking-[0.2em]">End Date (Until)</label>
-                    <input type="date" required min={formData.startDate} disabled={isReadOnly}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-[2.5rem] px-8 py-6 text-xl font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-inner"
-                      value={formData.endDate}
-                      onChange={e => setFormData({...formData, endDate: e.target.value})}
+                    <label className="block text-[11px] font-black text-slate-400 uppercase mb-4 ml-2 tracking-[0.2em]">Title / Description</label>
+                    <input 
+                      type="text" required autoFocus disabled={isReadOnly || formData.type === 'off-day'}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-[2.5rem] px-10 py-8 text-2xl font-black focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-200 shadow-inner disabled:opacity-70"
+                      placeholder={formData.type === 'off-day' ? "Advisor Out of Office" : "e.g. Portfolio Strategy Review"}
+                      value={formData.type === 'off-day' ? `${user?.name} Off-Day` : formData.title}
+                      onChange={e => setFormData({...formData, title: e.target.value})}
                     />
                   </div>
-                )}
-                {formData.type !== 'off-day' && (
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                     <div>
-                        <label className="block text-[11px] font-black text-slate-400 uppercase mb-4 ml-2 tracking-[0.2em]">Time</label>
-                        <input type="time" required disabled={isReadOnly}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-[2.5rem] px-8 py-6 text-xl font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-300 transition-all shadow-inner"
-                            value={formData.time}
-                            onChange={e => setFormData({...formData, time: e.target.value})}
-                        />
+                      <label className="block text-[11px] font-black text-slate-400 uppercase mb-4 ml-2 tracking-[0.2em]">
+                        {formData.type === 'off-day' ? 'Start Date' : 'Event Date'}
+                      </label>
+                      <input type="date" required min={todayStr} disabled={isReadOnly}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-[2.5rem] px-8 py-6 text-xl font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-inner disabled:opacity-70"
+                        value={formData.startDate}
+                        onChange={e => setFormData({...formData, startDate: e.target.value, endDate: e.target.value > formData.endDate ? e.target.value : formData.endDate})}
+                      />
                     </div>
-                )}
-              </div>
+                    {formData.type === 'off-day' && (
+                      <div>
+                        <label className="block text-[11px] font-black text-slate-400 uppercase mb-4 ml-2 tracking-[0.2em]">End Date (Until)</label>
+                        <input type="date" required min={formData.startDate} disabled={isReadOnly}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-[2.5rem] px-8 py-6 text-xl font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-inner"
+                          value={formData.endDate}
+                          onChange={e => setFormData({...formData, endDate: e.target.value})}
+                        />
+                      </div>
+                    )}
+                    {formData.type !== 'off-day' && (
+                        <div>
+                            <label className="block text-[11px] font-black text-slate-400 uppercase mb-4 ml-2 tracking-[0.2em]">Time</label>
+                            <input type="time" required disabled={isReadOnly}
+                                className="w-full bg-slate-50 border border-slate-200 rounded-[2.5rem] px-8 py-6 text-xl font-bold outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 disabled:bg-slate-100 disabled:text-slate-300 transition-all shadow-inner"
+                                value={formData.time}
+                                onChange={e => setFormData({...formData, time: e.target.value})}
+                            />
+                        </div>
+                    )}
+                  </div>
 
-              <div>
-                <label className="block text-[11px] font-black text-slate-400 uppercase mb-8 ml-2 tracking-[0.2em]">Classification</label>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-                    {[
-                      { id: 'meeting', icon: CalendarIcon, label: 'Meeting', active: 'border-emerald-600 text-emerald-600 ring-emerald-50' },
-                      { id: 'reminder', icon: AlertCircle, label: 'Reminder', active: 'border-amber-400 text-amber-500 ring-amber-50' },
-                      { id: 'task', icon: CheckCircle2, label: 'Task', active: 'border-blue-600 text-blue-600 ring-blue-50' },
-                      { id: 'off-day', icon: Coffee, label: 'Off Day', active: 'border-rose-600 text-rose-600 ring-rose-50' }
-                    ].map(type => (
-                        <button
-                            key={type.id}
-                            type="button"
-                            disabled={isReadOnly}
-                            onClick={() => setFormData({...formData, type: type.id as any})}
-                            className={`flex flex-col items-center justify-center gap-5 py-12 rounded-[4rem] border-2 transition-all group relative overflow-hidden
-                                ${formData.type === type.id ? `bg-white ${type.active} shadow-2xl scale-105 z-10 ring-8` : 'bg-slate-50 border-transparent text-slate-400 hover:border-slate-200 hover:bg-white'}
-                                ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}
-                            `}
-                        >   
-                            <type.icon className={`h-12 w-12 transition-transform duration-500 group-hover:scale-110`} />
-                            <div className="text-center">
-                                <span className="block text-[11px] font-black uppercase tracking-[0.25em]">{type.label}</span>
-                                <span className="text-[9px] font-bold opacity-60 uppercase tracking-widest mt-1">
-                                    {(type.id === 'reminder' || type.id === 'task') ? 'Private' : 'Public'}
-                                </span>
-                            </div>
+                  <div>
+                    <label className="block text-[11px] font-black text-slate-400 uppercase mb-8 ml-2 tracking-[0.2em]">Classification</label>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+                        {[
+                          { id: 'meeting', icon: CalendarIcon, label: 'Meeting', active: 'border-emerald-600 text-emerald-600 ring-emerald-50' },
+                          { id: 'reminder', icon: AlertCircle, label: 'Reminder', active: 'border-amber-400 text-amber-500 ring-amber-50' },
+                          { id: 'task', icon: CheckCircle2, label: 'Task', active: 'border-blue-600 text-blue-600 ring-blue-50' },
+                          { id: 'off-day', icon: Coffee, label: 'Off Day', active: 'border-rose-600 text-rose-600 ring-rose-50' }
+                        ].map(type => (
+                            <button
+                                key={type.id}
+                                type="button"
+                                disabled={isReadOnly}
+                                onClick={() => setFormData({...formData, type: type.id as any})}
+                                className={`flex flex-col items-center justify-center gap-5 py-12 rounded-[4rem] border-2 transition-all group relative overflow-hidden
+                                    ${formData.type === type.id ? `bg-white ${type.active} shadow-2xl scale-105 z-10 ring-8` : 'bg-slate-50 border-transparent text-slate-400 hover:border-slate-200 hover:bg-white'}
+                                    ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}
+                                `}
+                            >   
+                                <type.icon className={`h-12 w-12 transition-transform duration-500 group-hover:scale-110`} />
+                                <div className="text-center">
+                                    <span className="block text-[11px] font-black uppercase tracking-[0.25em]">{type.label}</span>
+                                    <span className="text-[9px] font-bold opacity-60 uppercase tracking-widest mt-1">
+                                        {(type.id === 'reminder' || type.id === 'task') ? 'Private' : 'Public'}
+                                    </span>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                  </div>
+                  
+                  <div className="pt-16 flex flex-col sm:flex-row justify-between items-center gap-6 border-t border-slate-100">
+                    {editingId && !isReadOnly ? (
+                        <button type="button" onClick={handleDelete} className="text-red-500 hover:text-red-700 text-sm font-black flex items-center justify-center px-12 py-6 rounded-full hover:bg-red-50 transition-all uppercase tracking-[0.2em]">
+                            <Trash2 className="h-5 w-5 mr-3" /> Remove Record
                         </button>
-                    ))}
+                    ) : <div className="flex-1"></div>}
+                    
+                    {!isReadOnly ? (
+                        <button type="submit" className="w-full sm:w-auto px-20 py-8 text-xl font-black text-white bg-blue-600 hover:bg-blue-700 rounded-full shadow-2xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-4">
+                            <Save className="h-7 w-7" /> {editingId ? 'Update Record' : 'Commit to Terminal'}
+                        </button>
+                    ) : (
+                        <button type="button" onClick={() => setIsModalOpen(false)} className="w-full sm:w-auto px-20 py-8 text-xl font-black text-white bg-slate-800 rounded-full transition-all hover:scale-105 active:scale-95">Close Details</button>
+                    )}
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isSettingsOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden"
+            >
+              <div className="p-8 border-b border-slate-100">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Animation Profile</h3>
+                  <button onClick={() => setIsSettingsOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                    <Trash2 className="h-5 w-5 hidden" />
+                    <span className="text-2xl leading-none">&times;</span>
+                  </button>
                 </div>
+                <p className="text-sm text-slate-500">Personalize how the calendar feels and moves.</p>
               </div>
-              
-              <div className="pt-16 flex flex-col sm:flex-row justify-between items-center gap-6 border-t border-slate-100">
-                {editingId && !isReadOnly ? (
-                    <button type="button" onClick={handleDelete} className="text-red-500 hover:text-red-700 text-sm font-black flex items-center justify-center px-12 py-6 rounded-full hover:bg-red-50 transition-all uppercase tracking-[0.2em]">
-                        <Trash2 className="h-5 w-5 mr-3" /> Remove Record
-                    </button>
-                ) : <div className="flex-1"></div>}
-                
-                {!isReadOnly ? (
-                    <button type="submit" className="w-full sm:w-auto px-20 py-8 text-xl font-black text-white bg-blue-600 hover:bg-blue-700 rounded-full shadow-2xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-4">
-                        <Save className="h-7 w-7" /> {editingId ? 'Update Record' : 'Commit to Terminal'}
-                    </button>
-                ) : (
-                    <button type="button" onClick={() => setIsModalOpen(false)} className="w-full sm:w-auto px-20 py-8 text-xl font-black text-white bg-slate-800 rounded-full transition-all hover:scale-105 active:scale-95">Close Details</button>
-                )}
+              <div className="p-8 space-y-4">
+                {[
+                  { id: 'Minimal', desc: 'Almost no animation, quick fades only.' },
+                  { id: 'Professional', desc: 'Smooth subtle transitions, light hover animations.' },
+                  { id: 'Friendly', desc: 'Slightly playful, event cards bounce softly.' },
+                  { id: 'Dynamic', desc: 'Stronger motion, elastic transitions.' }
+                ].map(mode => (
+                  <button
+                    key={mode.id}
+                    onClick={() => {
+                      setAnimationMode(mode.id as any);
+                      setIsSettingsOpen(false);
+                    }}
+                    className={`w-full text-left p-5 rounded-2xl border-2 transition-all ${animationMode === mode.id ? 'border-blue-600 bg-blue-50/50' : 'border-slate-100 hover:border-slate-300'}`}
+                  >
+                    <div className="font-bold text-slate-900">{mode.id}</div>
+                    <div className="text-xs text-slate-500 mt-1">{mode.desc}</div>
+                  </button>
+                ))}
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };
